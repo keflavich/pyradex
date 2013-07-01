@@ -107,13 +107,13 @@ def call_radex(executable, inpfilename, debug=False, delete_tempfile=True):
     return logfile
 
 def parse_outfile(filename,npartners,flow,fhigh):
-    try:
-        data = astropy.io.ascii.read(filename,delimiter="\s",data_start=9+npartners*2)
-        return data
-    except Exception as E:
-        print("Astropy table reading failed:")
-        print(E)
-        with open(filename,'r') as datafile:
-            result = read_radex(datafile,flow,fhigh)
-        return result
+    data = astropy.io.ascii.read(filename,delimiter="\s",data_start=9+npartners*2)
+    return data
+    #try:
+    #except Exception as E:
+    #    print("Astropy table reading failed:")
+    #    print(E)
+    #    with open(filename,'r') as datafile:
+    #        result = read_radex(datafile,flow,fhigh)
+    #    return result
 
