@@ -1,8 +1,14 @@
+from __future__ import print_function
 import subprocess
 import tempfile
-from __future__ import print_function
+import astropy.io.ascii 
 
-def radex(executable='radex', flow=1, fhigh=10, **kwargs):
+from read_radex import read_radex
+
+__all__ = ['radex','write_input','parse_outfile', 'call_radex']
+
+def radex(executable='radex', flow=1, fhigh=10, collider_densities={'H2':1},
+        **kwargs):
     """
     Get the radex results for a set of input parameters
 
@@ -23,7 +29,9 @@ def radex(executable='radex', flow=1, fhigh=10, **kwargs):
 
     logfile = call_radex(executable, outfile.name)
 
-    parse_outfile(outfile.name)
+    data = parse_outfile(outfile.name, len(collider_densities), flow, fhigh)
+
+    return data
 
 def write_input(tkin=10, column_density=1e12, collider_densities={'H2':1},
         bw=0.01, tbg=2.73, molecule='co', velocity_gradient=1.0, flow=1,
@@ -53,8 +61,8 @@ def write_input(tkin=10, column_density=1e12, collider_densities={'H2':1},
     infile.write(outfile.name+'\n')
     infile.write(str(flow)+' '+str(fhigh)+'\n')
     infile.write(str(tkin)+'\n')
-    infile.write('%s\n' % len(colliders))
-    for name,dens in colliders.iteritems():
+    infile.write('%s\n' % len(collider_densities))
+    for name,dens in collider_densities.iteritems():
         infile.write('%s\n' % name)
         infile.write(str(dens)+'\n')
     infile.write(str(tbg)+'\n')
@@ -77,3 +85,13 @@ def call_radex(executable, inpfilename):
         print("RADEX returned error code %i" % result)
 
     return logfile
+
+def parse_outfile(filename,npartners,flow,fhigh):
+    try:
+        data = astropy.io.ascii.read(filename,delimiter="\s",data_start=11+npartners*2)
+        return data
+    except:
+        with open(filename,'r') as datafile:
+            result = read_radex(datafile,flow,fhigh)
+        return result
+

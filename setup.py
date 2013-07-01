@@ -14,7 +14,7 @@ with open('README.rst') as file:
 #    long_description += file.read()
 
 
-from radex import __version__ as version
+from pyradex import __version__ as version
 
 setup(name='pyradex',
       version=version,
@@ -23,5 +23,5 @@ setup(name='pyradex',
       author='Adam Ginsburg & Julia Kamenetzky',
       author_email='adam.g.ginsburg@gmail.com',
       url='http://github.com/keflavich/pyradex/',
-      packages=['radex'],
+      packages=['pyradex'],
      )
