@@ -2,6 +2,7 @@ from __future__ import print_function
 import subprocess
 import tempfile
 import astropy.io.ascii 
+import stringio
 
 from read_radex import read_radex
 
@@ -107,7 +108,14 @@ def call_radex(executable, inpfilename, debug=False, delete_tempfile=True):
     return logfile
 
 def parse_outfile(filename,npartners,flow,fhigh):
-    data = astropy.io.ascii.read(filename,delimiter="\s",data_start=9+npartners*2)
+    # sigh... hack fails...
+    with open(filename,'r') as f:
+        lines = [L.replace("--","  ") for L in f 
+                if L[0] != '*' and 'GHz' not in L and 'iterat' not in L]
+        lines[0] = "N"+lines[0][1:].strip()+"B\n"
+        #lines[2] = "N"+lines[2][1:]
+        file = StringIO.StringIO("\n".join(lines[1:]))
+    data = astropy.io.ascii.read(file,delimiter="\s",data_start=0) # data_start=1,header_start=0)
     return data
     #try:
     #except Exception as E:
