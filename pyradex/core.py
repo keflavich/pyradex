@@ -2,7 +2,10 @@ from __future__ import print_function
 import subprocess
 import tempfile
 import astropy.io.ascii 
+import astropy.table
 import StringIO
+import re
+import numpy as np
 
 from read_radex import read_radex
 
@@ -107,21 +110,22 @@ def call_radex(executable, inpfilename, debug=False, delete_tempfile=True):
 
     return logfile
 
-def parse_outfile(filename,npartners,flow,fhigh):
-    # sigh... hack fails...
+
+import astropy.units as u
+header_names = ['Row#','Line#','E_UP','FREQ', 'WAVE', 'T_EX', 'TAU', 'T_R', 'POP_UP', 'POP_LOW', 'FLUX_Kkms',   'FLUX_Inu']
+header_units = [None,       None, u.K,   u.GHz,  u.um,   u.K,    None,  u.K,   None,     None,     u.K*u.km/u.s, u.erg/u.cm**2/u.s]
+dtypes       = [int,   int,    float, float,  float,  float,  float, float,  float,    float,     float,         float]
+
+def parse_outfile(filename):
     with open(filename,'r') as f:
         lines = [L.replace("--","  ") for L in f 
-                if L[0] != '*' and 'GHz' not in L and 'iterat' not in L]
-        lines[0] = "N"+lines[0][1:].strip()+"B\n"
-        #lines[2] = "N"+lines[2][1:]
-        file = StringIO.StringIO("\n".join(lines[1:]))
-    data = astropy.io.ascii.read(file,delimiter="\s",data_start=0) # data_start=1,header_start=0)
+                if (L[0] != '*' 
+                    and 'iterat' not in L 
+                    and 'GHz' not in L 
+                    and 'TAU' not in L)]
+    data_list = [L.split() for L in lines]
+    data_in_columns = map(list,zip(*data_list))
+    columns = [astropy.table.Column(data=C, name=name, units=units, dtype=dtype) 
+            for C,name,units,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
+    data = astropy.table.Table(columns)
     return data
-    #try:
-    #except Exception as E:
-    #    print("Astropy table reading failed:")
-    #    print(E)
-    #    with open(filename,'r') as datafile:
-    #        result = read_radex(datafile,flow,fhigh)
-    #    return result
-
