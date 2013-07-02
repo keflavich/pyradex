@@ -1,7 +1,7 @@
 import pyradex
 
 def test_parse_example():
-    data = pyradex.parse_outfile('example.out')
+    data = pyradex.parse_outfile('data/example.out')
     data.pprint(show_units=True)
 
 def test_call():
