@@ -37,6 +37,12 @@ def radex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1},
         which will yield H2 = 1000
 
     See write_input for additional parameters
+
+    Returns
+    -------
+    An astropy table containing the RADEX returns
+
+    .. WARNING:: If RADEX spits out *******, it will be replaced with -999
     """
 
     infile,outfile = write_input(flow=flow, fhigh=fhigh,
@@ -150,7 +156,7 @@ def parse_outfile(filename):
                     and 'iterat' not in L 
                     and 'GHz' not in L 
                     and 'TAU' not in L)]
-    data_list = [L.split() for L in lines]
+    data_list = [[x if '*' not in x else '-999' for x in L.split()] for L in lines]
     if len(data_list) == 0:
         raise ValueError("No lines included?")
     data_in_columns = map(list,zip(*data_list))
