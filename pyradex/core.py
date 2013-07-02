@@ -6,6 +6,7 @@ import astropy.table
 import StringIO
 import re
 import numpy as np
+import warnings
 
 from read_radex import read_radex
 
@@ -36,7 +37,9 @@ def radex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1},
     logfile = call_radex(executable, infile.name, debug=debug,
             delete_tempfile=delete_tempfile)
 
-    data = parse_outfile(outfile.name)#, len(collider_densities), flow, fhigh)
+    check_logfile(logfile.name)
+
+    data = parse_outfile(outfile.name)
 
     if debug:
         with open(infile.name,'r') as inf:
@@ -51,6 +54,11 @@ def radex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1},
     logfile.close()
 
     return data
+
+def check_logfile(logfilename):
+    with open(logfilename,'r') as f:
+        if "Warning: Assuming thermal o/p ratio" in f.read():
+            warnings.warn("Assumed thermal o/p ratio since only H2 was given but collider file has o- and p- H2")
 
 def write_input(tkin=10, column_density=1e12, collider_densities={'H2':1},
         bw=0.01, tbg=2.73, molecule='co', velocity_gradient=1.0, flow=1,
@@ -113,7 +121,7 @@ def call_radex(executable, inpfilename, debug=False, delete_tempfile=True):
 
 
 import astropy.units as u
-header_names = ['Row#','Line#','E_UP','FREQ', 'WAVE', 'T_EX', 'TAU', 'T_R', 'POP_UP', 'POP_LOW', 'FLUX_Kkms',   'FLUX_Inu']
+header_names = ['J_up','J_low','E_UP','FREQ', 'WAVE', 'T_EX', 'TAU', 'T_R', 'POP_UP', 'POP_LOW', 'FLUX_Kkms',   'FLUX_Inu']
 header_units = [None,       None, u.K,   u.GHz,  u.um,   u.K,    None,  u.K,   None,     None,     u.K*u.km/u.s, u.erg/u.cm**2/u.s]
 dtypes       = [int,   int,    float, float,  float,  float,  float, float,  float,    float,     float,         float]
 
