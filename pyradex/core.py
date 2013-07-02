@@ -30,7 +30,8 @@ def radex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1},
     """
 
     infile,outfile = write_input(flow=flow, fhigh=fhigh,
-            delete_tempfile=delete_tempfile, **kwargs)
+            delete_tempfile=delete_tempfile,
+            collider_densities=collider_densities, **kwargs)
 
     logfile = call_radex(executable, infile.name, debug=debug,
             delete_tempfile=delete_tempfile)
