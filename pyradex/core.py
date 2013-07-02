@@ -36,7 +36,7 @@ def radex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1},
     logfile = call_radex(executable, infile.name, debug=debug,
             delete_tempfile=delete_tempfile)
 
-    data = parse_outfile(outfile.name, len(collider_densities), flow, fhigh)
+    data = parse_outfile(outfile.name)#, len(collider_densities), flow, fhigh)
 
     if debug:
         with open(infile.name,'r') as inf:
