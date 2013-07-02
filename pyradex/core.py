@@ -127,7 +127,11 @@ dtypes       = [int,   int,    float, float,  float,  float,  float, float,  flo
 
 def parse_outfile(filename):
     with open(filename,'r') as f:
-        lines = [L.replace("--","  ") for L in f 
+        alllines = f.readlines()
+        header = {L.split(":")[0][2:].strip():L.split(":")[1].strip()
+                for L in alllines
+                if L[0]=='*'}
+        lines = [L.replace("--","  ") for L in alllines 
                 if (L[0] != '*' 
                     and 'iterat' not in L 
                     and 'GHz' not in L 
@@ -136,5 +140,5 @@ def parse_outfile(filename):
     data_in_columns = map(list,zip(*data_list))
     columns = [astropy.table.Column(data=C, name=name, units=units, dtype=dtype) 
             for C,name,units,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
-    data = astropy.table.Table(columns)
+    data = astropy.table.Table(columns, meta=header)
     return data
