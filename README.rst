@@ -23,16 +23,19 @@ Simple example
 --------------
 Using some trivial defaults::
 
-    In [1]: T = pyradex.radex(collider_densities={'H2':1000})
+    In [1]: import pyradex
 
-    In [2]: T.pprint(show_units=True)
+    In [2]: T = pyradex.radex(collider_densities={'H2':1000})
+    WARNING: Assumed thermal o/p ratio since only H2 was given but collider file has o- and p- H2 [pyradex.core]
+
+    In [3]: T.pprint(show_units=True)
     J_up J_low E_UP   FREQ      WAVE    T_EX    TAU      T_R   POP_UP POP_LOW FLUX_Kkms    FLUX_Inu
                 K     GHz        um      K                K                    K km / s erg / (cm2 s)
     ---- ----- ---- -------- --------- ----- --------- ------- ------ ------- --------- -------------
        1     0  5.5 115.2712 2600.7576 5.044 0.0004447 0.00086 0.4709    0.47 0.0009155     1.806e-11
 
-    In [3]: T.meta
-    Out[3]:
+    In [4]: T.meta
+    Out[4]:
     {'Column density [cm-2]': '1.000E+12',
      'Density of H2  [cm-3]': '1.000E+03',
      'Density of oH2 [cm-3]': '3.509E-04',
@@ -43,6 +46,7 @@ Using some trivial defaults::
      'Radex version': '20nov08',
      'T(background)     [K]': '2.730',
      'T(kin)            [K]': '10.000'}
+
 
 
 
