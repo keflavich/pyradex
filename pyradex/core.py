@@ -7,6 +7,7 @@ import StringIO
 import re
 import numpy as np
 import warnings
+import astropy.units as u
 
 from read_radex import read_radex
 
@@ -23,9 +24,17 @@ def radex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1},
     executable : str
         Full path to the RADEX executable
     flow : float
-        Lowest frequency line to store
+        Lowest frequency line to store, in GHz
+        (note: any astropy.unit spectroscopic unit is also allowed)
     fhigh : float
         Highest frequency line to store
+    collider_densities : dict
+        Collider names and their number densities
+        If the molecule specified has both o-H2 and p-H2, you will get a
+        WARNING if you specify 'H2'
+        An ortho/para example:
+        collider_densities = {'oH2':900, 'pH2':1000} 
+        which will yield H2 = 1000
 
     See write_input for additional parameters
     """
@@ -82,6 +91,12 @@ def write_input(tkin=10, column_density=1e12, collider_densities={'H2':1},
     velocity_gradient : float
         Velocity gradient per pc in km/s
     """
+
+    if hasattr(flow, 'unit'):
+        flow = flow.to('GHz',u.spectral()).value
+    if hasattr(fhigh, 'unit'):
+        fhigh = fhigh.to('GHz',u.spectral()).value
+
     infile = tempfile.NamedTemporaryFile(mode='w', delete=delete_tempfile)
     outfile = tempfile.NamedTemporaryFile(mode='w', delete=delete_tempfile)
     infile.write(molecule+'.dat\n')
@@ -120,10 +135,9 @@ def call_radex(executable, inpfilename, debug=False, delete_tempfile=True):
     return logfile
 
 
-import astropy.units as u
 header_names = ['J_up','J_low','E_UP','FREQ', 'WAVE', 'T_EX', 'TAU', 'T_R', 'POP_UP', 'POP_LOW', 'FLUX_Kkms',   'FLUX_Inu']
 header_units = [None,       None, u.K,   u.GHz,  u.um,   u.K,    None,  u.K,   None,     None,     u.K*u.km/u.s, u.erg/u.cm**2/u.s]
-dtypes       = [int,   int,    float, float,  float,  float,  float, float,  float,    float,     float,         float]
+dtypes       = [str,   str,    float, float,  float,  float,  float, float,  float,    float,     float,         float]
 
 def parse_outfile(filename):
     with open(filename,'r') as f:
@@ -137,6 +151,8 @@ def parse_outfile(filename):
                     and 'GHz' not in L 
                     and 'TAU' not in L)]
     data_list = [L.split() for L in lines]
+    if len(data_list) == 0:
+        raise ValueError("No lines included?")
     data_in_columns = map(list,zip(*data_list))
     columns = [astropy.table.Column(data=C, name=name, units=units, dtype=dtype) 
             for C,name,units,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
