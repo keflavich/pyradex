@@ -85,9 +85,8 @@ overheads.
 
 Making Grids
 ------------
-Is more efficient with the other script, but you can still do it...
+Is more efficient with the other script, but you can still do it...  ::
 
-::
     for n in 10**np.arange(12,18):
         T = pyradex.radex(collider_densities={'H2':1000}, column_density=n)
         T.pprint()
