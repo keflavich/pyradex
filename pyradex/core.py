@@ -2,7 +2,7 @@ from __future__ import print_function
 import subprocess
 import tempfile
 import astropy.io.ascii 
-import stringio
+import StringIO
 
 from read_radex import read_radex
 
