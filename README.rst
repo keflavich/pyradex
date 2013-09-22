@@ -110,3 +110,9 @@ Is more efficient with the other script, but you can still do it...  ::
     ---- ----- ---- -------- --------- ----- ----- ---- ------ ------- --------- ---------
        1     0  5.5 115.2712 2600.7576 9.294 18.09 5.96 0.4696  0.2839     6.345 1.252e-07
 
+
+
+.. image:: https://d2weczhvl823v0.cloudfront.net/keflavich/pyradex/trend.png
+   :alt: Bitdeli badge
+   :target: https://bitdeli.com/free
+
