@@ -31,6 +31,7 @@ structure.  This class is useful for direct manipulation of RADEX inputs and
 direct access to its outputs.
 
 Example:
+
 .. code-block:: python
 
     import pyradex
