@@ -256,11 +256,8 @@ class Radex(object):
         from pyradex.radex import radex
         self.radex = radex
 
-        self.collider_densities = defaultdict(lambda: 0)
-        self.collider_densities.update(collider_densities)
-        for k in collider_densities:
-            self.collider_densities[k.upper()] = self.collider_densities[k]
-        totaldensity = np.sum(self.collider_densities.values())
+        self.density = collider_densities
+        totaldensity = np.sum(collider_densities.values())
 
         self.datapath = datapath
         self.molpath = os.path.join(datapath,species+'.dat')
@@ -290,14 +287,6 @@ class Radex(object):
         self.debug = debug
 
     def _set_parameters(self):
-        self.radex.cphys.density[0] = self.collider_densities['H2']
-        self.radex.cphys.density[1] = self.collider_densities['OH2']
-        self.radex.cphys.density[2] = self.collider_densities['PH2']
-        self.radex.cphys.density[3] = self.collider_densities['E']
-        self.radex.cphys.density[4] = self.collider_densities['H']
-        self.radex.cphys.density[5] = self.collider_densities['HE']
-        self.radex.cphys.density[6] = self.collider_densities['H+']
-        self.radex.cphys.totdens = self.radex.cphys.density.sum()
 
         #self.radex.cphys.cdmol = self.column
         #self.radex.cphys.tkin = self.temperature
@@ -312,16 +301,30 @@ class Radex(object):
     @property
     def density(self):
         d = {'H2':self.radex.cphys.density[0],
-                'oH2':self.radex.cphys.density[1],
-                'pH2':self.radex.cphys.density[2],
-                'e':self.radex.cphys.density[3],
-                'H':self.radex.cphys.density[4],
-                'He':self.radex.cphys.density[5],
-                'H+':self.radex.cphys.density[6]}
+             'oH2':self.radex.cphys.density[1],
+             'pH2':self.radex.cphys.density[2],
+             'e':self.radex.cphys.density[3],
+             'H':self.radex.cphys.density[4],
+             'He':self.radex.cphys.density[5],
+             'H+':self.radex.cphys.density[6]}
         if u:
             for k in d:
                 d[k] = d[k] * u.cm**-3
         return d
+
+    @density.setter
+    def density(self, collider_density):
+        collider_densities = defaultdict(lambda: 0)
+        for k in collider_density:
+            collider_densities[k.upper()] = collider_density[k]
+        self.radex.cphys.density[0] = collider_densities['H2']
+        self.radex.cphys.density[1] = collider_densities['OH2']
+        self.radex.cphys.density[2] = collider_densities['PH2']
+        self.radex.cphys.density[3] = collider_densities['E']
+        self.radex.cphys.density[4] = collider_densities['H']
+        self.radex.cphys.density[5] = collider_densities['HE']
+        self.radex.cphys.density[6] = collider_densities['H+']
+        self.radex.cphys.totdens = self.radex.cphys.density.sum()
     
     @property
     def molpath(self):
