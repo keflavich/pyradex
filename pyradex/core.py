@@ -9,9 +9,9 @@ import astropy.units as u
 from collections import defaultdict
 import os
 
-__all__ = ['radex','write_input','parse_outfile', 'call_radex']
+__all__ = ['pyradex','write_input','parse_outfile', 'call_radex']
 
-def radex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1},
+def pyradex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1},
         debug=False, delete_tempfile=True, **kwargs):
     """
     Get the radex results for a set of input parameters
@@ -394,7 +394,7 @@ class Radex(object):
         self.radex.cphys.tbg = tbg
         self.radex.backrad()
 
-    def run_radex(self, reuse_last=False, reload_molfile=False):
+    def run_radex(self, silent=True, reuse_last=False, reload_molfile=False):
 
         if reload_molfile or self.radex.collie.ctot.sum()==0:
             self.radex.readdata()
@@ -409,12 +409,14 @@ class Radex(object):
 
         while not converged:
             if self._iter_counter >= self.maxiter:
-                print("Did not converge in %i iterations, stopping." % self.maxiter)
+                if not silent:
+                    print("Did not converge in %i iterations, stopping." % self.maxiter)
                 break
 
             self.radex.matrix(self._iter_counter, converged)
             if np.abs(last-self.level_population).sum() < 1e-16 and self._iter_counter>self.miniter:
-                print("Stopped changing after %i iterations" % self._iter_counter)
+                if not silent:
+                    print("Stopped changing after %i iterations" % self._iter_counter)
                 break
             last = self.level_population.copy()
             self._iter_counter += 1
