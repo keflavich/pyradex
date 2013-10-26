@@ -25,14 +25,13 @@ for ii,T in enumerate([5,10,20]):
         for kk,density in enumerate([1e3,1e5,1e7]):
             for mm,opr in enumerate([1e-2,0.1,1]):
                 fortho = opr/(1+opr)
-                print density,fortho,column,T
-                result = {caller}(collider_densities={{'H2':density,'oH2':density*fortho,'pH2':density*(1-fortho)}},
+                result = {caller}(collider_densities={{'oH2':density*fortho,'pH2':density*(1-fortho)}},
                                   column=column,
                                   temperature=T,
                                   species='co',
                                   minfreq=100,
                                   maxfreq=400)
-                grid[ii,jj,kk,mm] = result['TAU'][0]
+                grid[ii,jj,kk,mm] = result['tau'][0]
 """
 
 setup = """
