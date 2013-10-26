@@ -7,8 +7,8 @@ R.maxiter=1000
 
 for temperature in [5,10,20,30,40,50,60]:
     R.temperature = temperature
-    #R.debug = 1
-    R.run_radex(reload_molfile=False)
+    
+    R.run_radex()
     
     pl.figure(1)
     pl.plot(R.level_population, label="T=%i" % R.temperature)

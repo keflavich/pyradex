@@ -248,11 +248,11 @@ class Radex(object):
 
         if column:
             self.column = column
-            if abundance and abundance*totaldensity*length*dv != column:
+            if abundance and abundance*totaldensity*length*deltav != column:
                 raise ValueError("If both column & abundance are specified, they must agree!"
-                                 "  The abundance-derive column was %g" % (abundance*totaldensity*length*dv))
+                                 "  The abundance-derive column was %g" % (abundance*totaldensity*length*deltav))
         elif abundance:
-            self.column = abundance*totaldensity*length*dv
+            self.column = abundance*totaldensity*length*deltav
         else:
             raise ValueError("Must specify column or abundance.")
 
@@ -279,7 +279,18 @@ class Radex(object):
         self.radex.freq.fmin = self.minfreq
         self.radex.freq.fmax = self.maxfreq
 
+        self.miniter = 10
         self.maxiter = 200
+
+    @property
+    def density(self):
+        return {'H2':self.radex.cphys.density[0],
+                'oH2':self.radex.cphys.density[1],
+                'pH2':self.radex.cphys.density[2],
+                'e':self.radex.cphys.density[3],
+                'H':self.radex.cphys.density[4],
+                'He':self.radex.cphys.density[5],
+                'H+':self.radex.cphys.density[6]}
     
     @property
     def molpath(self):
@@ -402,7 +413,7 @@ class Radex(object):
                 break
 
             self.radex.matrix(self._iter_counter, converged)
-            if np.abs(last-self.level_population).sum() < 1e-16:
+            if np.abs(last-self.level_population).sum() < 1e-16 and self._iter_counter>self.miniter:
                 print("Stopped changing after %i iterations" % self._iter_counter)
                 break
             last = self.level_population.copy()
