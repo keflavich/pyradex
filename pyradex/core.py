@@ -7,13 +7,23 @@ import numpy as np
 import warnings
 import astropy.units as u
 from collections import defaultdict
+import itertools
 import os
 try:
     from astropy import units as u
+    from astropy import constants
 except ImportError:
     u = False
 
 __all__ = ['pyradex','write_input','parse_outfile', 'call_radex']
+
+
+# silly tool needed for fortran misrepresentation of strings
+# http://stackoverflow.com/questions/434287/what-is-the-most-pythonic-way-to-iterate-over-a-list-in-chunks
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return itertools.izip_longest(*args, fillvalue=fillvalue)
+        
 
 def pyradex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1},
         debug=False, delete_tempfile=True, **kwargs):
@@ -168,6 +178,11 @@ def parse_outfile(filename):
     return data
 
 class Radex(object):
+
+    def __call__(self, **kwargs):
+        # reset the parameters appropriately
+        self.__init__(**kwargs)
+        self.run_radex()
 
     def __init__(self,
                  collider_densities={'h2':1000},
@@ -446,4 +461,63 @@ class Radex(object):
 
         return self._iter_counter
 
+    @property
+    def quantum_number(self):
+        return np.array([("".join(x)).strip() for x in grouper(self.radex.quant.qnum.T.ravel().tolist(),6)])
 
+    @property
+    def upperlevelnumber(self):
+        return self.radex.imolec.iupp
+
+    @property
+    def lowerlevelnumber(self):
+        return self.radex.imolec.ilow
+
+    @property
+    def upperstateenergy(self):
+        return self.radex.rmolec.eup
+
+    @property
+    def line_flux(self):
+        return self.total_intensity - self.background_intensity
+
+    @property
+    def background_intensity(self):
+        if u:
+            return self.radex.radi.backi * u.erg * u.s**-1 * u.cm**-2 * u.Hz**-1 * u.sr**-1
+        else:
+            return self.radex.radi.backi
+
+    @property
+    def total_intensity(self):
+
+        if u:
+            thc = (2 * constants.h * constants.c).cgs / u.sr
+            fk = (constants.h * constants.c / constants.k_B).cgs
+            xnu = self.radex.radi.xnu * u.cm**-1
+        else:
+            thc = 3.9728913665386055e-16
+            fk = 1.4387769599838154
+            xnu = self.radex.radi.xnu
+
+        ftau = np.exp(-self.tau)
+        xt = xnu**3 # cm^-1 -> cm^-3
+        bnutex = thc*xt/(np.exp(fk*xnu/self.tex)-1.0)
+        toti = self.background_intensity*ftau+bnutex*(1.0-ftau)
+
+        return toti
+
+    def get_table(self, minfreq=None, maxfreq=None):
+        T = astropy.table.Table()
+        mask = self.tau > 0
+        T.add_column(astropy.table.Column(name='Tex',data=self.tex[mask], unit='K'))
+        T.add_column(astropy.table.Column(name='tau',data=self.tau[mask], unit=''))
+        T.add_column(astropy.table.Column(name='frequency',data=self.frequency[mask], unit='GHz'))
+        T.add_column(astropy.table.Column(name='upperstateenergy',data=self.upperstateenergy[mask], unit='K'))
+        T.add_column(astropy.table.Column(name='upperlevel',data=self.quantum_number[self.upperlevelnumber[mask]], unit=''))
+        T.add_column(astropy.table.Column(name='lowerlevel',data=self.quantum_number[self.lowerlevelnumber[mask]], unit=''))
+        T.add_column(astropy.table.Column(name='upperlevelpop',data=self.level_population[self.upperlevelnumber[mask]], unit=''))
+        T.add_column(astropy.table.Column(name='lowerlevelpop',data=self.level_population[self.lowerlevelnumber[mask]], unit=''))
+        T.add_column(astropy.table.Column(name='flux',data=self.line_flux[mask]))
+
+        return T
