@@ -124,8 +124,8 @@ def write_input(temperature=10, column=1e12, collider_densities={'H2':1},
     infile.write(str(temperature)+'\n')
 
     # RADEX doesn't allow densities < 1e-3
-    for k,n in collider_densities.iteritems():
-        if n < 1e-3:
+    for k in collider_densities.keys():
+        if collider_densities[k] < 1e-3:
             collider_densities.pop(k)
 
     infile.write('%s\n' % len(collider_densities))
