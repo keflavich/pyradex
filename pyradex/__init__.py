@@ -1,3 +1,3 @@
-__version__ = "0.1"
+__version__ = "0.2"
 
-from core import radex,write_input,parse_outfile,call_radex
+from core import radex,write_input,parse_outfile,call_radex,Radex

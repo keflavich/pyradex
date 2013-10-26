@@ -3,13 +3,11 @@ import subprocess
 import tempfile
 import astropy.io.ascii 
 import astropy.table
-import StringIO
-import re
 import numpy as np
 import warnings
 import astropy.units as u
-
-from read_radex import read_radex
+from collections import defaultdict
+import os
 
 __all__ = ['radex','write_input','parse_outfile', 'call_radex']
 
@@ -164,3 +162,252 @@ def parse_outfile(filename):
             for C,name,units,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
     data = astropy.table.Table(columns, meta=header)
     return data
+
+class Radex(object):
+
+    def __init__(self,
+                 collider_densities={'h2':1000},
+                 temperature=30,
+                 species='co',
+                 column=1e13,
+                 minfreq=100,
+                 maxfreq=400,
+                 tbackground=2.7315,
+                 deltav=1.0,
+                 length=3.085677581467192e+18,
+                 abundance=None,
+                 datapath='.',
+                 method='lvg',
+                 outfile='radex.out',
+                 logfile='radex.log',
+                 debug=False,
+                 ):
+        """
+        Direct wrapper of the radex FORTRAN code
+
+        Parameters
+        ----------
+        collider_densities: dict
+            Dictionary giving the volume densities of the collider(s) in units of
+            cm^-3.  Valid entries are h2,oh2,ph2,e,He,H,H+.  The keys are
+            case-insensitive.
+        temperature: float
+            Local gas temperature in K
+        species: str
+            A string specifying a valid chemical species.  This is used to look
+            up the specified molecule
+        column: float
+            The column density of the molecule of interest within the specified
+            line width.  If the column is specified, the abundance is equal to
+            (column/(dv*total density*length)).
+        abundance: float
+            The molecule's abundance relative to the total collider density in
+            each velocity bin, i.e. column = abundance * density * length * dv.
+            If both abundance and column are specified, they must agree.
+        minfreq: float
+        maxfreq: float
+            Minimum and maximum frequency to include in output
+        tbackground: float
+            Background radiation temperature (e.g., CMB)
+        deltav: float
+            The FWHM line width (really, the single-zone velocity width to
+            scale the column density by: this is most sensibly interpreted as a
+            velocity gradient (dv/length))
+        length: float
+            For abundance calculations, the line-of-sight size scale to
+            associate with a velocity bin.  Typically, assume 1 km/s/pc,
+            and thus set deltav=1, length=3.08e18
+        datapath: str
+            Path to the molecular data files
+        outfile: str
+            Output file name
+        logfile: str
+            Log file name
+        method: 'lvg','sphere','slab'
+            Which escape probability method to use
+        """
+        from pyradex.radex import radex
+        self.radex = radex
+
+        self.collider_densities = defaultdict(lambda: 0)
+        self.collider_densities.update(collider_densities)
+        for k in collider_densities:
+            self.collider_densities[k.upper()] = self.collider_densities[k]
+        totaldensity = np.sum(self.collider_densities.values())
+
+        self.datapath = datapath
+        self.molpath = os.path.join(datapath,species+'.dat')
+        self.outfile = outfile
+        self.logfile = logfile
+        self.method = method
+
+        self.deltav = deltav
+        self.minfreq = minfreq
+        self.maxfreq = maxfreq
+        self._set_parameters()
+
+        if column:
+            self.column = column
+            if abundance and abundance*totaldensity*length*dv != column:
+                raise ValueError("If both column & abundance are specified, they must agree!"
+                                 "  The abundance-derive column was %g" % (abundance*totaldensity*length*dv))
+        elif abundance:
+            self.column = abundance*totaldensity*length*dv
+        else:
+            raise ValueError("Must specify column or abundance.")
+
+        self.temperature = temperature
+        self.tbg = tbackground
+
+
+        self.debug = debug
+
+    def _set_parameters(self):
+        self.radex.cphys.density[0] = self.collider_densities['H2']
+        self.radex.cphys.density[1] = self.collider_densities['OH2']
+        self.radex.cphys.density[2] = self.collider_densities['PH2']
+        self.radex.cphys.density[3] = self.collider_densities['E']
+        self.radex.cphys.density[4] = self.collider_densities['H']
+        self.radex.cphys.density[5] = self.collider_densities['HE']
+        self.radex.cphys.density[6] = self.collider_densities['H+']
+        self.radex.cphys.totdens = self.radex.cphys.density.sum()
+
+        #self.radex.cphys.cdmol = self.column
+        #self.radex.cphys.tkin = self.temperature
+        self.radex.cphys.deltav = self.deltav*1e5
+
+        self.radex.freq.fmin = self.minfreq
+        self.radex.freq.fmax = self.maxfreq
+
+        self.maxiter = 200
+    
+    @property
+    def molpath(self):
+        return self.radex.impex.molfile
+
+    @molpath.setter
+    def molpath(self, molfile):
+        self.radex.impex.molfile[:len(self.molpath)] = molfile
+
+    @property
+    def outfile(self):
+        return self.radex.impex.outfile
+
+    @outfile.setter
+    def outfile(self, outfile):
+        self.radex.impex.outfile[:len(self.outfile)] = outfile
+
+    @property
+    def logfile(self):
+        return self.radex.setup.logfile
+
+    @logfile.setter
+    def logfile(self, logfile):
+        self.radex.setup.logfile[:len(self.logfile)] = logfile
+
+    @property
+    def datapath(self):
+        return self.radex.setup.radat
+
+    @datapath.setter
+    def datapath(self, radat):
+        # self.radex data path not needed if molecule given as full path
+        self.radex.setup.radat[:len(self.datapath)] = radat
+
+
+    @property
+    def method(self):
+        return self.radex.setup.method
+
+    @method.setter
+    def method(self, method):
+        mdict = {'lvg':2,'sphere':1,'slab':3}
+        if method not in mdict:
+            raise ValueError("Invalid method, must be one of "+",".join(mdict))
+        self.radex.setup.method = mdict[method]
+        
+
+    @property
+    def level_population(self):
+        return self.radex.collie.xpop
+
+    @property
+    def tex(self):
+        return self.radex.radi.tex
+
+    @property
+    def tau(self):
+        return self.radex.radi.taul
+
+    @property
+    def frequency(self):
+        return self.radex.radi.spfreq
+
+    @property
+    def temperature(self):
+        return self.radex.cphys.tkin
+
+    @temperature.setter
+    def temperature(self, tkin):
+        if tkin <= 0 or tkin > 1e4:
+            raise ValueError('Must have kinetic temperature > 0 and < 10^4 K')
+        self.radex.cphys.tkin = tkin
+        # must re-read molecular file and re-interpolate to new temperature
+        self.radex.readdata()
+
+    @property
+    def column(self):
+        return self.radex.cphys.cdmol
+
+    @column.setter
+    def column(self, col):
+        if col < 1e5 or col > 1e25:
+            raise ValueError("Extremely low or extremely high column.")
+        self.radex.cphys.cdmol = col
+
+    @property
+    def debug(self):
+        return self.radex.dbg.debug
+
+    @debug.setter
+    def debug(self, debug):
+        self.radex.dbg.debug = debug
+
+    @property
+    def tbg(self):
+        return self.radex.cphys.tbg
+
+    @tbg.setter
+    def tbg(self, tbg):
+        #print("Set TBG=%f" % tbg)
+        self.radex.cphys.tbg = tbg
+        self.radex.backrad()
+
+    def run_radex(self, reuse_last=False, reload_molfile=False):
+
+        if reload_molfile or self.radex.collie.ctot.sum()==0:
+            self.radex.readdata()
+
+        #self.radex.backrad()
+            
+        self._iter_counter = 1 if reuse_last else 0
+        
+        converged = np.array(False)
+
+        last = self.level_population.copy()
+
+        while not converged:
+            if self._iter_counter >= self.maxiter:
+                print("Did not converge in %i iterations, stopping." % self.maxiter)
+                break
+
+            self.radex.matrix(self._iter_counter, converged)
+            if np.abs(last-self.level_population).sum() < 1e-16:
+                print("Stopped changing after %i iterations" % self._iter_counter)
+                break
+            last = self.level_population.copy()
+            self._iter_counter += 1
+
+        return self._iter_counter
+
+

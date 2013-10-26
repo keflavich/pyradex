@@ -16,6 +16,11 @@ with open('README.rst') as file:
 
 from pyradex import __version__ as version
 
+import os
+if not os.path.exists('pyradex/radex/radex.so'):
+    import install_radex
+    install_radex.install_radex()
+
 setup(name='pyradex',
       version=version,
       description='Python-RADEX',
@@ -23,5 +28,7 @@ setup(name='pyradex',
       author='Adam Ginsburg & Julia Kamenetzky',
       author_email='adam.g.ginsburg@gmail.com',
       url='http://github.com/keflavich/pyradex/',
-      packages=['pyradex'],
+      packages=['pyradex','pyradex.radex'],
+      package_data={'pyradex.radex':['radex.so']},
+      #include_package_data=True,
      )
