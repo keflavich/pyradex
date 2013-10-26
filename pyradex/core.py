@@ -25,8 +25,9 @@ def grouper(iterable, n, fillvalue=None):
     return itertools.izip_longest(*args, fillvalue=fillvalue)
         
 
-def pyradex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1},
-        debug=False, delete_tempfile=True, **kwargs):
+def pyradex(executable='radex', minfreq=100, maxfreq=130,
+            collider_densities={'H2':1}, debug=False, delete_tempfile=True,
+            **kwargs):
     """
     Get the radex results for a set of input parameters
 
@@ -35,10 +36,10 @@ def pyradex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1}
     ----------
     executable : str
         Full path to the RADEX executable
-    flow : float
+    minfreq : float
         Lowest frequency line to store, in GHz
         (note: any astropy.unit spectroscopic unit is also allowed)
-    fhigh : float
+    maxfreq : float
         Highest frequency line to store
     collider_densities : dict
         Collider names and their number densities
@@ -57,7 +58,7 @@ def pyradex(executable='radex', flow=100, fhigh=130, collider_densities={'H2':1}
     .. WARNING:: If RADEX spits out *******, it will be replaced with -999
     """
 
-    infile,outfile = write_input(flow=flow, fhigh=fhigh,
+    infile,outfile = write_input(minfreq=minfreq, maxfreq=maxfreq,
             delete_tempfile=delete_tempfile,
             collider_densities=collider_densities, **kwargs)
 
@@ -87,46 +88,52 @@ def check_logfile(logfilename):
         if "Warning: Assuming thermal o/p ratio" in f.read():
             warnings.warn("Assumed thermal o/p ratio since only H2 was given but collider file has o- and p- H2")
 
-def write_input(tkin=10, column_density=1e12, collider_densities={'H2':1},
-        bw=0.01, tbg=2.73, molecule='co', velocity_gradient=1.0, flow=1,
-        fhigh=10, delete_tempfile=True):
+def write_input(temperature=10, column=1e12, collider_densities={'H2':1},
+        bw=0.01, tbg=2.73, species='co', velocity_gradient=1.0, minfreq=1,
+        maxfreq=10, delete_tempfile=True):
     """
     Write radex.inp file parameters
 
     Parameters
     ----------
-    tkin : float
+    temperature : float
         Kinetic temperature (K)
     collider_densities : dict
         Collider names and their number densities
-    column_density : float
+    column : float
         column density of the molecule
-    molecule : str
+    species : str
         Name of the molecule (specifically, the prefix for the file name, e.g.
-        for "co.dat", molecule='co').  Case sensitive!
+        for "co.dat", species='co').  Case sensitive!
     tbg : float
         Temperature of the background radiation (e.g. CMB)
     velocity_gradient : float
         Velocity gradient per pc in km/s
     """
 
-    if hasattr(flow, 'unit'):
-        flow = flow.to('GHz',u.spectral()).value
-    if hasattr(fhigh, 'unit'):
-        fhigh = fhigh.to('GHz',u.spectral()).value
+    if hasattr(minfreq, 'unit'):
+        minfreq = minfreq.to('GHz',u.spectral()).value
+    if hasattr(maxfreq, 'unit'):
+        maxfreq = maxfreq.to('GHz',u.spectral()).value
 
     infile = tempfile.NamedTemporaryFile(mode='w', delete=delete_tempfile)
     outfile = tempfile.NamedTemporaryFile(mode='w', delete=delete_tempfile)
-    infile.write(molecule+'.dat\n')
+    infile.write(species+'.dat\n')
     infile.write(outfile.name+'\n')
-    infile.write(str(flow)+' '+str(fhigh)+'\n')
-    infile.write(str(tkin)+'\n')
+    infile.write(str(minfreq)+' '+str(maxfreq)+'\n')
+    infile.write(str(temperature)+'\n')
+
+    # RADEX doesn't allow densities < 1e-3
+    for k,n in collider_densities.iteritems():
+        if n < 1e-3:
+            collider_densities.pop(k)
+
     infile.write('%s\n' % len(collider_densities))
     for name,dens in collider_densities.iteritems():
         infile.write('%s\n' % name)
         infile.write(str(dens)+'\n')
     infile.write(str(tbg)+'\n')
-    infile.write(str(column_density)+'\n')
+    infile.write(str(column)+'\n')
     infile.write(str(velocity_gradient)+'\n')
     # end the input file
     infile.write('0\n')
@@ -183,6 +190,7 @@ class Radex(object):
         # reset the parameters appropriately
         self.__init__(**kwargs)
         self.run_radex()
+        return self.get_table()
 
     def __init__(self,
                  collider_densities={'h2':1000},
@@ -430,6 +438,24 @@ class Radex(object):
         self.radex.backrad()
 
     def run_radex(self, silent=True, reuse_last=False, reload_molfile=False):
+        """
+        Run the iterative matrix solution using a python loop
+
+        Parameters
+        ----------
+        silent: bool
+            Print a message when iteration is done?
+        reuse_last: bool
+            If this is True, the matrix iterator will start at iteration 1
+            rather than iteration 0, and it will therefore repopulate the rate
+            matrix based on the radiative background alone.  In principle,
+            setting this to True should result in a significantly faster
+            convergence; in practice, it does not.
+        reload_molfile: bool
+            Re-read the molecular line file?  This is needed if the collision
+            rates are different and have not been updated by, e.g., changing
+            the temperature (which automatically runs the `readdata` function)
+        """
 
         if reload_molfile or self.radex.collie.ctot.sum()==0:
             self.radex.readdata()

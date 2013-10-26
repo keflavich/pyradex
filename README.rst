@@ -36,21 +36,32 @@ Example:
 
     import pyradex
     import numpy as np
-    Rlvg = pyradex.Radex(collider_densities={'oH2':900,'pH2':100}, column=1e16, species='co',method='lvg')
-    Rlvg.run_radex()
-    print Rlvg.level_population[:3],Rlvg.tex[:3],Rlvg.tau[:3],Rlvg.tex[:3]*(1-np.exp(-Rlvg.tau[:3]))
-    Rslab = pyradex.Radex(collider_densities={'oH2':900,'pH2':100}, column=1e16, species='co',method='slab')
-    Rslab.run_radex()
-    print Rslab.level_population[:3],Rslab.tex[:3],Rslab.tau[:3],Rslab.tex[:3]*(1-np.exp(-Rslab.tau[:3]))
-    Rsphere = pyradex.Radex(collider_densities={'oH2':900,'pH2':100}, column=1e16, species='co',method='sphere')
-    Rsphere.run_radex()
-    print Rsphere.level_population[:3],Rsphere.tex[:3],Rsphere.tau[:3],Rsphere.tex[:3]*(1-np.exp(-Rsphere.tau[:3]))
+    R = pyradex.Radex()
+    Tlvg = R(collider_densities={'oH2':900,'pH2':100}, column=1e16, species='co',method='lvg')
+    Tslab = R(collider_densities={'oH2':900,'pH2':100}, column=1e16, species='co',method='slab')
+    Tsphere = R(collider_densities={'oH2':900,'pH2':100}, column=1e16, species='co',method='sphere')
+    Tlvg[:3].pprint()
+    Tslab[:3].pprint()
+    Tsphere[:3].pprint()
 
 Result::
     
-    [ 0.21720238  0.45362191  0.27314034] [ 15.27471017  10.86732113   8.30670325] [ 0.93769234  2.74275176  2.01021824] [  9.29419812  10.16754271   7.19394197]
-    [ 0.17957399  0.39486278  0.31297916] [ 17.80769375  14.88651187  11.44840706] [ 0.68134195  1.96024231  2.03949857] [  8.79811204  12.79012934   9.95903882]
-    [ 0.23532836  0.4805592   0.24340073] [ 14.38256087   9.28920338   7.50189024] [ 1.06765592  3.16666395  1.84556901] [ 9.43764227  8.89771958  6.31707599]
+         Tex           tau        frequency  upperstateenergy upperlevel lowerlevel  upperlevelpop    lowerlevelpop         flux
+    ------------- -------------- ----------- ---------------- ---------- ---------- ---------------- --------------- -----------------
+    15.2747101724 0.937692338925 115.2712018             5.53          2          1   0.273140336953  0.453621905471 2.93964536078e-14
+    10.8673211326  2.74275175782     230.538             16.6          3          2  0.0518618367484  0.273140336953 9.26125039465e-14
+    8.30670325364  2.01021823976 345.7959899            33.19          4          3 0.00379591658449 0.0518618367484 8.16324298598e-14
+         Tex           tau        frequency  upperstateenergy upperlevel lowerlevel  upperlevelpop   lowerlevelpop         flux
+    ------------- -------------- ----------- ---------------- ---------- ---------- ---------------- -------------- -----------------
+    17.8076937528 0.681341951256 115.2712018             5.53          2          1   0.312979158313 0.394862780876 2.89304678735e-14
+    14.8865118666  1.96024230849     230.538             16.6          3          2   0.102821702575 0.312979158313 1.38012283784e-13
+     11.448407058  2.03949857132 345.7959899            33.19          4          3 0.00920322307626 0.102821702575  1.6139902821e-13
+         Tex           tau       frequency  upperstateenergy upperlevel lowerlevel  upperlevelpop   lowerlevelpop         flux
+    ------------- ------------- ----------- ---------------- ---------- ---------- ---------------- -------------- -----------------
+      14.38256087 1.06765591906 115.2712018             5.53          2          1   0.243400727834 0.480559204909 2.93394133644e-14
+    9.28920337666  3.1666639484     230.538             16.6          3          2   0.037299201561 0.243400727834 7.24810556601e-14
+    7.50189023571 1.84556901411 345.7959899            33.19          4          3 0.00307839203073 0.037299201561 6.19215196139e-14
+
     
 Note that because of how RADEX was written, i.e. with common blocks, the values
 stored in each of these objects is identical!  You cannot have two independent
@@ -158,11 +169,10 @@ the difference is enormous.  The following tests can be seen in `timing.py
     Fortran:  0.0753719806671
     py/fortran:  12.7432346512
     
-    
 
 Making Grids
 ------------
-Is more efficient with the other script, but you can still do it...  ::
+Is more efficient with scripts, but you can still do it...  ::
 
     for n in 10**np.arange(12,18):
         T = pyradex.radex(collider_densities={'H2':1000}, column_density=n)
@@ -191,6 +201,10 @@ If you want to create a grid with the directly wrapped version, do loops with
 constant temperature: every time you load a new temperature, RADEX must read in
 the molecular data file and interpolate across the collision rate values, which
 may be a substantial overhead.
+
+If you want to build a grid, *do not* make an astropy table each time!  That
+appears to dominate the overhead at each iteration.
+    
 
 .. image:: https://d2weczhvl823v0.cloudfront.net/keflavich/pyradex/trend.png
    :alt: Bitdeli badge
