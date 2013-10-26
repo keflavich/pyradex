@@ -8,6 +8,10 @@ import warnings
 import astropy.units as u
 from collections import defaultdict
 import os
+try:
+    from astropy import units as u
+except ImportError:
+    u = False
 
 __all__ = ['pyradex','write_input','parse_outfile', 'call_radex']
 
@@ -284,13 +288,17 @@ class Radex(object):
 
     @property
     def density(self):
-        return {'H2':self.radex.cphys.density[0],
+        d = {'H2':self.radex.cphys.density[0],
                 'oH2':self.radex.cphys.density[1],
                 'pH2':self.radex.cphys.density[2],
                 'e':self.radex.cphys.density[3],
                 'H':self.radex.cphys.density[4],
                 'He':self.radex.cphys.density[5],
                 'H+':self.radex.cphys.density[6]}
+        if u:
+            for k in d:
+                d[k] = d[k] * u.cm**-3
+        return d
     
     @property
     def molpath(self):
@@ -344,7 +352,10 @@ class Radex(object):
 
     @property
     def tex(self):
-        return self.radex.radi.tex
+        if u:
+            return self.radex.radi.tex * u.K
+        else:
+            return self.radex.radi.tex
 
     @property
     def tau(self):
@@ -352,11 +363,17 @@ class Radex(object):
 
     @property
     def frequency(self):
-        return self.radex.radi.spfreq
+        if u:
+            return self.radex.radi.spfreq * u.GHz
+        else:
+            return self.radex.radi.spfreq
 
     @property
     def temperature(self):
-        return self.radex.cphys.tkin
+        if u:
+            return self.radex.cphys.tkin*u.K
+        else:
+            return self.radex.cphys.tkin
 
     @temperature.setter
     def temperature(self, tkin):
@@ -386,7 +403,10 @@ class Radex(object):
 
     @property
     def tbg(self):
-        return self.radex.cphys.tbg
+        if u:
+            return self.radex.cphys.tbg * u.K
+        else:
+            return self.radex.cphys.tbg
 
     @tbg.setter
     def tbg(self, tbg):
@@ -420,6 +440,9 @@ class Radex(object):
                 break
             last = self.level_population.copy()
             self._iter_counter += 1
+
+        if converged and not silent:
+            print("Successfully converged after %i iterations" % self._iter_counter)
 
         return self._iter_counter
 
