@@ -22,6 +22,11 @@ texgrid_150 = np.empty([ndens,ntemp])
 fluxgrid_150 = np.empty([ndens,ntemp])
 columngrid = np.empty([ndens,ntemp])
 
+import os
+if not os.path.exists('oh2co-h2.dat'):
+    import urllib
+    urllib.urlretrieve('http://home.strw.leidenuniv.nl/~moldata/datafiles/oh2co-h2.dat')
+
 R = pyradex.Radex(species='oh2co-h2', abundance=abundance)
 R.run_radex()
 
@@ -106,8 +111,27 @@ for kk,freq in enumerate([6,140,150]):
     grid = eval('fluxgrid_%i' % freq)
     #ax.imshow(grid, extent=extent)
     ax.pcolormesh(np.log10(densities),temperatures,grid)
-    ax.set_title('Flux o-H$_2$CO %s GHz' % (label,freq))
+    ax.set_title('Flux o-H$_2$CO %i GHz' % (freq))
     ax.set_xlabel('log Density')
     ax.set_ylabel('Temperature')
+
+pl.figure(6)
+pl.clf()
+ax = pl.subplot(2,1,1)
+#ax.imshow(grid, extent=extent)
+cax = ax.pcolormesh(np.log10(densities),temperatures,fluxgrid_6/fluxgrid_150, vmax=0.01, vmin=0)
+pl.colorbar(cax)
+ax.set_title('$S_{\\nu}$ o-H$_2$CO 6/150 GHz')
+ax.set_xlabel('log Density')
+ax.set_ylabel('Temperature')
+
+ax = pl.subplot(2,1,2)
+#ax.imshow(grid, extent=extent)
+cax = ax.pcolormesh(np.log10(densities),temperatures,fluxgrid_140/fluxgrid_150, vmax=1.2, vmin=0.8)
+pl.colorbar(cax)
+ax.set_title('$S_{\\nu}$ o-H$_2$CO 140/150 GHz')
+ax.set_xlabel('log Density')
+ax.set_ylabel('Temperature')
+
 
 pl.show()
