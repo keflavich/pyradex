@@ -230,7 +230,7 @@ class Radex(object):
         abundance: float
             The molecule's abundance relative to the total collider density in
             each velocity bin, i.e. column = abundance * density * length * dv.
-            If both abundance and column are specified, they must agree.
+            If both abundance and column are specified, abundance is ignored.
         minfreq: float
         maxfreq: float
             Minimum and maximum frequency to include in output
@@ -256,8 +256,9 @@ class Radex(object):
         from pyradex.radex import radex
         self.radex = radex
 
+        self.length = length
+
         self.density = collider_densities
-        totaldensity = np.sum(collider_densities.values())
 
         self.datapath = datapath
         self.molpath = os.path.join(datapath,species+'.dat')
@@ -272,11 +273,8 @@ class Radex(object):
 
         if column:
             self.column = column
-            if abundance and abundance*totaldensity*length*deltav != column:
-                raise ValueError("If both column & abundance are specified, they must agree!"
-                                 "  The abundance-derive column was %g" % (abundance*totaldensity*length*deltav))
         elif abundance:
-            self.column = abundance*totaldensity*length*deltav
+            self.abundance = abundance
         else:
             raise ValueError("Must specify column or abundance.")
 
@@ -290,7 +288,10 @@ class Radex(object):
 
         #self.radex.cphys.cdmol = self.column
         #self.radex.cphys.tkin = self.temperature
-        self.radex.cphys.deltav = self.deltav*1e5
+        if u:
+            self.radex.cphys.deltav = self.deltav.to(u.cm/u.s).value
+        else:
+            self.radex.cphys.deltav = self.deltav*1e5
 
         self.radex.freq.fmin = self.minfreq
         self.radex.freq.fmax = self.maxfreq
@@ -326,6 +327,13 @@ class Radex(object):
         self.radex.cphys.density[6] = collider_densities['H+']
         self.radex.cphys.totdens = self.radex.cphys.density.sum()
     
+    @property
+    def totaldensity(self):
+        if u:
+            return self.radex.cphys.totdens * u.cm**-3
+        else:
+            return self.radex.cphys.totdens
+
     @property
     def molpath(self):
         return self.radex.impex.molfile
@@ -411,13 +419,66 @@ class Radex(object):
 
     @property
     def column(self):
-        return self.radex.cphys.cdmol
+        if u:
+            return self.radex.cphys.cdmol * u.cm**-2
+        else:
+            return self.radex.cphys.cdmol
 
     @column.setter
     def column(self, col):
         if col < 1e5 or col > 1e25:
             raise ValueError("Extremely low or extremely high column.")
         self.radex.cphys.cdmol = col
+
+    @property
+    def column_per_bin(self):
+        return self.column / self.deltav
+
+    @column_per_bin.setter
+    def total_column(self, cddv):
+        if u:
+            self.column = cddv * self.deltav.to(u.km/u.s).value
+        else:
+            self.column = cddv * self.deltav
+
+    @property
+    def abundance(self):
+        abund = self.column / (self.totaldensity * self.length)
+        if u:
+            return abund.decompose().value
+        else:
+            return abund
+
+    @abundance.setter
+    def abundance(self, abund):
+        col = abund * self.totaldensity * self.length
+        if u:
+            # need to divide the column per km/s by
+            self.column = col.to(u.cm**-2).value
+        else:
+            self.column = col
+
+    @property
+    def deltav(self):
+        return self._deltav
+
+    @deltav.setter
+    def deltav(self, dv):
+        if u:
+            self._deltav = dv * u.km/u.s
+        else:
+            self._deltav = dv
+
+    @property
+    def length(self):
+        return self._length
+
+    @length.setter
+    def length(self, L):
+        if u:
+            self._length = L * u.cm
+        else:
+            self._length = L
 
     @property
     def debug(self):
