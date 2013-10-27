@@ -501,7 +501,7 @@ class Radex(object):
         self.radex.cphys.tbg = tbg
         self.radex.backrad()
 
-    def run_radex(self, silent=True, reuse_last=False, reload_molfile=False):
+    def run_radex(self, silent=True, reuse_last=False, reload_molfile=True):
         """
         Run the iterative matrix solution using a python loop
 
