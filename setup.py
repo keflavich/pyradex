@@ -14,7 +14,7 @@ with open('README.rst') as file:
 #    long_description += file.read()
 
 
-from pyradex import __version__ as version
+version = "0.2"
 
 import os
 if not os.path.exists('pyradex/radex/radex.so'):
