@@ -10,10 +10,14 @@ except ImportError:
 
 
 def install_radex(download=True, extract=True, patch=True, compile=True):
-    download_radex()
-    extract_radex()
-    patch_radex()
-    compile_radex()
+    if download:
+        filename = download_radex()
+    if extract:
+        extract_radex(filename)
+    if patch:
+        patch_radex()
+    if compile:
+        compile_radex()
 
 def download_radex(url='http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'):
 
