@@ -31,4 +31,4 @@ setup(name='pyradex',
       packages=['pyradex','pyradex.radex'],
       package_data={'pyradex.radex':['radex.so']},
       #include_package_data=True,
-     )
+      )
