@@ -631,7 +631,7 @@ class Radex(object):
 
     def get_table(self, minfreq=None, maxfreq=None):
         T = astropy.table.Table()
-        mask = self.frequency != 0
+        mask = self.frequency.value != 0
         T.add_column(astropy.table.Column(name='Tex',data=self.tex[mask], unit='K'))
         T.add_column(astropy.table.Column(name='tau',data=self.tau[mask], unit=''))
         T.add_column(astropy.table.Column(name='frequency',data=self.frequency[mask], unit='GHz'))
