@@ -193,7 +193,7 @@ class Radex(object):
         return self.get_table()
 
     def __init__(self,
-                 collider_densities={'h2':1000},
+                 collider_densities={'ph2':990,'oh2':10},
                  temperature=30,
                  species='co',
                  column=1e13,
@@ -411,6 +411,8 @@ class Radex(object):
 
     @temperature.setter
     def temperature(self, tkin):
+        if hasattr(tkin,'to'):
+            tkin = tkin.to(u.K).value
         if tkin <= 0 or tkin > 1e4:
             raise ValueError('Must have kinetic temperature > 0 and < 10^4 K')
         self.radex.cphys.tkin = tkin
@@ -564,6 +566,14 @@ class Radex(object):
         return self.radex.imolec.ilow
 
     @property
+    def upperlevelindex(self):
+        return self.radex.imolec.iupp-1
+
+    @property
+    def lowerlevelindex(self):
+        return self.radex.imolec.ilow-1
+
+    @property
     def upperstateenergy(self):
         return self.radex.rmolec.eup
 
@@ -597,17 +607,50 @@ class Radex(object):
 
         return toti
 
+    @property
+    def _xnu(self):
+        if u:
+            return self.radex.radi.xnu * u.cm**-1
+        else:
+            return self.radex.radi.xnu
+
+    @property
+    def _xt(self):
+        return self._xnu**3
+
+    @property
+    def _cddv(self):
+        return self.column / self.deltav
+
+    @property
+    def statistical_weight(self):
+        return self.radex.rmolec.gstat
+
+	 # taul(iline) = cddv*(xpop(n)*gstat(m)/gstat(n)-xpop(m))
+     #$         /(fgaus*xt/aeinst(iline))
+
     def get_table(self, minfreq=None, maxfreq=None):
         T = astropy.table.Table()
-        mask = self.tau > 0
+        mask = self.frequency != 0
         T.add_column(astropy.table.Column(name='Tex',data=self.tex[mask], unit='K'))
         T.add_column(astropy.table.Column(name='tau',data=self.tau[mask], unit=''))
         T.add_column(astropy.table.Column(name='frequency',data=self.frequency[mask], unit='GHz'))
         T.add_column(astropy.table.Column(name='upperstateenergy',data=self.upperstateenergy[mask], unit='K'))
-        T.add_column(astropy.table.Column(name='upperlevel',data=self.quantum_number[self.upperlevelnumber[mask]], unit=''))
-        T.add_column(astropy.table.Column(name='lowerlevel',data=self.quantum_number[self.lowerlevelnumber[mask]], unit=''))
-        T.add_column(astropy.table.Column(name='upperlevelpop',data=self.level_population[self.upperlevelnumber[mask]], unit=''))
-        T.add_column(astropy.table.Column(name='lowerlevelpop',data=self.level_population[self.lowerlevelnumber[mask]], unit=''))
+        T.add_column(astropy.table.Column(name='upperlevel',data=self.quantum_number[self.upperlevelindex[mask]], unit=''))
+        T.add_column(astropy.table.Column(name='lowerlevel',data=self.quantum_number[self.lowerlevelindex[mask]], unit=''))
+        T.add_column(astropy.table.Column(name='upperlevelpop',data=self.level_population[self.upperlevelindex[mask]], unit=''))
+        T.add_column(astropy.table.Column(name='lowerlevelpop',data=self.level_population[self.lowerlevelindex[mask]], unit=''))
         T.add_column(astropy.table.Column(name='flux',data=self.line_flux[mask]))
 
         return T
+
+
+def density_distribution(meandens, **kwargs):
+    """
+    Compute the LVG model for a single zone with an assumed density
+    *distribution* but other properties fixed.
+    """
+    pass
+
+def grid():
+    pass
