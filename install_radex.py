@@ -9,10 +9,15 @@ except ImportError:
     download_file = None
 
 
-def install_radex():
+def install_radex(download=True, extract=True, patch=True, compile=True):
+    download_radex()
+    extract_radex()
+    patch_radex()
+    compile_radex()
+
+def download_radex(url='http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'):
 
     print("Downloading RADEX")
-    url = 'http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'
 
     if download_file is None:
         filename = 'radex_public.tar.gz'
@@ -26,6 +31,9 @@ def install_radex():
     else:
         filename = download_file(url, cache=True)
 
+    return filename
+
+def extract_radex(filename='radex_public.tar.gz'):
     with tarfile.open(filename,mode='r:gz') as tar:
         # this will fail if readonly files are overwritten: tf.extractall()
         for file_ in tar:
@@ -37,6 +45,7 @@ def install_radex():
             finally:
                 os.chmod(file_.name, file_.mode)
 
+def patch_radex():
     # PATCHES
     radlines = []
     vers = re.compile("parameter\(version = '([a-z0-9]*)'\)")
@@ -72,6 +81,7 @@ def install_radex():
             else:
                 f.write(line)
 
+def compile_radex():
     r1 = os.system('f2py -h pyradex/radex/radex.pyf Radex/src/*.f --overwrite-signature')
     if r1 != 0:
         raise SystemError("f2py failed with error %i" % r1)
