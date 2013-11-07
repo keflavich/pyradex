@@ -23,7 +23,9 @@ def download_radex(url='http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'
 
     print("Downloading RADEX")
 
-    if download_file is None:
+    try:
+        filename = download_file(url, cache=True)
+    except:
         filename = 'radex_public.tar.gz'
         r = requests.get(url,
                          #data={'filename':filename},
@@ -32,8 +34,6 @@ def download_radex(url='http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'
         with open(filename,'wb') as f:
             for chunk in r.iter_content(1024):
                 f.write(chunk)
-    else:
-        filename = download_file(url, cache=True)
 
     return filename
 

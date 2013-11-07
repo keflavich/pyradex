@@ -17,9 +17,23 @@ with open('README.rst') as file:
 version = "0.2"
 
 import os
-if not os.path.exists('pyradex/radex/radex.so'):
-    import install_radex
-    install_radex.install_radex()
+#if not os.path.exists('pyradex/radex/radex.so'):
+#    import install_radex
+#    install_radex.install_radex()
+
+class InstallRadex(Command):
+
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import install_radex
+        install_radex.install_radex()
 
 import subprocess
 
@@ -46,6 +60,6 @@ setup(name='pyradex',
       url='http://github.com/keflavich/pyradex/',
       packages=['pyradex','pyradex.radex','pyradex.tests'],
       package_data={'pyradex.radex':['radex.so']},
-      cmdclass={'test': PyTest},
+      cmdclass={'test': PyTest, 'install-radex': InstallRadex},
       #include_package_data=True,
       )
