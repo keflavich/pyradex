@@ -35,6 +35,8 @@ def download_radex(url='http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'
             for chunk in r.iter_content(1024):
                 f.write(chunk)
 
+    print("Download succeeded, or at least didn't obviously fail.")
+
     return filename
 
 def extract_radex(filename='radex_public.tar.gz'):

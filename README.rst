@@ -34,6 +34,7 @@ following information:
  * python version
  * numpy version
  * astropy version
+ * gfortran version
 
 e.g.:
 
@@ -43,6 +44,10 @@ e.g.:
     2.7.2 (v2.7.2:8527427914a2, Jun 11 2011, 15:22:34)
     [GCC 4.2.1 (Apple Inc. build 5666) (dot 3)]
     ('1.6.1', '0.3.dev6331')
+
+    $ gfortran --version
+    GNU Fortran (GCC) 4.2.3
+    Copyright (C) 2007 Free Software Foundation, Inc.
    
 
 Using the f2py-wrapped version
