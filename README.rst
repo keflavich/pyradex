@@ -17,11 +17,33 @@ All you need to do is:
 
 .. code-block:: bash
 
-   $ python setup.py install
+   $ python setup.py install_radex install
 
 This will call a procedure `install_radex` that downloads the latest version of
 RADEX from the radex homepage, patches the source, and builds a file `radex.so`,
 which is a python shared object that can be imported.  
+
+Installation Troubles
+~~~~~~~~~~~~~~~~~~~~~
+
+Depending on the version of python, gfortran, and f2py used, you may experience
+troubles!  I was unable to get this to work with gfortran-4.1, for example.  If
+you have any trouble, please post on the issues_ page, and include the
+following information:
+
+ * python version
+ * numpy version
+ * astropy version
+
+e.g.:
+
+.. code-block:: bash
+
+    $ python -c "import sys, astropy, numpy; print(sys.version); print(numpy.__version__,astropy.__version__)"
+    2.7.2 (v2.7.2:8527427914a2, Jun 11 2011, 15:22:34)
+    [GCC 4.2.1 (Apple Inc. build 5666) (dot 3)]
+    ('1.6.1', '0.3.dev6331')
+   
 
 Using the f2py-wrapped version
 ------------------------------
@@ -210,3 +232,4 @@ appears to dominate the overhead at each iteration.
    :alt: Bitdeli badge
    :target: https://bitdeli.com/free
 
+.. _issues: https://github.com/keflavich/pyradex/issues
