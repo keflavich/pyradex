@@ -4,6 +4,7 @@ import sys
 if 'develop' in sys.argv:
     # use setuptools for develop, but nothing else
     from setuptools import setup
+    Command = object
 else:
     from distutils.core import setup, Command
 
@@ -16,7 +17,7 @@ with open('README.rst') as file:
 
 version = "0.2"
 
-import os
+#import os
 #if not os.path.exists('pyradex/radex/radex.so'):
 #    import install_radex
 #    install_radex.install_radex()
