@@ -5,7 +5,6 @@ import os
 try:
     from astropy.utils.data import download_file
 except ImportError:
-    import requests
     download_file = None
 
 
@@ -26,6 +25,7 @@ def download_radex(url='http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'
     try:
         filename = download_file(url, cache=True)
     except:
+        import requests
         filename = 'radex_public.tar.gz'
         r = requests.get(url,
                          #data={'filename':filename},
