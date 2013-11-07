@@ -12,16 +12,16 @@ python:
 matrix:
     include:
         - python: 2.7
-          env: NUMPY_VERSION=1.7.1 SETUP_CMD='test' ASTROPY='false'
+          env: NUMPY_VERSION=1.7.1 SETUP_CMD='test' ASTROPY='true'
 
         - python: 2.6
-          env: NUMPY_VERSION=1.7.1 SETUP_CMD='test' ASTROPY='false'
+          env: NUMPY_VERSION=1.7.1 SETUP_CMD='test' ASTROPY='true'
 
         - python: 2.7
-          env: NUMPY_VERSION=1.6.1 SETUP_CMD='test' ASTROPY='false'
+          env: NUMPY_VERSION=1.6.1 SETUP_CMD='test' ASTROPY='true'
 
         - python: 2.6
-          env: NUMPY_VERSION=1.6.1 SETUP_CMD='test' ASTROPY='false'
+          env: NUMPY_VERSION=1.6.1 SETUP_CMD='test' ASTROPY='true'
 
         - python: 2.7
           env: NUMPY_VERSION=1.7.1 SETUP_CMD='test' ASTROPY='true'
