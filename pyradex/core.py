@@ -150,8 +150,7 @@ def call_radex(executable, inpfilename, debug=False, delete_tempfile=True):
     if debug:
         print("Command:",cmd)
 
-    result = subprocess.call(cmd,
-        shell=True)
+    result = subprocess.call(cmd, shell=True)
     if result != 0:
         print("RADEX returned error code %i" % result)
         with open(logfile.name,'r') as f:
@@ -197,8 +196,6 @@ class Radex(object):
                  temperature=30,
                  species='co',
                  column=1e13,
-                 minfreq=100,
-                 maxfreq=400,
                  tbackground=2.7315,
                  deltav=1.0,
                  length=3.085677581467192e+18,
@@ -231,9 +228,6 @@ class Radex(object):
             The molecule's abundance relative to the total collider density in
             each velocity bin, i.e. column = abundance * density * length * dv.
             If both abundance and column are specified, abundance is ignored.
-        minfreq: float
-        maxfreq: float
-            Minimum and maximum frequency to include in output
         tbackground: float
             Background radiation temperature (e.g., CMB)
         deltav: float
@@ -267,8 +261,6 @@ class Radex(object):
         self.method = method
 
         self.deltav = deltav
-        self.minfreq = minfreq
-        self.maxfreq = maxfreq
         self._set_parameters()
 
         if column:
@@ -293,8 +285,9 @@ class Radex(object):
         else:
             self.radex.cphys.deltav = self.deltav*1e5
 
-        self.radex.freq.fmin = self.minfreq
-        self.radex.freq.fmax = self.maxfreq
+        # these parameters are only used for outputs and therefore can be ignored
+        self.radex.freq.fmin = 0
+        self.radex.freq.fmax = 1e10
 
         self.miniter = 10
         self.maxiter = 200
@@ -629,7 +622,7 @@ class Radex(object):
 	 # taul(iline) = cddv*(xpop(n)*gstat(m)/gstat(n)-xpop(m))
      #$         /(fgaus*xt/aeinst(iline))
 
-    def get_table(self, minfreq=None, maxfreq=None):
+    def get_table(self):
         T = astropy.table.Table()
         mask = self.frequency.value != 0
         T.add_column(astropy.table.Column(name='Tex',data=self.tex[mask], unit='K'))
