@@ -86,10 +86,10 @@ def patch_radex():
                 f.write(line)
 
 def compile_radex():
-    r1 = os.system('f2py -h pyradex/radex/radex.pyf Radex/src/*.f --overwrite-signature')
+    r1 = os.system('f2py -h pyradex/radex/radex.pyf Radex/src/*.f --overwrite-signature > radex_build.log')
     if r1 != 0:
         raise SystemError("f2py failed with error %i" % r1)
-    r2 = os.system('f2py -m radex -c Radex/src/*.f --fcompiler=gfortran')
+    r2 = os.system('f2py -m radex -c Radex/src/*.f --fcompiler=gfortran >> radex_build.log')
     if r2 != 0:
         raise SystemError("f2py failed with error %i" % r2)
     r3 = os.system('mv radex.so pyradex/radex/')
