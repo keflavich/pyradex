@@ -60,6 +60,6 @@ setup(name='pyradex',
       url='http://github.com/keflavich/pyradex/',
       packages=['pyradex','pyradex.radex','pyradex.tests'],
       package_data={'pyradex.radex':['radex.so']},
-      cmdclass={'test': PyTest, 'install-radex': InstallRadex},
+      cmdclass={'test': PyTest, 'install_radex': InstallRadex},
       #include_package_data=True,
       )
