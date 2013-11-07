@@ -587,18 +587,37 @@ class Radex(object):
         if u:
             thc = (2 * constants.h * constants.c).cgs / u.sr
             fk = (constants.h * constants.c / constants.k_B).cgs
-            xnu = self.radex.radi.xnu * u.cm**-1
         else:
             thc = 3.9728913665386055e-16
             fk = 1.4387769599838154
-            xnu = self.radex.radi.xnu
 
         ftau = np.exp(-self.tau)
-        xt = xnu**3 # cm^-1 -> cm^-3
+        xt = self._xt
+        xnu = self._xnu
         bnutex = thc*xt/(np.exp(fk*xnu/self.tex)-1.0)
         toti = self.background_intensity*ftau+bnutex*(1.0-ftau)
 
         return toti
+
+    @property
+    def total_intensity_beta(self):
+        if u:
+            thc = (2 * constants.h * constants.c).cgs / u.sr
+            fk = (constants.h * constants.c / constants.k_B).cgs
+        else:
+            thc = 3.9728913665386055e-16
+            fk = 1.4387769599838154
+        xt = self._xt
+        xnu = self._xnu
+        bnutex = thc*xt/(np.exp(fk*xnu/self.tex)-1.0)
+        toti = self.background_intensity*ftau+bnutex*(1-self.beta)
+        return toti
+
+    @property
+    def beta(self):
+        # this will probably be faster if vectorized (translated completely
+        # from fortran to python)
+        return np.array([self.radex.escprob(t) for t in self.tau])
 
     @property
     def _xnu(self):
@@ -609,6 +628,7 @@ class Radex(object):
 
     @property
     def _xt(self):
+        # xt = xnu**3 # cm^-1 -> cm^-3
         return self._xnu**3
 
     @property
