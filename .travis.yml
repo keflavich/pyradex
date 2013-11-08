@@ -42,5 +42,5 @@ install:
    - pip install requests
    - pip install git+http://github.com/astropy/astropy.git#egg=astropy
    #- pip install scipy --use-mirrors
-   - python setup.py install_radex install # I guess?
+   - python setup.py install_radex
 script: python setup.py $SETUP_CMD
