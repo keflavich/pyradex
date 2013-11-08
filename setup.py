@@ -49,8 +49,9 @@ class PyTest(Command):
         pass
 
     def run(self):
-        errno = subprocess.call(['py.test'])
-        raise SystemExit(errno)
+        errno1 = subprocess.call(['py.test','--genscript=runtests.py'])
+        errno2 = subprocess.call([sys.executable, 'runtests.py'])
+        raise SystemExit(errno2)
 
 setup(name='pyradex',
       version=version,
@@ -60,7 +61,8 @@ setup(name='pyradex',
       author_email='adam.g.ginsburg@gmail.com',
       url='http://github.com/keflavich/pyradex/',
       packages=['pyradex','pyradex.radex','pyradex.tests'],
-      package_data={'pyradex.radex':['radex.so']},
+      package_data={'pyradex.radex':['radex.so'],
+                    'pyradex.tests':['data/example.out']},
       cmdclass={'test': PyTest, 'install_radex': InstallRadex},
       #include_package_data=True,
       )
