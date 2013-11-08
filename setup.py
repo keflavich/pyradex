@@ -59,7 +59,7 @@ class PyTest(Command):
         raise SystemExit(errno2)
 
 setup(name='pyradex',
-      version=version,
+      version=__version__,
       description='Python-RADEX',
       long_description=long_description,
       author='Adam Ginsburg & Julia Kamenetzky',
