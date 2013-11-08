@@ -37,6 +37,8 @@ class InstallRadex(Command):
         install_radex.install_radex()
 
 import subprocess
+import shutil
+import os
 
 class PyTest(Command):
 
@@ -49,6 +51,9 @@ class PyTest(Command):
         pass
 
     def run(self):
+
+        if os.path.exists('build'):
+            shutil.rmtree('build')
         errno1 = subprocess.call(['py.test','--genscript=runtests.py'])
         errno2 = subprocess.call([sys.executable, 'runtests.py'])
         raise SystemExit(errno2)
