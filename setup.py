@@ -15,7 +15,7 @@ with open('README.rst') as file:
 #    long_description += file.read()
 
 
-version = "0.2"
+execfile('pyradex/version.py')
 
 #import os
 #if not os.path.exists('pyradex/radex/radex.so'):
@@ -54,7 +54,7 @@ class PyTest(Command):
 
         if os.path.exists('build'):
             shutil.rmtree('build')
-        errno1 = subprocess.call(['py.test','--genscript=runtests.py'])
+        #errno1 = subprocess.call(['py.test','--genscript=runtests.py'])
         errno2 = subprocess.call([sys.executable, 'runtests.py'])
         raise SystemExit(errno2)
 
