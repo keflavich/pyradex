@@ -11,13 +11,13 @@ for temperature in [5,10,20,30,40,50,60]:
     R.run_radex()
     
     pl.figure(1)
-    pl.plot(R.level_population, label="T=%i" % R.temperature)
+    pl.plot(R.level_population, label="T=%s" % R.temperature._repr_latex_())
 
     pl.figure(2)
-    pl.plot(R.frequency, R.tau, label="T=%i" % R.temperature)
+    pl.plot(R.frequency, R.tau, label="T=%s" % R.temperature._repr_latex_())
 
     pl.figure(3)
-    pl.plot(R.frequency, R.tex, label="T=%i" % R.temperature)
+    pl.plot(R.frequency, R.tex, label="T=%s" % R.temperature._repr_latex_())
 
 f1 = pl.figure(1)
 ax1 = f1.gca()

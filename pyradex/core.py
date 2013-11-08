@@ -200,7 +200,7 @@ class Radex(object):
                  deltav=1.0,
                  length=3.085677581467192e+18,
                  abundance=None,
-                 datapath='.',
+                 datapath=None,
                  method='lvg',
                  outfile='radex.out',
                  logfile='radex.log',
@@ -239,7 +239,8 @@ class Radex(object):
             associate with a velocity bin.  Typically, assume 1 km/s/pc,
             and thus set deltav=1, length=3.08e18
         datapath: str
-            Path to the molecular data files
+            Path to the molecular data files.  If it is not specified, defaults
+            to the current directory.
         outfile: str
             Output file name
         logfile: str
@@ -250,12 +251,20 @@ class Radex(object):
         from pyradex.radex import radex
         self.radex = radex
 
+        if datapath is not None:
+            self.datapath = datapath
+            if self.datapath != datapath:
+                raise ValueError("Data path was not successfully stored.  It could be too long.")
+        self.molpath = os.path.join(self.datapath,species+'.dat')
+        if self.molpath == '':
+            raise ValueError("Must set a species name.")
+        if not os.path.exists(self.molpath):
+            raise ValueError("Must specify a valid path to a molecular data file else RADEX will crash.")
+
         self.length = length
 
         self.density = collider_densities
 
-        self.datapath = datapath
-        self.molpath = os.path.join(datapath,species+'.dat')
         self.outfile = outfile
         self.logfile = logfile
         self.method = method
@@ -329,11 +338,11 @@ class Radex(object):
 
     @property
     def molpath(self):
-        return self.radex.impex.molfile
+        return "".join(self.radex.impex.molfile).strip()
 
     @molpath.setter
     def molpath(self, molfile):
-        self.radex.impex.molfile[:len(self.molpath)] = molfile
+        self.radex.impex.molfile[:len(molfile)] = molfile
 
     @property
     def outfile(self):
@@ -353,12 +362,12 @@ class Radex(object):
 
     @property
     def datapath(self):
-        return self.radex.setup.radat
+        return "".join(self.radex.setup.radat).strip()
 
     @datapath.setter
     def datapath(self, radat):
         # self.radex data path not needed if molecule given as full path
-        self.radex.setup.radat[:len(self.datapath)] = radat
+        self.radex.setup.radat[:len(radat)] = radat
 
 
     @property
@@ -409,6 +418,9 @@ class Radex(object):
         if tkin <= 0 or tkin > 1e4:
             raise ValueError('Must have kinetic temperature > 0 and < 10^4 K')
         self.radex.cphys.tkin = tkin
+        
+        if not os.path.exists(self.molpath):
+            raise IOError("File not found: %s" % self.molpath)
         # must re-read molecular file and re-interpolate to new temperature
         self.radex.readdata()
 
