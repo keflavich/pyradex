@@ -1,5 +1,6 @@
 import despotic
 import numpy as np
+import warnings
 import os
 from collections import defaultdict
 from astropy import units as u
@@ -112,6 +113,10 @@ class Despotic(object):
     def nH(self):
         return self.cloud.nH
 
+    @nH.setter
+    def nH(self, nh):
+        self.cloud.nH = nh
+
     @density.setter
     def density(self, collider_density):
         collider_densities = defaultdict(lambda: 0)
@@ -121,14 +126,11 @@ class Despotic(object):
         if 'OH2' in collider_densities:
             if not 'PH2' in collider_densities:
                 raise ValueError("If o-H2 density is specified, p-H2 must also be.")
-            self.cloud.comp.xH2 = (collider_densities['OH2'] + collider_densities['PH2'])/self.nH
-            self.cloud.comp.xoH2 = (collider_densities['OH2'])/self.nH
-            self.cloud.comp.xpH2 = (collider_densities['PH2'])/self.nH
+            collider_densities['H2'] = (collider_densities['OH2'] + collider_densities['PH2'])
         elif 'H2' in collider_densities:
             warnings.warn("Using a default ortho-to-para ratio (which "
                           "will only affect species for which independent "
                           "ortho & para collision rates are given)")
-            self.cloud.comp.xH2 = collider_densities['H2']/self.nH
 
             T = self.temperature.value if hasattr(self.temperature,'value') else self.temperature
             if T > 0:
@@ -136,16 +138,21 @@ class Despotic(object):
             else:
                 opr = 3.0
             fortho = opr/(1+opr)
-            self.cloud.comp.xoH2 = collider_densities['H2']*fortho/self.nH
-            self.cloud.comp.xpH2 = collider_densities['H2']*(1-fortho)/self.nH
+            collider_densities['OH2'] = collider_densities['H2']*fortho
+            collider_densities['PH2'] = collider_densities['H2']*(1-fortho)
+
+        total_density = np.sum([collider_densities[x] * (2 if '2' in x else 1)
+                                for x in (['OH2','PH2','H','E','HE','H+'])])
+        self.nH = total_density
+
+        self.cloud.comp.xH2 = collider_densities['H2']/self.nH
+        self.cloud.comp.xoH2 = (collider_densities['OH2'])/self.nH
+        self.cloud.comp.xpH2 = (collider_densities['PH2'])/self.nH
 
         self.cloud.comp.xe = collider_densities['E']/self.nH
         self.cloud.comp.xHI = collider_densities['H']/self.nH
         self.cloud.comp.xHe = collider_densities['HE']/self.nH
         self.cloud.comp.xHplus = collider_densities['H+']/self.nH
-
-        # skip H2 when computing by assuming OPR correctly distributes ortho & para
-        self.radex.cphys.totdens = self.radex.cphys.density[1:].sum()
 
     @property
     def temperature(self):
