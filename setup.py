@@ -36,6 +36,20 @@ class InstallRadex(Command):
         import install_radex
         install_radex.install_radex()
 
+class BuildRadexExecutable(Command):
+
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import install_radex
+        install_radex.build_radex_executable()
+
 import subprocess
 import shutil
 import os
@@ -68,6 +82,8 @@ setup(name='pyradex',
       packages=['pyradex','pyradex.radex','pyradex.tests'],
       package_data={'pyradex.radex':['radex.so'],
                     'pyradex.tests':['data/example.out']},
-      cmdclass={'test': PyTest, 'install_radex': InstallRadex},
+      cmdclass={'test': PyTest,
+                'install_radex': InstallRadex,
+                'build_radex_exe': BuildRadexExecutable},
       #include_package_data=True,
       )

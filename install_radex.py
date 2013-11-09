@@ -18,7 +18,13 @@ def install_radex(download=True, extract=True, patch=True, compile=True):
     if compile:
         compile_radex()
 
-def download_radex(url='http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'):
+def download_radex(redownload=True,
+                   url='http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'):
+
+    filename = 'radex_public.tar.gz'
+
+    if os.path.isfile(filename) and not redownload:
+        return filename
 
     print("Downloading RADEX")
 
@@ -26,7 +32,6 @@ def download_radex(url='http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'
         filename = download_file(url, cache=True)
     except:
         import requests
-        filename = 'radex_public.tar.gz'
         r = requests.get(url,
                          #data={'filename':filename},
                          stream=True,
@@ -113,9 +118,47 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     if r3 != 0:
         raise SystemError("moving failed with error %i; radex.so was not created successfully" % r3)
 
-def compile_radex_src():
+def build_radex_executable(datapath=None):
+    download_radex(redownload=False)
+    compile_radex_source(datapath=datapath)
+
+
+def compile_radex_source(datapath=None):
+    """
+    Compile the source file in the Radex/ directory
+
+    May be good to download & untar first
+    """
+
+    cwd = os.getcwd()
+
+    # Set datapath to the 'examples' directory if not specified (since there is
+    # at least co.dat there)
+    if datapath is None:
+        datapath = os.path.join(os.getcwd(), 'examples')
+
+    # make sure ~ gets expanded
+    datapath = os.path.expanduser(datapath)
+
+    try:
+        os.link('Radex/data/hco+.dat',os.path.join(datapath,'hco+.dat'))
+    except OSError:
+        pass
+
+    # I think fortran requires a trailing slash... can't hurt
+    if datapath[-1] != '/':
+        datapath = datapath+'/'
+
     os.chdir('Radex/src/')
+    with open('radex.inc','r') as f:
+        lines = [L.replace('/Users/floris/Radex/moldat/',datapath)
+                 if 'radat' in L else L
+                 for L in f.readlines()]
+    with open('radex.inc','w') as of:
+        of.writelines(lines)
+
     r1 = os.system('make')
     if r1 != 0:
         raise SystemError("radex make failed with error %i" % r1)
-    os.chdir('../../')
+
+    os.chdir(cwd)
