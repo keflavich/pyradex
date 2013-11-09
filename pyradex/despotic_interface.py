@@ -117,6 +117,21 @@ class Despotic(object):
     def nH(self, nh):
         self.cloud.nH = nh
 
+    @property
+    def nH2(self):
+        return self.cloud.nH/2.
+
+    @nH2.setter
+    def nH2(self, nh2):
+        self.nh = nh2*2.
+
+    def set_length(self, length, fix_density=True, fix_column=False, fix_abundance=True):
+        """
+        Set the length scale of the cloud, which affects the relationship
+        between the abundance, column density, and density
+        """
+        
+
     @density.setter
     def density(self, collider_density):
         collider_densities = defaultdict(lambda: 0)

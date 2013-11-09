@@ -231,6 +231,51 @@ may be a substantial overhead.
 
 If you want to build a grid, *do not* make an astropy table each time!  That
 appears to dominate the overhead at each iteration.
+
+A note on self-consistency in LVG calculations
+----------------------------------------------
+
+LVG computations have weird units.  The opacity of a line only depends on the
+velocity-coherent column along the line of sight, i.e. the column per km/s.
+
+The key assumption in the LVG Sobolev approximation is that each "cell" can be
+treated independently such that there are no nonlocal radiative effects.
+
+This independence implies that there is a separation between the local volume
+density and the total line-of-sight column density.
+
+However, the quantities reported by typical codes - RADEX, DESPOTIC - are
+integrated line-of-sight values.  The column density, abundance, and local
+volume density are not independent, then.
+
+In order to have a self-consistent cloud (or line of sight), you must assume
+some length scale.  Usually, one specifies a velocity gradient per length scale
+rather than an absolute length scale, but the length scale is important.
+
+If a total column density of hydrogen `N(H)` is specified along with a density
+`n(H)`, the length scale is trivial: `N(H)/n(H) = L`.  If you increase the
+density, this length scale decreases - so far all is fine.
+
+Within RADEX, the standard free variable is the column of the molecule of
+interest.  If you change the column of, say, CO while holding all other
+quantities (`n(H)`, `N(H)`, `dv/dl`) fixed, you are changing the abundance of
+the molecule.  Usually, abundances are assumed fixed, so that's not desirable.
+
+To avoid this behavior, you can instead change the abundance of a molecule with
+`Radex.abundance = X` and the *column* will be appropriately adjusted assuming
+a fixed length scale.
+
+One could consider the alternative possibility of treating the length scale as
+a free parameter, but this approach contains a danger of changing the
+interpretation of the processes involved: if the length scale is decreased for
+a fixed delta-V, the velocity gradient `dv/dl` must be larger.  This
+interpretation should be avoided as it bears the risk of breaking the LVG
+assumption.  The velocity gradient is also often an imposed constraint via the
+observed linewidth, while the length scale is only weakly constrained in most
+situations.
+
+In DESPOTIC, the free variables are the total column density, the density,
+the abundance, and the velocity gradient.   
     
 
 .. image:: https://d2weczhvl823v0.cloudfront.net/keflavich/pyradex/trend.png
