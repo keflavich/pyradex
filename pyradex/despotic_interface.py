@@ -5,6 +5,12 @@ import os
 from collections import defaultdict
 from astropy import units as u
 
+try:
+    from astropy import units as u
+    from astropy import constants
+except ImportError:
+    u = False
+
 class Despotic(object):
     """
     A class meant to be similar to RADEX in terms of how it is called but to
@@ -25,6 +31,7 @@ class Despotic(object):
                  #column=1e13,
                  tbackground=2.7315,
                  deltav=1.0,
+                 sigmaNT=0.0,
                  length=3.085677581467192e+18,
                  method='lvg',
                  outfile='radex.out',
@@ -55,6 +62,8 @@ class Despotic(object):
             The FWHM line width (really, the single-zone velocity width to
             scale the column density by: this is most sensibly interpreted as a
             velocity gradient (dv/length))
+        sigmaNT: float
+            Nonthermal velocity dispersion
         length: float
             For abundance calculations, the line-of-sight size scale to
             associate with a velocity bin.  Typically, assume 1 km/s/pc,
@@ -78,7 +87,11 @@ class Despotic(object):
 
         self.cloud.Td = temperature
         self.cloud.Tg = temperature
-        self.cloud.dVdr = (deltav*u.km/u.s / (length*u.pc)).to(1/u.s).value
+        if u:
+            self.cloud.dVdr = (deltav*u.km/u.s / (length*u.pc)).to(1/u.s).value
+        else:
+            self.cloud.dVdr = deltav
+        self.cloud.sigmaNT = sigmaNT
         self.cloud.colDen = hcolumn
 
 
