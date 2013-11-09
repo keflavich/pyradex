@@ -185,11 +185,15 @@ def parse_outfile(filename):
 
 class Radex(object):
 
-    def __call__(self, **kwargs):
+    def __call__(self, return_table=True, **kwargs):
         # reset the parameters appropriately
         self.__init__(**kwargs)
-        self.run_radex()
-        return self.get_table()
+        niter = self.run_radex()
+
+        if return_table:
+            return self.get_table()
+        else:
+            return niter
 
     def __init__(self,
                  collider_densities={'ph2':990,'oh2':10},
@@ -253,7 +257,7 @@ class Radex(object):
 
         if datapath is not None:
             self.datapath = datapath
-            if self.datapath != datapath:
+            if self.datapath != os.path.expanduser(datapath):
                 raise ValueError("Data path was not successfully stored.  It could be too long.")
         self.molpath = os.path.join(self.datapath,species+'.dat')
         if self.molpath == '':
@@ -321,13 +325,34 @@ class Radex(object):
         for k in collider_density:
             collider_densities[k.upper()] = collider_density[k]
         self.radex.cphys.density[0] = collider_densities['H2']
-        self.radex.cphys.density[1] = collider_densities['OH2']
-        self.radex.cphys.density[2] = collider_densities['PH2']
+        if 'OH2' in collider_densities:
+            if not 'PH2' in collider_densities:
+                raise ValueError("If o-H2 density is specified, p-H2 must also be.")
+            self.radex.cphys.density[0] = collider_densities['OH2'] + collider_densities['PH2']
+            self.radex.cphys.density[1] = collider_densities['OH2']
+            self.radex.cphys.density[2] = collider_densities['PH2']
+        elif 'H2' in collider_densities:
+            warnings.warn("Using a default ortho-to-para ratio (which "
+                          "will only affect species for which independent "
+                          "ortho & para collision rates are given)")
+            self.radex.cphys.density[0] = collider_densities['H2']
+
+            T = self.temperature.value if hasattr(self.temperature,'value') else self.temperature
+            if T > 0:
+                opr = min(3.0,9.0*np.exp(-170.6/T))
+            else:
+                opr = 3.0
+            fortho = opr/(1+opr)
+            self.radex.cphys.density[1] = collider_densities['H2']*fortho
+            self.radex.cphys.density[2] = collider_densities['H2']*(1-fortho)
+
         self.radex.cphys.density[3] = collider_densities['E']
         self.radex.cphys.density[4] = collider_densities['H']
         self.radex.cphys.density[5] = collider_densities['HE']
         self.radex.cphys.density[6] = collider_densities['H+']
-        self.radex.cphys.totdens = self.radex.cphys.density.sum()
+
+        # skip H2 when computing by assuming OPR correctly distributes ortho & para
+        self.radex.cphys.totdens = self.radex.cphys.density[1:].sum()
     
     @property
     def totaldensity(self):
@@ -337,11 +362,17 @@ class Radex(object):
             return self.radex.cphys.totdens
 
     @property
+    def opr(self):
+        return self.radex.cphys.density[1]/self.radex.cphys.density[2]
+
+    @property
     def molpath(self):
         return "".join(self.radex.impex.molfile).strip()
 
     @molpath.setter
     def molpath(self, molfile):
+        if "~" in molfile:
+            molfile = os.path.expandpath(molfile)
         self.radex.impex.molfile[:len(molfile)] = molfile
 
     @property
@@ -362,7 +393,7 @@ class Radex(object):
 
     @property
     def datapath(self):
-        return "".join(self.radex.setup.radat).strip()
+        return os.path.expanduser("".join(self.radex.setup.radat).strip())
 
     @datapath.setter
     def datapath(self, radat):
@@ -442,7 +473,7 @@ class Radex(object):
         return self.column / self.deltav
 
     @column_per_bin.setter
-    def total_column(self, cddv):
+    def column_per_bin(self, cddv):
         if u:
             self.column = cddv * self.deltav.to(u.km/u.s).value
         else:
@@ -464,6 +495,10 @@ class Radex(object):
             self.column = col.to(u.cm**-2).value
         else:
             self.column = col
+
+    @property
+    def total_column(self):
+        return self.totaldensity * self.length
 
     @property
     def deltav(self):
