@@ -257,13 +257,10 @@ If a total column density of hydrogen `N(H)` is specified along with a density
 density, this length scale decreases - so far all is fine.
 
 Within RADEX, the standard free variable is the column of the molecule of
-interest.  If you change the column of, say, CO while holding all other
-quantities (`n(H)`, `N(H)`, `dv/dl`) fixed, you are changing the abundance of
-the molecule.  Usually, abundances are assumed fixed, so that's not desirable.
-
-To avoid this behavior, you can instead change the abundance of a molecule with
-`Radex.abundance = X` and the *column* will be appropriately adjusted assuming
-a fixed length scale.
+interest.  
+If you change the column of the molecule, which is possible to do explicitly,
+and hold everything else fixed in RADEX (`n(H)`, `dV`), the change can be
+interpreted as a change in the size scale or the column.
 
 One could consider the alternative possibility of treating the length scale as
 a free parameter, but this approach contains a danger of changing the
@@ -275,7 +272,13 @@ observed linewidth, while the length scale is only weakly constrained in most
 situations.
 
 In DESPOTIC, the free variables are the total column density, the density,
-the abundance, and the velocity gradient.   
+the abundance, and the velocity gradient.  Length is therefore left as the
+dependent variable, consistent with the above.
+
+The Classes (`Despotic` & `Radex`) are constructed such that length is a
+dependent variables and all the others can be changed.  Since abundance is not
+an explicit input into RADEX, this is done with some property machinery behind
+the scenes.
     
 
 .. image:: https://d2weczhvl823v0.cloudfront.net/keflavich/pyradex/trend.png

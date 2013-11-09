@@ -200,9 +200,9 @@ class Radex(object):
                  temperature=30,
                  species='co',
                  column=1e13,
+                 h2column=1e21,
                  tbackground=2.7315,
                  deltav=1.0,
-                 length=3.085677581467192e+18,
                  abundance=None,
                  datapath=None,
                  method='lvg',
@@ -228,6 +228,8 @@ class Radex(object):
             The column density of the molecule of interest within the specified
             line width.  If the column is specified, the abundance is equal to
             (column/(dv*total density*length)).
+        h2column: float
+            The column of h2. 
         abundance: float
             The molecule's abundance relative to the total collider density in
             each velocity bin, i.e. column = abundance * density * length * dv.
@@ -238,10 +240,6 @@ class Radex(object):
             The FWHM line width (really, the single-zone velocity width to
             scale the column density by: this is most sensibly interpreted as a
             velocity gradient (dv/length))
-        length: float
-            For abundance calculations, the line-of-sight size scale to
-            associate with a velocity bin.  Typically, assume 1 km/s/pc,
-            and thus set deltav=1, length=3.08e18
         datapath: str
             Path to the molecular data files.  If it is not specified, defaults
             to the current directory.
@@ -265,8 +263,6 @@ class Radex(object):
         if not os.path.exists(self.molpath):
             raise ValueError("Must specify a valid path to a molecular data file else RADEX will crash.")
 
-        self.length = length
-
         self.density = collider_densities
 
         self.outfile = outfile
@@ -276,16 +272,25 @@ class Radex(object):
         self.deltav = deltav
         self._set_parameters()
 
+        if None not in (column,abundance,h2column) and column/h2column != abundance:
+            raise ValueError("Cannot specify column, h2column, and abundance unless they are consistent.")
+
+        if sum(x is None for x in (column,abundance,h2column)) >= 2:
+            raise ValueError("Must specify at least two of: h2column, column, and abundance")
+
+        if abundance:
+            self._abundance = abundance
+        else:
+            self._abundance = column/h2column
+        
+        if h2column:
+            self.total_column = h2column
+
         if column:
             self.column = column
-        elif abundance:
-            self.abundance = abundance
-        else:
-            raise ValueError("Must specify column or abundance.")
 
         self.temperature = temperature
         self.tbg = tbackground
-
 
         self.debug = debug
 
@@ -355,7 +360,7 @@ class Radex(object):
         self.radex.cphys.totdens = self.radex.cphys.density[1:].sum()
     
     @property
-    def totaldensity(self):
+    def total_density(self):
         if u:
             return self.radex.cphys.totdens * u.cm**-3
         else:
@@ -464,6 +469,8 @@ class Radex(object):
 
     @column.setter
     def column(self, col):
+        if hasattr(col,'to'):
+            col = col.to('cm**-2').value
         if col < 1e5 or col > 1e25:
             raise ValueError("Extremely low or extremely high column.")
         self.radex.cphys.cdmol = col
@@ -481,15 +488,18 @@ class Radex(object):
 
     @property
     def abundance(self):
-        abund = self.column / (self.totaldensity * self.length)
-        if u:
-            return abund.decompose().value
-        else:
-            return abund
+        #abund = self.column / (self.total_density * self.length)
+        #if u:
+        #    return abund.decompose().value
+        #else:
+        #    return abund
+        return self._abundance
 
     @abundance.setter
     def abundance(self, abund):
-        col = abund * self.totaldensity * self.length
+        col = self.total_column * abund
+        self._abundance = abund
+        #col = abund * self.total_density * self.length
         if u:
             # need to divide the column per km/s by
             self.column = col.to(u.cm**-2).value
@@ -498,7 +508,17 @@ class Radex(object):
 
     @property
     def total_column(self):
-        return self.totaldensity * self.length
+        return self.column / self.abundance
+        #return self.total_density * self.length
+
+    @total_column.setter
+    def total_column(self, nh2, unit='cm**-2'):
+        if u:
+            if not hasattr(nh2,'to'):
+                nh2 = nh2*u.Unit(unit)
+            self.column = nh2.to(u.cm**-2) * self.abundance
+        else:
+            self.column = nh2 * self.abundance
 
     @property
     def deltav(self):
@@ -513,14 +533,7 @@ class Radex(object):
 
     @property
     def length(self):
-        return self._length
-
-    @length.setter
-    def length(self, L):
-        if u:
-            self._length = L * u.cm
-        else:
-            self._length = L
+        return self.total_column / self.total_density
 
     @property
     def debug(self):

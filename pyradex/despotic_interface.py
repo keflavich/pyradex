@@ -130,6 +130,7 @@ class Despotic(object):
         Set the length scale of the cloud, which affects the relationship
         between the abundance, column density, and density
         """
+        pass
         
 
     @density.setter

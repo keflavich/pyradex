@@ -37,6 +37,26 @@ def test_molecules(molecule):
     data = pyradex.pyradex(executable=exepath,species=molecule,minfreq=1,maxfreq=250)
     data.pprint(show_unit=True)
 
+def test_radex_class():
+    R = pyradex.Radex(datapath='examples/',species='co')
+    assert hasattr(R,'radex')
+
+def test_change_abundance():
+    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=None)
+    totdens = R.total_density
+    R.abundance = 1e-6
+    assert totdens == R.total_density
+
+def test_consistent_abund():
+    with pytest.raises(ValueError):
+        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4)
+    with pytest.raises(ValueError):
+        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15,h2column=1e20)
+    with pytest.raises(ValueError):
+        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,h2column=None,column=None)
+    with pytest.raises(ValueError):
+        R = pyradex.Radex(datapath='examples/',species='co',abundance=None,h2column=None,column=None)
+
 if __name__ == "__main__":
     test_call()
     test_parse_example()
