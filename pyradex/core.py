@@ -324,7 +324,7 @@ class Radex(object):
         collider_densities = defaultdict(lambda: 0)
         for k in collider_density:
             collider_densities[k.upper()] = collider_density[k]
-        self.radex.cphys.density[0] = collider_densities['H2']
+
         if 'OH2' in collider_densities:
             if not 'PH2' in collider_densities:
                 raise ValueError("If o-H2 density is specified, p-H2 must also be.")
