@@ -112,3 +112,10 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     r3 = os.system('mv radex.so pyradex/radex/')
     if r3 != 0:
         raise SystemError("moving failed with error %i; radex.so was not created successfully" % r3)
+
+def compile_radex_src():
+    os.chdir('Radex/src/')
+    r1 = os.system('make')
+    if r1 != 0:
+        raise SystemError("radex make failed with error %i" % r1)
+    os.chdir('../../')
