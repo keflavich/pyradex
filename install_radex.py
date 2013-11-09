@@ -119,7 +119,9 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
         raise SystemError("moving failed with error %i; radex.so was not created successfully" % r3)
 
 def build_radex_executable(datapath=None):
-    download_radex(redownload=False)
+    filename = download_radex(redownload=False)
+    # need to re-extract the RADEX source to get an un-patched version
+    extract_radex(filename)
     compile_radex_source(datapath=datapath)
 
 
