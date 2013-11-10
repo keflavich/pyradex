@@ -205,7 +205,7 @@ class Radex(object):
                  deltav=1.0,
                  abundance=None,
                  datapath=None,
-                 method='lvg',
+                 escapeProbGeom='lvg',
                  outfile='radex.out',
                  logfile='radex.log',
                  debug=False,
@@ -247,7 +247,7 @@ class Radex(object):
             Output file name
         logfile: str
             Log file name
-        method: 'lvg','sphere','slab'
+        escapeProbGeom: 'lvg','sphere','slab'
             Which escape probability method to use
         """
         from pyradex.radex import radex
@@ -267,7 +267,7 @@ class Radex(object):
 
         self.outfile = outfile
         self.logfile = logfile
-        self.method = method
+        self.escapeProbGeom = escapeProbGeom
 
         self.deltav = deltav
         self._set_parameters()
@@ -407,15 +407,15 @@ class Radex(object):
 
 
     @property
-    def method(self):
+    def escapeProbGeom(self):
         return self.radex.setup.method
 
-    @method.setter
-    def method(self, method):
+    @escapeProbGeom.setter
+    def escapeProbGeom(self, escapeProbGeom):
         mdict = {'lvg':2,'sphere':1,'slab':3}
-        if method not in mdict:
-            raise ValueError("Invalid method, must be one of "+",".join(mdict))
-        self.radex.setup.method = mdict[method]
+        if escapeProbGeom not in mdict:
+            raise ValueError("Invalid escapeProbGeom, must be one of "+",".join(mdict))
+        self.radex.setup.method = mdict[escapeProbGeom]
         
 
     @property

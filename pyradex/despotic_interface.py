@@ -4,6 +4,7 @@ import warnings
 import os
 from collections import defaultdict
 from astropy import units as u
+from .utils import united,uvalue
 
 try:
     from astropy import units as u
@@ -16,6 +17,10 @@ class Despotic(object):
     A class meant to be similar to RADEX in terms of how it is called but to
     use Despotic instead of RADEX as the backend
     """
+
+    # escapeprobabilty geometry names
+    _epgdict = {'lvg':'LVG','sphere':'sphere','slab':'slab'}
+
     def __call__(self, **kwargs):
         # reset the parameters appropriately
         self.__init__(**kwargs)
@@ -31,9 +36,7 @@ class Despotic(object):
                  #column=1e13,
                  tbackground=2.7315,
                  deltav=1.0,
-                 sigmaNT=0.0,
-                 length=3.085677581467192e+18,
-                 method='lvg',
+                 escapeProbGeom='lvg',
                  outfile='radex.out',
                  logfile='radex.log',
                  debug=False,
@@ -61,13 +64,10 @@ class Despotic(object):
         deltav: float
             The FWHM line width (really, the single-zone velocity width to
             scale the column density by: this is most sensibly interpreted as a
-            velocity gradient (dv/length))
+            velocity gradient (dv/dR))
         sigmaNT: float
             Nonthermal velocity dispersion
-        length: float
-            For abundance calculations, the line-of-sight size scale to
-            associate with a velocity bin.  Typically, assume 1 km/s/pc,
-            and thus set deltav=1, length=3.08e18
+            (this is strictly ignored - deltav IS sigmant)
         datapath: str
             Path to the molecular data files
         """
@@ -85,18 +85,15 @@ class Despotic(object):
         if 'oh2' in collider_densities:
             self.cloud.comp.xoH2 = collider_densities['oh2'] / self.cloud.nH
 
-        self.cloud.Td = temperature
-        self.cloud.Tg = temperature
-        if u:
-            self.cloud.dVdr = (deltav*u.km/u.s / (length*u.pc)).to(1/u.s).value
-        else:
-            self.cloud.dVdr = deltav
-        self.cloud.sigmaNT = sigmaNT
-        self.cloud.colDen = hcolumn
+        self.cloud.Td = uvalue(temperature,u.K)
+        self.cloud.Tg = uvalue(temperature,u.K)
+        self.cloud.dust.sigma10 = 0.0
+
+        self.cloud.colDen = uvalue(hcolumn,u.cm**-2)
 
 
-        if tbackground > 2.7315:
-            self.cloud.rad.TradDust = tbackground
+        if uvalue(tbackground,u.K) > 2.7315:
+            self.cloud.rad.TradDust = uvalue(tbackground,u.K)
 
         self.species = species
         if datapath is None:
@@ -105,8 +102,43 @@ class Despotic(object):
             emitterFile = os.path.expanduser(os.path.join(datapath, species+'.dat'))
         self.cloud.addEmitter(species, abundance, emitterFile=emitterFile)
 
-    def lineLum(self):
-        return self.cloud.lineLum(self.species)
+
+        self.cloud.comp.computeDerived(self.cloud.nH)
+
+        self.deltav = deltav
+
+        self.escapeProbGeom = escapeProbGeom
+
+    @property
+    def deltav(self):
+        return united(self._dv,u.km/u.s)
+
+    @deltav.setter
+    def deltav(self, deltav):
+        FWHM = united(deltav,u.km/u.s)
+        self.cs = np.sqrt(constants.k_B*united(self.cloud.Tg,u.K)/(self.cloud.comp.mu*constants.m_p)).to(u.km/u.s)
+        self.sigmaTot = FWHM/np.sqrt(8.0*np.log(2))
+        self.cloud.sigmaNT = uvalue(np.sqrt(self.sigmaTot**2 -
+                                            self.cs**2/self.cloud.emitters[self.species].data.molWgt),
+                                    u.km/u.s)
+        self.cloud.dVdr = uvalue(united(deltav,u.km/u.s/u.pc),u.s**-1)
+
+
+    def lineLum(self, **kwargs):
+        if 'escapeProbGeom' not in kwargs:
+            kwargs['escapeProbGeom'] = self.escapeProbGeom
+        return self.cloud.lineLum(self.species, **kwargs)
+
+    @property
+    def escapeProbGeom(self):
+        return self._epg
+
+    @escapeProbGeom.setter
+    def escapeProbGeom(self, escapeProbGeom):
+        mdict = self._epgdict
+        if escapeProbGeom.lower() not in mdict:
+            raise ValueError("Invalid escapeProbGeom, must be one of "+",".join(mdict.values()))
+        self._epg = mdict[escapeProbGeom]
 
     @property
     def density(self):
@@ -138,13 +170,6 @@ class Despotic(object):
     def nH2(self, nh2):
         self.nh = nh2*2.
 
-    def set_length(self, length, fix_density=True, fix_column=False, fix_abundance=True):
-        """
-        Set the length scale of the cloud, which affects the relationship
-        between the abundance, column density, and density
-        """
-        pass
-        
 
     @density.setter
     def density(self, collider_density):
@@ -182,6 +207,8 @@ class Despotic(object):
         self.cloud.comp.xHI = collider_densities['H']/self.nH
         self.cloud.comp.xHe = collider_densities['HE']/self.nH
         self.cloud.comp.xHplus = collider_densities['H+']/self.nH
+
+        self.cloud.comp.computeDerived()
 
     @property
     def temperature(self):
