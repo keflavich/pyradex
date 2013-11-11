@@ -1,4 +1,7 @@
-import despotic
+try:
+    import despotic
+except ImportError:
+    despotic=False
 import numpy as np
 import warnings
 import os
@@ -71,6 +74,9 @@ class Despotic(object):
         datapath: str
             Path to the molecular data files
         """
+
+        if not despotic:
+            raise ImportError("Despotic could not be imported.  Please check that it is installed.")
         
         self.cloud = despotic.cloud()
         self.cloud.nH = float(np.sum([collider_densities[k]*2 if 'h2' in k.lower()
