@@ -39,6 +39,12 @@ set of flags, and you need to make sure that `gcc --version` and `gfortran --ver
 Note that if you're using a 32 bit machine or 32 bit python, you should use
 `-m32` instead of `-m64` in those flags.
 
+You may also need to set your C_INCLUDE_PATH, e.g.:
+
+    C_INCLUDE_PATH /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include
+
+(I didn't have to do this, but someone else did - the error that pointed us in this direction was that `stdio.h` couldn't be found)
+
 For linux, the build failed with gcc-4.0.1 but succeeded with gcc-4.3.6, which
 suggests that gcc>=4.2 might be required (since gcc-4.2 worked on a mac).
 
