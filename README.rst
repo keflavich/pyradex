@@ -23,6 +23,8 @@ This will call a procedure `install_radex` that downloads the latest version of
 RADEX from the radex homepage, patches the source, and builds a file `radex.so`,
 which is a python shared object that can be imported.  
 
+See the install_ page for more details.
+
 Installation Troubles
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -286,3 +288,5 @@ the scenes.
    :target: https://bitdeli.com/free
 
 .. _issues: https://github.com/keflavich/pyradex/issues
+
+.. _install: install.rst
