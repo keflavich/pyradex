@@ -29,10 +29,14 @@ If you're using mac-native compilers (e.g., gcc-4.2 from Xcode), you can use
 the `-arch` flags.  I used this really long command to make sure everything got
 set right:
 
+.. code-block:: bash
+
     FFLAGS='-arch i686 -arch x86_64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-common -dynamic -arch i386 -arch x86_64 -g -O2' LDFLAGS='-arch i686 -arch x86_64 -undefined dynamic_lookup -bundle' python setup.py install_radex
 
 If you're using a different compiler, say from hpc.sourceforge.net, you need a different
 set of flags, and you need to make sure that `gcc --version` and `gfortran --version` match.
+
+.. code-block:: bash
 
     FFLAGS='-m64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-common -dynamic -m64 -g -O2' LDFLAGS='-m64 -undefined dynamic_lookup -bundle' python setup.py install_radex install
 
@@ -40,6 +44,8 @@ Note that if you're using a 32 bit machine or 32 bit python, you should use
 `-m32` instead of `-m64` in those flags.
 
 You may also need to set your C_INCLUDE_PATH, e.g.:
+
+.. code-block:: bash
 
     C_INCLUDE_PATH /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include
 
