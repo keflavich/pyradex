@@ -1,0 +1,47 @@
+Installation
+------------
+
+Installation *should* be relatively easy, but it may break down depending on
+your compiler.
+
+This command should install the python-wrapped-fortran version of RADEX:
+
+.. code-block:: bash
+
+   $ python setup.py install_radex install
+
+If it doesn't work, there are a number of ways things could have gone wrong.
+
+If you try to `import pyradex` and see the error:
+
+    ImportError: No module named radex 
+   
+that means that the "shared object" file `radex.so` (which is what python
+actually imports) never got built.  In this case, you should have seen an
+error message at the `python setup.py install_radex` step.  At this point,
+look in the `radex_build.log` file - it may contain useful information.
+
+I don't know how general this advice is, but for installation on 2 macs and 1
+linux machine, the trick was using the right `gfortran` versions with the right
+flags.
+
+If you're using mac-native compilers (e.g., gcc-4.2 from Xcode), you can use
+the `-arch` flags.  I used this really long command to make sure everything got
+set right:
+
+    FFLAGS='-arch i686 -arch x86_64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-common -dynamic -arch i386 -arch x86_64 -g -O2' LDFLAGS='-arch i686 -arch x86_64 -undefined dynamic_lookup -bundle' python setup.py install_radex
+
+If you're using a different compiler, say from hpc.sourceforge.net, you need a different
+set of flags, and you need to make sure that `gcc --version` and `gfortran --version` match.
+
+    FFLAGS='-m64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-common -dynamic -m64 -g -O2' LDFLAGS='-m64 -undefined dynamic_lookup -bundle' python setup.py install_radex install
+
+Note that if you're using a 32 bit machine or 32 bit python, you should use
+`-m32` instead of `-m64` in those flags.
+
+For linux, the build failed with gcc-4.0.1 but succeeded with gcc-4.3.6, which
+suggests that gcc>=4.2 might be required (since gcc-4.2 worked on a mac).
+
+If you need further help, please post an issue_!  I'll help if I can.
+
+.. _issue: https://github.com/keflavich/pyradex/issues
