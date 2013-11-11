@@ -25,32 +25,6 @@ which is a python shared object that can be imported.
 
 See the install_ page for more details.
 
-Installation Troubles
-~~~~~~~~~~~~~~~~~~~~~
-
-Depending on the version of python, gfortran, and f2py used, you may experience
-troubles!  I was unable to get this to work with gfortran-4.1, for example.  If
-you have any trouble, please post on the issues_ page, and include the
-following information:
-
- * python version
- * numpy version
- * astropy version
- * gfortran version
-
-e.g.:
-
-.. code-block:: bash
-
-    $ python -c "import sys, astropy, numpy; print(sys.version); print(numpy.__version__,astropy.__version__)"
-    2.7.2 (v2.7.2:8527427914a2, Jun 11 2011, 15:22:34)
-    [GCC 4.2.1 (Apple Inc. build 5666) (dot 3)]
-    ('1.6.1', '0.3.dev6331')
-
-    $ gfortran --version
-    GNU Fortran (GCC) 4.2.3
-    Copyright (C) 2007 Free Software Foundation, Inc.
-   
 
 Using the f2py-wrapped version
 ------------------------------
@@ -286,7 +260,5 @@ the scenes.
 .. image:: https://d2weczhvl823v0.cloudfront.net/keflavich/pyradex/trend.png
    :alt: Bitdeli badge
    :target: https://bitdeli.com/free
-
-.. _issues: https://github.com/keflavich/pyradex/issues
 
 .. _install: install.rst

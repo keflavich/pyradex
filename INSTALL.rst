@@ -54,6 +54,30 @@ You may also need to set your C_INCLUDE_PATH, e.g.:
 For linux, the build failed with gcc-4.0.1 but succeeded with gcc-4.3.6, which
 suggests that gcc>=4.2 might be required (since gcc-4.2 worked on a mac).
 
-If you need further help, please post an issue_!  I'll help if I can.
 
-.. _issue: https://github.com/keflavich/pyradex/issues
+Installation Troubles
+~~~~~~~~~~~~~~~~~~~~~
+
+If you still cannot install pyradex given the above information, please post on
+the issues_ page, and include the following information:
+
+ * python version
+ * numpy version
+ * astropy version
+ * gfortran version
+
+e.g.:
+
+.. code-block:: bash
+
+    $ python -c "import sys, astropy, numpy; print(sys.version); print(numpy.__version__,astropy.__version__)"
+    2.7.2 (v2.7.2:8527427914a2, Jun 11 2011, 15:22:34)
+    [GCC 4.2.1 (Apple Inc. build 5666) (dot 3)]
+    ('1.6.1', '0.3.dev6331')
+
+    $ gfortran --version
+    GNU Fortran (GCC) 4.2.3
+    Copyright (C) 2007 Free Software Foundation, Inc.
+   
+
+.. _issues: https://github.com/keflavich/pyradex/issues
