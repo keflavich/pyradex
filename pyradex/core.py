@@ -57,6 +57,7 @@ def pyradex(executable='radex', minfreq=100, maxfreq=130,
 
     .. WARNING:: If RADEX spits out *******, it will be replaced with -999
     """
+    warnings.warn("pyradex is deprecated: it uses very slow hard disk file i/o.  Use pyradex.Radex instead if you can.")
 
     infile,outfile = write_input(minfreq=minfreq, maxfreq=maxfreq,
             delete_tempfile=delete_tempfile,
@@ -378,6 +379,7 @@ class Radex(object):
     def molpath(self, molfile):
         if "~" in molfile:
             molfile = os.path.expandpath(molfile)
+        self.radex.impex.molfile[:] = ""
         self.radex.impex.molfile[:len(molfile)] = molfile
 
     @property
@@ -403,6 +405,7 @@ class Radex(object):
     @datapath.setter
     def datapath(self, radat):
         # self.radex data path not needed if molecule given as full path
+        self.radex.setup.radat[:] = ""
         self.radex.setup.radat[:len(radat)] = radat
 
 
