@@ -243,7 +243,8 @@ class Radex(object):
             velocity gradient (dv/length))
         datapath: str
             Path to the molecular data files.  If it is not specified, defaults
-            to the current directory.
+            to the current directory, OR the shell variable RADEX_DATAPATH if
+            it is specified.
         outfile: str
             Output file name
         logfile: str
@@ -253,6 +254,9 @@ class Radex(object):
         """
         from pyradex.radex import radex
         self.radex = radex
+
+        if os.getenv('RADEX_DATAPATH') and datapath is None:
+            datapath = os.getenv('RADEX_DATAPATH')
 
         if datapath is not None:
             self.datapath = datapath
