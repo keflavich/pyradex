@@ -261,7 +261,7 @@ class Radex(object):
         if datapath is not None:
             self.datapath = datapath
             if self.datapath != os.path.expanduser(datapath):
-                raise ValueError("Data path was not successfully stored.  It could be too long.")
+                raise ValueError("Data path %s was not successfully stored; instead %s was." % (datapath,self.datapath))
         self.molpath = os.path.join(self.datapath,species+'.dat')
         if self.molpath == '':
             raise ValueError("Must set a species name.")
