@@ -25,6 +25,11 @@ which is a python shared object that can be imported.
 
 See the install_ page for more details.
 
+If you want pyradex to look in a specific directory for the molecular data
+files, you can specify an environmental variable `RADEX_DATAPATH` prior to
+starting python.  It can also be specified interactively with the `datapath`
+keyword.
+
 
 Using the f2py-wrapped version
 ------------------------------

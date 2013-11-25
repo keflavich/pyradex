@@ -210,6 +210,7 @@ class Radex(object):
                  outfile='radex.out',
                  logfile='radex.log',
                  debug=False,
+                 mu=2.8,
                  ):
         """
         Direct wrapper of the radex FORTRAN code
@@ -226,9 +227,9 @@ class Radex(object):
             A string specifying a valid chemical species.  This is used to look
             up the specified molecule
         column: float
-            The column density of the molecule of interest within the specified
-            line width.  If the column is specified, the abundance is equal to
-            (column/(dv*total density*length)).
+            The column density of the molecule of interest.  If the column is
+            specified, the abundance is equal to (column/(dv*total
+            density*length)).
         h2column: float
             The column of h2. 
         abundance: float
@@ -251,9 +252,13 @@ class Radex(object):
             Log file name
         escapeProbGeom: 'lvg','sphere','slab'
             Which escape probability method to use
+        mu: float
+            Mean mass per particle in AMU.  Set to 2.8 for H2+Helium mix
         """
         from pyradex.radex import radex
         self.radex = radex
+
+        self.mu = mu
 
         if os.getenv('RADEX_DATAPATH') and datapath is None:
             datapath = os.getenv('RADEX_DATAPATH')
@@ -289,7 +294,7 @@ class Radex(object):
             self._abundance = column/h2column
         
         if h2column:
-            self.total_column = h2column
+            self.h2column = h2column
 
         if column:
             self.column = column
@@ -370,6 +375,21 @@ class Radex(object):
             return self.radex.cphys.totdens * u.cm**-3
         else:
             return self.radex.cphys.totdens
+
+    @property
+    def mass_density(self):
+        d = {'H2':self.radex.cphys.density[0]*0, # ignore H2, use o/p H2
+             'oH2':self.radex.cphys.density[1]*2,
+             'pH2':self.radex.cphys.density[2]*2,
+             'e':self.radex.cphys.density[3]/1836.,
+             'H':self.radex.cphys.density[4]*2,
+             'He':self.radex.cphys.density[5]*4,
+             'H+':self.radex.cphys.density[6]}
+        if u:
+            return np.sum(d.values())*constants.m_p
+        else:
+            return np.sum(d.values())
+
 
     @property
     def opr(self):
@@ -504,7 +524,7 @@ class Radex(object):
 
     @abundance.setter
     def abundance(self, abund):
-        col = self.total_column * abund
+        col = self.h2column * abund
         self._abundance = abund
         #col = abund * self.total_density * self.length
         if u:
@@ -514,12 +534,13 @@ class Radex(object):
             self.column = col
 
     @property
-    def total_column(self):
+    @property
+    def h2column(self):
         return self.column / self.abundance
         #return self.total_density * self.length
 
-    @total_column.setter
-    def total_column(self, nh2, unit='cm**-2'):
+    @h2column.setter
+    def h2column(self, nh2, unit='cm**-2'):
         if u:
             if not hasattr(nh2,'to'):
                 nh2 = nh2*u.Unit(unit)
@@ -538,9 +559,19 @@ class Radex(object):
         else:
             self._deltav = dv
 
-    @property
     def length(self):
-        return self.total_column / self.total_density
+        """ Hard-coded, assumed length-scale """
+        if u:
+            return 1*u.pc
+        else:
+            return 1
+
+    #@property
+    #def length(self):
+    #    if self.escapeProbGeom == 'lvg':
+    #        return self.column_per_bin / self.total_density
+    #    else:
+    #        return self.h2column / self.total_density
 
     @property
     def debug(self):
@@ -641,10 +672,24 @@ class Radex(object):
     def line_flux(self):
         return self.total_intensity - self.background_intensity
 
+    def line_brightness(self,beamsize):
+        """
+        Return the line surface brightness in kelvins for a given beam area
+        (Assumes the frequencies are rest frequencies)
+        """
+        if u:
+            #return (self.line_flux * beamsize)
+            # because each line has a different frequency, have to loop it
+            return u.Quantity([x.to(u.K, u.brightness_temperature(beamsize, f)).value
+                               for x,f in zip(self.line_flux,self.frequency)],
+                              unit=u.K)
+        else:
+            raise NotImplementedError("Astropy's units are required for this conversion.")
+
     @property
     def background_intensity(self):
         if u:
-            return self.radex.radi.backi * u.erg * u.s**-1 * u.cm**-2 * u.Hz**-1 * u.sr**-1
+            return self.radex.radi.backi * u.erg * u.s**-1 * u.cm**-2 * u.Hz**-1# * u.sr**-1
         else:
             return self.radex.radi.backi
 
@@ -652,7 +697,7 @@ class Radex(object):
     def total_intensity(self):
 
         if u:
-            thc = (2 * constants.h * constants.c).cgs / u.sr
+            thc = (2 * constants.h * constants.c).cgs# / u.sr
             fk = (constants.h * constants.c / constants.k_B).cgs
         else:
             thc = 3.9728913665386055e-16

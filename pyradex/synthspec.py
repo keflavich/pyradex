@@ -25,7 +25,7 @@ class SyntheticSpectrum(Spectrum):
     def __init__(self, minfreq, maxfreq, table,
                  linewidth=1.0*u.km/u.s,
                  npts=1000,
-                 profile_function=models.Gaussian1DModel):
+                 profile_function=models.Gaussian1D):
         """
         Create a synthetic spectrum from a RADEX (or DESPOTIC, eventually)
         output
@@ -51,8 +51,10 @@ class SyntheticSpectrum(Spectrum):
 
         Examples
         --------
+        >>> import pyradex
         >>> R = pyradex.Radex(species='ch3cn')
-        >>> S = synthspec.SyntheticSpectrum(91.97*u.GHz,92*u.GHz,R.get_table())
+        >>> R.run_radex()
+        >>> S = pyradex.synthspec.SyntheticSpectrum(91.95*u.GHz,92*u.GHz,R.get_table())
         >>> S.plot()
         """
 
