@@ -211,6 +211,7 @@ class Radex(object):
                  logfile='radex.log',
                  debug=False,
                  mu=2.8,
+                 source_area=None,
                  ):
         """
         Direct wrapper of the radex FORTRAN code
@@ -254,6 +255,8 @@ class Radex(object):
             Which escape probability method to use
         mu: float
             Mean mass per particle in AMU.  Set to 2.8 for H2+Helium mix
+        source_area: float / unit
+            The emitting area of the source on the sky in steradians
         """
         from pyradex.radex import radex
         self.radex = radex
@@ -303,6 +306,8 @@ class Radex(object):
         self.tbg = tbackground
 
         self.debug = debug
+
+        self.source_area = source_area
 
     def _set_parameters(self):
 
@@ -669,10 +674,19 @@ class Radex(object):
         return self.radex.rmolec.eup
 
     @property
-    def line_flux(self):
-        return self.total_intensity - self.background_intensity
+    def source_area(self):
+        return self._source_area
 
-    def line_brightness(self,beamsize):
+    @source_area.setter
+    def source_area(self, source_area):
+        self._source_area = source_area
+
+
+    @property
+    def source_line_surfbrightness(self):
+        return self.source_brightness - self.background_brightness
+
+    def line_brightness_temperature(self,beamsize):
         """
         Return the line surface brightness in kelvins for a given beam area
         (Assumes the frequencies are rest frequencies)
@@ -680,24 +694,73 @@ class Radex(object):
         if u:
             #return (self.line_flux * beamsize)
             # because each line has a different frequency, have to loop it
+            OK_freqs = self.frequency != 0
             return u.Quantity([x.to(u.K, u.brightness_temperature(beamsize, f)).value
-                               for x,f in zip(self.line_flux,self.frequency)],
+                               for x,f in zip(self.line_flux_density[OK_freqs],self.frequency[OK_freqs])
+                               ],
                               unit=u.K)
         else:
             raise NotImplementedError("Astropy's units are required for this conversion.")
 
     @property
-    def background_intensity(self):
+    def source_line_brightness_temperature(self):
+        """
+        The surface brightness of the source assuming it is observed with a
+        beam matched to its size and it has ff=1
+        """
         if u:
-            return self.radex.radi.backi * u.erg * u.s**-1 * u.cm**-2 * u.Hz**-1# * u.sr**-1
+            #return (self.line_flux * beamsize)
+            # because each line has a different frequency, have to loop it
+            OK_freqs = self.frequency != 0
+            return u.Quantity([(x*u.sr).to(u.K, u.brightness_temperature(1*u.sr, f)).value
+                               for x,f in zip(self.source_line_surfbrightness[OK_freqs],self.frequency[OK_freqs])
+                               ],
+                              unit=u.K)
+        else:
+            raise NotImplementedError("Astropy's units are required for this conversion.")
+
+    @property
+    def T_B(self):
+        return self.source_line_brightness_temperature
+
+    @property
+    def background_brightness(self):
+        if u:
+            return self.radex.radi.backi * u.erg * u.s**-1 * u.cm**-2 * u.Hz**-1 * u.sr**-1
         else:
             return self.radex.radi.backi
 
     @property
-    def total_intensity(self):
+    def flux_density(self):
+        """
+        Convert the source surface brightness to a flux density by specifying
+        the emitting area of the source (in steradian-equivalent units)
+
+        This is the non-background-subtracted version
+        """
+
+        if not self.source_area:
+            raise AttributeError("Need to specify a source area in order to compute the flux density")
+
+        return self.source_brightness * self.source_area
+
+    @property
+    def line_flux_density(self):
+        """
+        Background-subtracted version of flux_density
+        """
+
+        if not self.source_area:
+            raise AttributeError("Need to specify a source area in order to compute the flux density")
+
+        return self.source_line_surfbrightness * self.source_area
+
+
+    @property
+    def source_brightness(self):
 
         if u:
-            thc = (2 * constants.h * constants.c).cgs# / u.sr
+            thc = (2 * constants.h * constants.c).cgs / u.sr
             fk = (constants.h * constants.c / constants.k_B).cgs
         else:
             thc = 3.9728913665386055e-16
@@ -707,12 +770,12 @@ class Radex(object):
         xt = self._xt
         xnu = self._xnu
         bnutex = thc*xt/(np.exp(fk*xnu/self.tex)-1.0)
-        toti = self.background_intensity*ftau+bnutex*(1.0-ftau)
+        toti = self.background_brightness*ftau+bnutex*(1.0-ftau)
 
         return toti
 
     @property
-    def total_intensity_beta(self):
+    def source_brightness_beta(self):
         if u:
             thc = (2 * constants.h * constants.c).cgs / u.sr
             fk = (constants.h * constants.c / constants.k_B).cgs
@@ -722,7 +785,7 @@ class Radex(object):
         xt = self._xt
         xnu = self._xnu
         bnutex = thc*xt/(np.exp(fk*xnu/self.tex)-1.0)
-        toti = self.background_intensity*ftau+bnutex*(1-self.beta)
+        toti = self.background_brightness*ftau+bnutex*(1-self.beta)
         return toti
 
     @property
@@ -765,7 +828,10 @@ class Radex(object):
         T.add_column(astropy.table.Column(name='lowerlevel',data=self.quantum_number[self.lowerlevelindex[mask]], unit=''))
         T.add_column(astropy.table.Column(name='upperlevelpop',data=self.level_population[self.upperlevelindex[mask]], unit=''))
         T.add_column(astropy.table.Column(name='lowerlevelpop',data=self.level_population[self.lowerlevelindex[mask]], unit=''))
-        T.add_column(astropy.table.Column(name='flux',data=self.line_flux[mask]))
+        T.add_column(astropy.table.Column(name='brightness',data=self.source_line_surfbrightness[mask]))
+        T.add_column(astropy.table.Column(name='T_B',data=self.T_B)) # T_B is pre-masked
+        if self.source_area:
+            T.add_column(astropy.table.Column(name='flux',data=self.line_flux_density[mask]))
 
         return T
 

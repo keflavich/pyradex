@@ -32,7 +32,7 @@ for ii,temperature in enumerate(temperatures):
     S.plot(label='%i K' % temperature,color=color)
 
     for ii in xrange(nlines):
-        fluxes[ii].append(S.table[ii]['flux'])
+        fluxes[ii].append(S.table[ii]['T_B'])
 
 pl.savefig("CH3CN_synthetic_spectra.pdf",bbox_inches='tight')
 

@@ -32,27 +32,27 @@ ratio = []
 f1 = []
 f2 = []
 
-for temperature in temperatures:
-    R.temperature = temperature
-    R.run_radex()
+for density in [100,1e4,1e6]:
+    R.density = {'H2': density}
+    for temperature in temperatures:
+        R.temperature = temperature
+        R.run_radex()
 
-    F1 = R.line_flux[2]
-    F2 = R.line_flux[12]
+        F1 = R.T_B[2]
+        F2 = R.T_B[12]
 
-    #tb = R.line_brightness(np.pi*(1*u.arcsec)**2)
-    #t1 = tb[2]
-    #t2 = tb[12]
-
-    ratio.append(F2/F1)
-    f2.append(F2)
-    f1.append(F1)
+        ratio.append(F2/F1)
+        f2.append(F2)
+        f1.append(F1)
 
 ratio = np.array(ratio)
 
 pl.figure(2)
 pl.clf()
 
-pl.plot(ratio,temperatures)
+pl.plot(ratio[:50]   ,temperatures)
+pl.plot(ratio[50:100],temperatures)
+pl.plot(ratio[100:]  ,temperatures)
 pl.ylabel("Temperature")
 pl.xlabel("$S(3_{2,1}-2_{2,0})/S(3_{0,3}-2_{0,2})$")
 
@@ -61,3 +61,12 @@ b = temperatures[5]-ratio[5]*m
 line=(m,b)
 pl.plot(ratio,ratio*line[0]+line[1])
 pl.axis([0,0.5,10,200,])
+
+f1 = np.array([x.value for x in f1])
+f2 = np.array([x.value for x in f2])
+pl.plot(f2[:50]   ,temperatures)
+pl.plot(f2[50:100],temperatures)
+pl.plot(f2[100:]  ,temperatures)
+pl.plot(f1[:50]   ,temperatures,'--')
+pl.plot(f1[50:100],temperatures,'--')
+pl.plot(f1[100:]  ,temperatures,'--')

@@ -72,7 +72,7 @@ class SyntheticSpectrum(Spectrum):
         data = self.get_profile()
 
         super(Spectrum,self).__init__(data=data, wcs=self.wcs,
-                                      unit=u.Unit(table['flux'].unit))
+                                      unit=u.Unit(table['T_B'].unit))
 
 
     def get_profile(self):
@@ -82,7 +82,7 @@ class SyntheticSpectrum(Spectrum):
                 xpts = xpts.to(u.Hz).value
             M = np.zeros_like(xpts)
             for freq,flux,width in zip(u.Quantity(self.table['frequency'],unit=u.Unit(self.table['frequency'].unit)),
-                                       u.Quantity(self.table['flux'],unit=u.Unit(self.table['flux'].unit)),
+                                       u.Quantity(self.table['T_B'],unit=u.Unit(self.table['T_B'].unit)),
                                        self.width_frequency):
                 M += self.profile_function(flux.value, freq.to(u.Hz).value, width.to(u.Hz).value)(xpts)
 
