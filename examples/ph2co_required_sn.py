@@ -9,9 +9,16 @@ import matplotlib
 import astropy.units as u
 import os
 
+# for pretty on-screen plots
 if os.path.exists('/Users/adam/.matplotlib/ggplotrc'):
     matplotlib.rc_file('/Users/adam/.matplotlib/ggplotrc')
 
+# Download the data file if it's not here already
+if not os.path.exists('ph2co-h2.dat'):
+    import urllib
+    urllib.urlretrieve('http://home.strw.leidenuniv.nl/~moldata/datafiles/ph2co-h2.dat')
+
+# Formatting tool
 def latex_float(f):
     float_str = "{0:.1g}".format(f)
     if "e" in float_str:
@@ -20,6 +27,7 @@ def latex_float(f):
     else:
         return float_str
 
+# Define the grid parameters
 ntemp = 50
 temperatures = np.linspace(10,200,ntemp)
 abundance = 10**-8.5
