@@ -1,8 +1,6 @@
 from __future__ import print_function
 import subprocess
 import tempfile
-import astropy.io.ascii 
-import astropy.table
 import numpy as np
 import warnings
 import astropy.units as u
@@ -12,6 +10,7 @@ import os
 try:
     from astropy import units as u
     from astropy import constants
+    import astropy.table
 except ImportError:
     u = False
 
@@ -538,7 +537,6 @@ class Radex(object):
         else:
             self.column = col
 
-    @property
     @property
     def h2column(self):
         return self.column / self.abundance

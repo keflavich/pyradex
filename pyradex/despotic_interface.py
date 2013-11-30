@@ -6,12 +6,12 @@ import numpy as np
 import warnings
 import os
 from collections import defaultdict
-from astropy import units as u
 from .utils import united,uvalue
 
 try:
     from astropy import units as u
     from astropy import constants
+    import astropy.table
 except ImportError:
     u = False
 
@@ -27,7 +27,7 @@ class Despotic(object):
     def __call__(self, **kwargs):
         # reset the parameters appropriately
         self.__init__(**kwargs)
-        return self.lineLum(self.species)
+        return self.lineLum()
 
     def __init__(self,
                  collider_densities={'ph2':990,'oh2':10},
@@ -61,7 +61,7 @@ class Despotic(object):
         hcolumn: float
             The total column density of hydrogen.
         abundance: float
-            The molecule's abundance relative to H.
+            The molecule's abundance relative to H (NOT H2 as is normally done!).
         tbackground: float
             Background radiation temperature (e.g., CMB)
         deltav: float
@@ -111,24 +111,39 @@ class Despotic(object):
 
         self.cloud.comp.computeDerived(self.cloud.nH)
 
-        self.deltav = deltav
-
         self.escapeProbGeom = escapeProbGeom
+
+        self.deltav = deltav
 
     @property
     def deltav(self):
-        return united(self._dv,u.km/u.s)
+        try:
+            return united(self._dv,u.km/u.s)
+        except u.UnitsError:
+            return united(self._dv,u.km/u.s/u.pc)
 
     @deltav.setter
     def deltav(self, deltav):
-        FWHM = united(deltav,u.km/u.s)
-        self.cs = np.sqrt(constants.k_B*united(self.cloud.Tg,u.K)/(self.cloud.comp.mu*constants.m_p)).to(u.km/u.s)
-        self.sigmaTot = FWHM/np.sqrt(8.0*np.log(2))
-        self.cloud.sigmaNT = uvalue(np.sqrt(self.sigmaTot**2 -
-                                            self.cs**2/self.cloud.emitters[self.species].data.molWgt),
-                                    u.km/u.s)
-        self.cloud.dVdr = uvalue(united(deltav,u.km/u.s/u.pc),u.s**-1)
 
+        if self.escapeProbGeom == 'LVG':
+            self._dv = united(self.cloud.dVdr,u.s**-1)
+            # See notes.rst: DESPOTIC must have a different dVdR to get the same results as RADEX
+            # 1.0645 / sqrt(8*log(2)) = sqrt(2 * pi) / (8*log(2))
+            self.cloud.dVdr = uvalue(united(deltav,u.km/u.s/u.pc),u.s**-1) * np.sqrt(8*np.log(2)) * 2
+            # (2*np.pi)**0.5/(8*np.log(2))
+
+        else:
+            self._dv = united(self.cloud.sigmaNT,u.km/u.s)
+
+            FWHM = united(deltav,u.km/u.s)
+            self.sigmaTot = FWHM/np.sqrt(8.0*np.log(2))
+            self.cloud.sigmaNT = uvalue(np.sqrt(self.sigmaTot**2 -
+                                                self.cs**2/self.cloud.emitters[self.species].data.molWgt),
+                                        u.km/u.s)
+
+    @property
+    def cs(self):
+        return np.sqrt(constants.k_B*united(self.cloud.Tg,u.K)/(self.cloud.comp.mu*constants.m_p)).to(u.km/u.s)
 
     def lineLum(self, **kwargs):
         if 'escapeProbGeom' not in kwargs:
@@ -219,3 +234,15 @@ class Despotic(object):
     @property
     def temperature(self):
         return self.cloud.Tg
+
+    def get_table(self,**kwargs):
+
+        D = self.lineLum(**kwargs)
+
+        names = D[0].keys()
+        T = astropy.table.Table(names=names,dtypes=[type(D[0][k]) for k in names])
+    
+        for row in D:
+            T.add_row([row[k] for k in names])
+
+        return T
