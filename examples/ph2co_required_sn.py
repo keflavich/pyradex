@@ -103,6 +103,7 @@ for abundance in (10**-8.5,10**-9):
 
         pl.figure(3)
         pl.clf()
+
         for d in densities:
             L, = pl.plot(temperatures,f2[d],label='$n=10^{%i}$' % (np.log10(d)))
             pl.plot(temperatures,f1[d],'--',color=L.get_color())
@@ -115,4 +116,39 @@ for abundance in (10**-8.5,10**-9):
         ax.axis([10,100,0,3.2])
         pl.legend(loc='best',fontsize=14)
         pl.title("$N(H_2) = %s$ cm$^{-2}$, X(p-H$_2$CO)$=10^{%0.1f}$" % (latex_float(nh2),np.log10(abundance)))
+
         pl.savefig("pH2CO_321-220_vs_temperature_N=%1.0e_X=%0.1e.pdf" % (nh2,abundance),bbox_inches='tight')
+
+
+        pl.figure(4,figsize=(10,10))
+        pl.clf()
+        ax1= pl.subplot(2,1,1)
+
+        for d in densities:
+            pl.plot(temperatures,ratio[d],label='$n=10^{%i}$' % (np.log10(d)))
+        #pl.xlabel("Temperature")
+        pl.ylabel("$S(3_{2,1}-2_{2,0})/S(3_{0,3}-2_{0,2})$")
+        pl.legend(loc='best',fontsize=18)
+        pl.title("$N(H_2) = %s$ cm$^{-2}$, X(p-H$_2$CO)$=10^{%0.1f}$" % (latex_float(nh2),np.log10(abundance)))
+        ax1.set_xticks([])
+        pl.subplots_adjust(hspace=0.0)
+
+
+        ax2 = pl.subplot(2,1,2)
+
+
+        for d in densities:
+            L, = pl.plot(temperatures,f2[d],dashes=[2,2],label='$n=10^{%i}$' % (np.log10(d)))
+            pl.plot(temperatures,f1[d],'--',color=L.get_color())
+        pl.xlabel("Temperature")
+        pl.ylabel("$T_B$")
+        ax2.axis([10,100,0,3.2])
+
+        pl.legend((pl.Line2D([0],[0],dashes=[2,2],color='k'),pl.Line2D([0],[0],linestyle='--',color='k')),
+                  ("$3_{2,1}-2_{2,0}$","$3_{0,3}-2_{0,2}$"),
+                  fontsize=16,
+                  loc='center right',
+                  bbox_to_anchor=[1,1.2])
+
+        #pl.savefig("pH2CO_321-220_vs_temperature_N=%1.0e_X=%0.1e.pdf" % (nh2,abundance),bbox_inches='tight')
+        pl.savefig("pH2CO_flux_and_ratio_vs_temperature_N=%1.0e_X=%0.1e.pdf" % (nh2,abundance),bbox_inches='tight')
