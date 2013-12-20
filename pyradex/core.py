@@ -199,8 +199,8 @@ class Radex(object):
                  collider_densities={'ph2':990,'oh2':10},
                  temperature=30,
                  species='co',
-                 column=1e13,
-                 h2column=1e21,
+                 column=None,
+                 h2column=None,
                  tbackground=2.7315,
                  deltav=1.0,
                  abundance=None,
@@ -273,7 +273,8 @@ class Radex(object):
         if self.molpath == '':
             raise ValueError("Must set a species name.")
         if not os.path.exists(self.molpath):
-            raise ValueError("Must specify a valid path to a molecular data file else RADEX will crash.")
+            raise ValueError("Must specify a valid path to a molecular data file else RADEX will crash."
+                             "  Current path is {0}".format(self.molpath))
 
         self.density = collider_densities
 
