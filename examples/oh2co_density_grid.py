@@ -11,7 +11,7 @@ if os.path.exists('/Users/adam/.matplotlib/ggplotrc'):
 ndens = 20
 
 #temperatures = np.linspace(10,50,nabund)
-temperature = 20
+temperature = 50
 densities = np.logspace(1.5,7,ndens)
 abundances = 10**np.array([-9,-8.5])
 opr = 0.01 # assume primarily para

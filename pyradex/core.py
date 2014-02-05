@@ -795,6 +795,9 @@ class Radex(object):
 
     @property
     def _xnu(self):
+        """
+        Line frequency in inverse cm
+        """
         if u:
             return self.radex.radi.xnu * u.cm**-1
         else:
