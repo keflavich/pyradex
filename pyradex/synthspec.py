@@ -2,14 +2,9 @@
 Tools to generate synthetic spectra given a table of line strengths
 """
 
-try:
-    import specutils
-    Spectrum = specutils.Spectrum1D
-    Spectrum1DLinearWCS = specutils.wcs.Spectrum1DLinearWCS
-except ImportError:
-    Spectrum = object
-    def Spectrum1DLinearWCS(dispersion0, dispersion_delta, pixel_index, unit):
-        return lambda pixel_indices: (dispersion0 + dispersion_delta * (pixel_indices - pixel_index)) * unit
+import specutils
+Spectrum = specutils.Spectrum1D
+Spectrum1DLinearWCS = specutils.wcs.Spectrum1DLinearWCS
 
 from astropy.modeling import models
 from astropy import units as u
@@ -94,4 +89,11 @@ class SyntheticSpectrum(Spectrum):
 
     def plot(self, *args, **kwargs):
 
-        return pl.plot(self.dispersion, self.data, *args, **kwargs)
+        pl.gca().set_xlabel(self.dispersion.unit.to_string())
+        if hasattr(self.data,'unit'):
+            pl.gca().set_ylabel(self.data.unit.to_string())
+            data = self.data.value
+        else:
+            data = self.data
+
+        return pl.plot(self.dispersion.value, data, *args, **kwargs)

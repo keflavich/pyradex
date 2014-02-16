@@ -31,16 +31,18 @@ def latex_float(f):
 ntemp = 25
 temperatures = np.linspace(10,100,ntemp)
 
+# initial density; will be modified later
 density = 1e4
 
-abundance = 10**-8.5 # 10**-8.5
-nh2 = 1e22
+deltav = 1.0 # km/s
+
 for abundance in (10**-8.5,10**-9):
     for nh2 in (1e22,1e23):
 
         R = pyradex.Radex(species='ph2co-h2',
                           abundance=abundance,
                           collider_densities={'H2':density},
+                          deltav=1.0,
                           column=None,
                           temperature=temperatures[0],
                           h2column=nh2)

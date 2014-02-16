@@ -38,11 +38,11 @@ def test_molecules(molecule):
     data.pprint(show_unit=True)
 
 def test_radex_class():
-    R = pyradex.Radex(datapath='examples/',species='co')
+    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15)
     assert hasattr(R,'radex')
 
 def test_change_abundance():
-    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=None)
+    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15)
     totdens = R.total_density
     R.abundance = 1e-6
     assert totdens == R.total_density
