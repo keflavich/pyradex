@@ -10,7 +10,6 @@ from astropy.modeling import models
 from astropy import units as u
 from astropy import constants as c
 import numpy as np
-import pylab as pl
 
 class SyntheticSpectrum(Spectrum):
     """
@@ -88,6 +87,7 @@ class SyntheticSpectrum(Spectrum):
         return model(X)
 
     def plot(self, *args, **kwargs):
+        import pylab as pl
 
         pl.gca().set_xlabel(self.dispersion.unit.to_string())
         if hasattr(self.data,'unit'):
