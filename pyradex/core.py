@@ -64,7 +64,7 @@ def pyradex(executable='radex', minfreq=100, maxfreq=130,
             collider_densities=collider_densities, **kwargs)
 
     logfile = call_radex(executable, infile.name, debug=debug,
-            delete_tempfile=delete_tempfile)
+                         delete_tempfile=delete_tempfile)
 
     check_logfile(logfile.name)
 

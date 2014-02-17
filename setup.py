@@ -23,6 +23,9 @@ execfile('pyradex/version.py') # sets version
 #    install_radex.install_radex()
 
 class InstallRadex(Command):
+    """
+    Compile the f2py radex modules needed for the python wrapper
+    """
 
     user_options = []
 
@@ -37,6 +40,10 @@ class InstallRadex(Command):
         install_radex.install_radex()
 
 class BuildRadexExecutable(Command):
+    """
+    Create the files radex_sphere, radex_lvg, radex_slab in the Radex/bin/
+    directory
+    """
 
     user_options = []
 

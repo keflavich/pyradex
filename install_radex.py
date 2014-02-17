@@ -2,6 +2,7 @@ from __future__ import print_function
 import tarfile
 import re
 import os
+import shutil
 try:
     from astropy.utils.data import download_file
 except ImportError:
@@ -118,14 +119,14 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     if r3 != 0:
         raise SystemError("moving failed with error %i; radex.so was not created successfully" % r3)
 
-def build_radex_executable(datapath=None):
+def build_radex_executable(datapath='./'):
     filename = download_radex(redownload=False)
     # need to re-extract the RADEX source to get an un-patched version
     extract_radex(filename)
     compile_radex_source(datapath=datapath)
 
 
-def compile_radex_source(datapath=None):
+def compile_radex_source(datapath='./'):
     """
     Compile the source file in the Radex/ directory
 
@@ -138,6 +139,7 @@ def compile_radex_source(datapath=None):
     # at least co.dat there)
     if datapath is None:
         datapath = os.path.join(os.getcwd(), 'examples')
+        print("Datapath was not defined.  Set to ",datapath)
 
     # make sure ~ gets expanded
     datapath = os.path.expanduser(datapath)
@@ -159,8 +161,43 @@ def compile_radex_source(datapath=None):
     with open('radex.inc','w') as of:
         of.writelines(lines)
 
-    r1 = os.system('make')
-    if r1 != 0:
-        raise SystemError("radex make failed with error %i" % r1)
+    method_types = {1:'sphere',2:'lvg',3:'slab'}
+    for method in method_types:
+        radex_inc_method('./',method=method)
+        r1 = os.system('make')
+        if r1 != 0:
+            raise SystemError("radex make failed with error %i" % r1)
+        shutil.move('../bin/radex','../bin/radex_%s' % method_types[method])
 
     os.chdir(cwd)
+
+def radex_inc_method(datapath, method=1):
+    """
+    Convert the radex.inc file to a method
+
+    Parameters
+    ----------
+    datapath: path
+        a directory path containing the target radex.inc
+    method: 1,2,3
+        1: sphere
+        2: lvg
+        3: slab
+    """
+    fn = os.path.join(datapath, 'radex.inc')
+    with open(fn,'r') as f:
+        lines = [L.replace('/Users/floris/Radex/moldat/',datapath)
+                 if 'radat' in L else L
+                 for L in f.readlines()]
+    
+    radlines = []
+    for line in lines:
+        if ('parameter (method' in line):
+            line = 'c'+line
+        if 'method = 3' in line:
+            radlines.append('      parameter (method = %i)\n' % method)
+        radlines.append(line)
+
+    with open(fn,'w') as f:
+        f.writelines(radlines)
+

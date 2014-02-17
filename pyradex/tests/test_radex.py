@@ -21,11 +21,11 @@ def test_parse_example():
 
 @pytest.mark.skipif(exepath=='radex',reason='radex not installed')
 def test_call():
-    data = pyradex.pyradex(executable=exepath,species='Radex/data/hco+')
+    data = pyradex.pyradex(executable=exepath,species='Radex/data/hco+',minfreq=50)
     data.pprint(show_unit=True)
 
 @pytest.mark.skipif(exepath=='radex',reason='radex not installed')
-@pytest.mark.parametrize(('molecule',),('co','13co','c18o','o-h2co','p-nh3',))
+@pytest.mark.parametrize('molecule,',('co','13co','c18o','o-h2co','p-nh3',))
 def test_molecules(molecule):
     if os.path.isfile('examples/%s.dat' % molecule):
         molecule = 'examples/%s' % molecule
