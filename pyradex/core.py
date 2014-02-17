@@ -7,6 +7,7 @@ import astropy.units as u
 from collections import defaultdict
 import itertools
 import os
+import utils # shouldn't this be relative somehow?
 try:
     from astropy import units as u
     from astropy import constants
@@ -409,6 +410,7 @@ class Radex(object):
         if "~" in molfile:
             molfile = os.path.expandpath(molfile)
         self.radex.impex.molfile[:] = ""
+        utils.verify_collisionratefile(molfile)
         self.radex.impex.molfile[:len(molfile)] = molfile
 
     @property
