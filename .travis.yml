@@ -42,6 +42,7 @@ install:
    - pip install requests
    - pip install git+http://github.com/astropy/astropy.git#egg=astropy
    - pip install git+http://github.com/astropy/astroquery.git#egg=astroquery
+   - pip install git+http://github.com/astropy/specutils.git#egg=specutils
    #- pip install scipy --use-mirrors
    - python setup.py build_radex_exe
    - python setup.py install_radex
