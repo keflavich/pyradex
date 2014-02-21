@@ -465,6 +465,8 @@ class Radex(object):
 
     @property
     def tau(self):
+        # taul(iline) = cddv*(xpop(n)*gstat(m)/gstat(n)-xpop(m))
+        #$         /(fgaus*xt/aeinst(iline))
         return self.radex.radi.taul
 
     @property
@@ -817,9 +819,6 @@ class Radex(object):
     @property
     def statistical_weight(self):
         return self.radex.rmolec.gstat
-
-	 # taul(iline) = cddv*(xpop(n)*gstat(m)/gstat(n)-xpop(m))
-     #$         /(fgaus*xt/aeinst(iline))
 
     def get_table(self):
         T = astropy.table.Table()
