@@ -3,7 +3,7 @@
 
 import sys
 
-if 'develop' in sys.argv:
+if any((x in sys.argv for x in ('develop','bdist'))):
     # use setuptools for develop, but nothing else
     from setuptools import setup
     Command = object
