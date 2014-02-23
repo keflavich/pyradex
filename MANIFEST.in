@@ -1,5 +1,5 @@
-requirements.txt
-INSTALL.rst
-README.rst
-pip-requirements
-install_radex.py
+include requirements.txt
+include INSTALL.rst
+include README.rst
+include pip-requirements
+include install_radex.py
