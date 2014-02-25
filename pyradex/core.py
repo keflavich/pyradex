@@ -278,6 +278,7 @@ class Radex(object):
                              "  Current path is {0}".format(self.molpath))
 
         self.density = collider_densities
+        self.species = species
 
         self.outfile = outfile
         self.logfile = logfile
@@ -462,6 +463,8 @@ class Radex(object):
             return self.radex.radi.tex * u.K
         else:
             return self.radex.radi.tex
+
+    Tex = tex
 
     @property
     def tau(self):
@@ -669,8 +672,16 @@ class Radex(object):
         return self.radex.imolec.iupp-1
 
     @property
+    def upperlevelpop(self):
+        return self.level_population[self.upperlevelindex]
+
+    @property
     def lowerlevelindex(self):
         return self.radex.imolec.ilow-1
+
+    @property
+    def lowerlevelpop(self):
+        return self.level_population[self.lowerlevelindex]
 
     @property
     def upperstateenergy(self):
