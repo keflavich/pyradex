@@ -327,6 +327,8 @@ class Radex(object):
         self.miniter = 10
         self.maxiter = 200
 
+    _valid_colliders = ['H2','OH2','PH2','E','H','HE','H+']
+
     @property
     def density(self):
         d = {'H2':self.radex.cphys.density[0],
@@ -346,6 +348,9 @@ class Radex(object):
         collider_densities = defaultdict(lambda: 0)
         for k in collider_density:
             collider_densities[k.upper()] = collider_density[k]
+            if k.upper() not in self._valid_colliders:
+                raise ValueError('Collider %s is not one of the valid colliders: %s' %
+                                 (k,self._valid_colliders))
 
         if 'OH2' in collider_densities:
             if not 'PH2' in collider_densities:

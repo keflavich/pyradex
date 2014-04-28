@@ -28,8 +28,10 @@ def latex_float(f):
         return float_str
 
 # Define the grid parameters
-ntemp = 25
-temperatures = np.linspace(10,100,ntemp)
+ntemp = 75
+tmin = 10
+tmax = 300
+temperatures = np.linspace(tmin,300,ntemp)
 
 # initial density; will be modified later
 density = 1e4
@@ -41,7 +43,7 @@ for abundance in (10**-8.5,10**-9):
 
         R = pyradex.Radex(species='ph2co-h2',
                           abundance=abundance,
-                          collider_densities={'H2':density},
+                          collider_densities={'oH2':density,'pH2':0},
                           deltav=1.0,
                           column=None,
                           temperature=temperatures[0],
@@ -50,37 +52,47 @@ for abundance in (10**-8.5,10**-9):
         pl.figure(1)
         pl.clf()
 
-        for temperature in [10,50,100]:
+        Swcs = pyradex.synthspec.FrequencyArray(218.2*u.GHz, 218.8*u.GHz, npts=1000)
+        for temperature in [10,50,100,200,300]:
             R.temperature = temperature
             R.run_radex()
-            S = pyradex.synthspec.SyntheticSpectrum(218.2*u.GHz,218.8*u.GHz,R.get_table(),linewidth=10*u.km/u.s)
-            S.plot(label='%i K' % temperature)
+            S = pyradex.synthspec.SyntheticSpectrum.from_RADEX(Swcs, R, linewidth=10*u.km/u.s)
+            S.plot(label='%i K' % temperature, linewidth=2, alpha=0.5)
 
         pl.legend(loc='best')
+        pl.savefig("pH2CO_synthspectra_N=%1.0e_X=%0.1e_n=%0.1e_opr=0.pdf" % (nh2,abundance,density),bbox_inches='tight')
 
         # create a small grid...
         densities = [10**x for x in xrange(4,7)]
-        ratio = {d:[] for d in densities}
+        ratio1 = {d:[] for d in densities}
+        ratio2 = {d:[] for d in densities}
         f1 = {d:[] for d in densities}
         f2 = {d:[] for d in densities}
+        f3 = {d:[] for d in densities}
 
         for density in densities:
-            R.density = {'H2': density}
+            R.density = {'oH2': density, 'pH2':0}
             for temperature in temperatures:
                 R.temperature = temperature
                 print R.run_radex(),
 
-                F1 = R.T_B[2]
-                F2 = R.T_B[12]
+                F1 = R.T_B[2]  # 218.222192 3_0_3
+                F2 = R.T_B[12] # 218.760066 3_2_1
+                F3 = R.T_B[9]  # 218.475632 3_2_2
 
-                ratio[density].append(F2/F1)
+                ratio1[density].append(F2/F1)
+                ratio2[density].append(F3/F1)
+                f3[density].append(F3)
                 f2[density].append(F2)
                 f1[density].append(F1)
             print
 
         f1 = {d:np.array([x.value for x in f1[d]]) for d in densities}
         f2 = {d:np.array([x.value for x in f2[d]]) for d in densities}
-        ratio = {d:np.array(ratio[d]) for d in densities}
+        f3 = {d:np.array([x.value for x in f3[d]]) for d in densities}
+        ratio1 = {d:np.array(ratio1[d]) for d in densities}
+        ratio2 = {d:np.array(ratio2[d]) for d in densities}
+        ratio = ratio1
 
         pl.figure(2)
         pl.clf()
@@ -99,7 +111,7 @@ for abundance in (10**-8.5,10**-9):
         pl.legend(loc='best',fontsize=14)
         pl.title("$N(H_2) = %s$ cm$^{-2}$, X(p-H$_2$CO)$=10^{%0.1f}$" % (latex_float(nh2),np.log10(abundance)))
 
-        pl.axis([0,0.5,10,200,])
+        pl.axis([0,0.5,tmin,tmax,])
 
         pl.savefig("pH2CO_ratio_vs_temperature_N=%1.0e_X=%0.1e.pdf" % (nh2,abundance),bbox_inches='tight')
 
@@ -115,7 +127,7 @@ for abundance in (10**-8.5,10**-9):
         #pl.plot(ax.get_xlim(),[1.5,1.5],'k--',label='S/N$=5$, $\sigma=0.3$ K')
         #pl.plot(ax.get_xlim(),[2.5,2.5],'k:',label='S/N$=5$, $\sigma=0.5$ K')
         #pl.plot(ax.get_xlim(),[0.25,0.25],'k-.',label='S/N$=5$, $\sigma=0.05$ K')
-        ax.axis([10,100,0,3.2])
+        ax.axis([tmin,tmax,0,5.2])
         pl.legend(loc='best',fontsize=14)
         pl.title("$N(H_2) = %s$ cm$^{-2}$, X(p-H$_2$CO)$=10^{%0.1f}$" % (latex_float(nh2),np.log10(abundance)))
 
@@ -130,7 +142,7 @@ for abundance in (10**-8.5,10**-9):
             pl.plot(temperatures,ratio[d],label='$n=10^{%i}$' % (np.log10(d)))
         #pl.xlabel("Temperature")
         pl.ylabel("$S(3_{2,1}-2_{2,0})/S(3_{0,3}-2_{0,2})$")
-        pl.legend(loc='best',fontsize=18)
+        pl.legend(loc='upper left',fontsize=18)
         pl.title("$N(H_2) = %s$ cm$^{-2}$, X(p-H$_2$CO)$=10^{%0.1f}$" % (latex_float(nh2),np.log10(abundance)))
         ax1.set_xticks([])
         pl.subplots_adjust(hspace=0.0)
@@ -144,7 +156,7 @@ for abundance in (10**-8.5,10**-9):
             pl.plot(temperatures,f1[d],'--',color=L.get_color())
         pl.xlabel("Temperature")
         pl.ylabel("$T_B$")
-        ax2.axis([10,100,0,3.2])
+        ax2.axis([tmin,tmax,0,5.2])
 
         pl.legend((pl.Line2D([0],[0],dashes=[2,2],color='k'),pl.Line2D([0],[0],linestyle='--',color='k')),
                   ("$3_{2,1}-2_{2,0}$","$3_{0,3}-2_{0,2}$"),
