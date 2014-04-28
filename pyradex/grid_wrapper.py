@@ -1,5 +1,6 @@
 import numpy as np
 import pyradex
+import itertools
 
 def grid_wrapper(molecule,
                  temperatures=[],
@@ -39,24 +40,37 @@ def grid_wrapper(molecule,
     # Target frequencies:
     # frequencies = table[np.array(transition_indices)]
 
-    parameters_iterator = itertools.product(orthopararatios, columns, abundances, temperatures, densities)
+    # parameters_iterator = itertools.product(orthopararatios, columns, abundances, temperatures, densities)
 
-    for opr,col,abund,tem,dens in parameters_iterator:
+    try:
+        import progressbar
+        pb = progressbar.ProgressBar(maxval=ntemp*ndens*ncols*nabund*nopr)
+    except ImportError:
+        pb = lambda x: x
+
+    for opri, opr in enumerate(orthopararatios):
         fortho = opr/(1+opr)
-        R.temperature = tem
-        R.density = {'oH2':dd*fortho,'pH2':dd*(1-fortho)}
-        if coltype == 'mol':
-            R.column = col
-        else:
-            R.h2column = col
-        R.abundance = abund # reset column to the appropriate value
-        R.run_radex(reuse_last=False, reload_molfile=True)
+        for coli, col in enumerate(columns):
+            for abundi, abund in enumerate(abundances):
+                for temi,tem in enumerate(temperatures):
+                    R.temperature = tem
+                    for densi,dens in enumerate(densities):
+                        R.density = {'oH2':dens*fortho,'pH2':dens*(1-fortho)}
+                        if coltype == 'mol':
+                            R.column = col
+                        else:
+                            R.h2column = col
+                        R.abundance = abund # reset column to the appropriate value
+                        R.run_radex(reuse_last=False, reload_molfile=True)
 
-        for tid in transition_indices:
-            for par in observable_parameters:
-                val = getattr(R, par)[tid]
-                if hasattr(val,'value'):
-                    val = val.value
-                grids[tid][par] = val
+                        # type is important: MUST be tuple!
+                        ind = (opri, coli, abundi, temi, densi)
+
+                        for tid in transition_indices:
+                            for par in observable_parameters:
+                                val = getattr(R, par)[tid]
+                                if hasattr(val,'value'):
+                                    val = val.value
+                                grids[tid][par][ind] = val
 
     return grids
