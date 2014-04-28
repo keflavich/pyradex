@@ -39,26 +39,24 @@ def grid_wrapper(molecule,
     # Target frequencies:
     # frequencies = table[np.array(transition_indices)]
 
-    for opri, opr in enumerate(orthopararatios):
-        fortho = opr/(1+opr)
-        for coli, col in enumerate(columns):
-            for abundi, abund in enumerate(abundances):
-                for temi,tt in enumerate(temperatures):
-                    R.temperature = tt
-                    for densi,dd in enumerate(densities):
-                        R.density = {'oH2':dd*fortho,'pH2':dd*(1-fortho)}
-                        if coltype == 'mol':
-                            R.column = col
-                        else:
-                            R.h2column = col
-                        R.abundance = abund # reset column to the appropriate value
-                        R.run_radex(reuse_last=False, reload_molfile=True)
+    parameters_iterator = itertools.product(orthopararatios, columns, abundances, temperatures, densities)
 
-                        for tid in transition_indices:
-                            for par in observable_parameters:
-                                val = getattr(R, par)[tid]
-                                if hasattr(val,'value'):
-                                    val = val.value
-                                grids[tid][par] = val
+    for opr,col,abund,tem,dens in parameters_iterator:
+        fortho = opr/(1+opr)
+        R.temperature = tem
+        R.density = {'oH2':dd*fortho,'pH2':dd*(1-fortho)}
+        if coltype == 'mol':
+            R.column = col
+        else:
+            R.h2column = col
+        R.abundance = abund # reset column to the appropriate value
+        R.run_radex(reuse_last=False, reload_molfile=True)
+
+        for tid in transition_indices:
+            for par in observable_parameters:
+                val = getattr(R, par)[tid]
+                if hasattr(val,'value'):
+                    val = val.value
+                grids[tid][par] = val
 
     return grids
