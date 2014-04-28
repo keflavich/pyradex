@@ -1,6 +1,6 @@
 import numpy as np
 import pyradex
-import itertools
+from astropy.utils.console import ProgressBar
 
 def grid_wrapper(molecule,
                  temperatures=[],
@@ -23,7 +23,7 @@ def grid_wrapper(molecule,
     nopr = len(orthopararatios)
 
     grids = {tid:
-             {par: np.empty([ndens,ntemp,ncols,nabund,nopr])
+             {par: np.empty([nopr, ncols, nabund, ntemp, ndens])
               for par in observable_parameters}
              for tid in transition_indices}
 
@@ -40,13 +40,7 @@ def grid_wrapper(molecule,
     # Target frequencies:
     # frequencies = table[np.array(transition_indices)]
 
-    # parameters_iterator = itertools.product(orthopararatios, columns, abundances, temperatures, densities)
-
-    try:
-        import progressbar
-        pb = progressbar.ProgressBar(maxval=ntemp*ndens*ncols*nabund*nopr)
-    except ImportError:
-        pb = lambda x: x
+    pb = ProgressBar(ntemp*ndens*ncols*nabund*nopr)
 
     for opri, opr in enumerate(orthopararatios):
         fortho = opr/(1+opr)
@@ -65,6 +59,8 @@ def grid_wrapper(molecule,
 
                         # type is important: MUST be tuple!
                         ind = (opri, coli, abundi, temi, densi)
+
+                        pb.update()
 
                         for tid in transition_indices:
                             for par in observable_parameters:
