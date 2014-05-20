@@ -345,6 +345,15 @@ class Radex(object):
 
     @density.setter
     def density(self, collider_density):
+
+        collider_ids = {'H2': 0,
+                        'PH2': 1,
+                        'OH2': 2,
+                        'E': 3,
+                        'H': 4,
+                        'HE': 5,
+                        'H+': 6}
+
         collider_densities = defaultdict(lambda: 0)
         for k in collider_density:
             collider_densities[k.upper()] = collider_density[k]
@@ -355,9 +364,13 @@ class Radex(object):
         if 'OH2' in collider_densities:
             if not 'PH2' in collider_densities:
                 raise ValueError("If o-H2 density is specified, p-H2 must also be.")
-            self.radex.cphys.density[0] = collider_densities['OH2'] + collider_densities['PH2']
-            self.radex.cphys.density[1] = collider_densities['OH2']
-            self.radex.cphys.density[2] = collider_densities['PH2']
+            # TODO: look up whether RADEX uses density[0] if density[1] and [2] are specified
+            # (it looks like the answer is "no" based on a quick test)
+            self.radex.cphys.density[0] = 0 # collider_densities['OH2'] + collider_densities['PH2']
+            # PARA is [1], ORTHO is [2]
+            # See lines 91, 92 of io.f
+            self.radex.cphys.density[1] = collider_densities['PH2']
+            self.radex.cphys.density[2] = collider_densities['OH2']
         elif 'H2' in collider_densities:
             warnings.warn("Using a default ortho-to-para ratio (which "
                           "will only affect species for which independent "
@@ -370,8 +383,8 @@ class Radex(object):
             else:
                 opr = 3.0
             fortho = opr/(1+opr)
-            self.radex.cphys.density[1] = collider_densities['H2']*fortho
-            self.radex.cphys.density[2] = collider_densities['H2']*(1-fortho)
+            self.radex.cphys.density[1] = collider_densities['H2']*(1-fortho)
+            self.radex.cphys.density[2] = collider_densities['H2']*(fortho)
 
         self.radex.cphys.density[3] = collider_densities['E']
         self.radex.cphys.density[4] = collider_densities['H']
@@ -379,6 +392,7 @@ class Radex(object):
         self.radex.cphys.density[6] = collider_densities['H+']
 
         # skip H2 when computing by assuming OPR correctly distributes ortho & para
+        # It's not obvious that RADEX does this correctly in readdata.f
         self.radex.cphys.totdens = self.radex.cphys.density[1:].sum()
     
     @property
