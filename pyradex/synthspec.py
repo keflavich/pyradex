@@ -1,17 +1,17 @@
 """
 Tools to generate synthetic spectra given a table of line strengths
 """
+import numpy as np
+
+from astropy import logging
+from astropy.modeling import models
+from astropy import units as u
+from astropy import constants as c
 
 try:
     import specutils
     Spectrum = specutils.Spectrum1D
     Spectrum1DLinearWCS = specutils.wcs.Spectrum1DLinearWCS
-
-    from astropy.modeling import models
-    from astropy import units as u
-    from astropy import constants as c
-    import numpy as np
-    from .core import Radex
 
     class FrequencyArray(Spectrum1DLinearWCS):
         """
@@ -30,7 +30,22 @@ try:
             self.minfreq = minfreq
             self.maxfreq = maxfreq
             self.npts = npts
-            super(FrequencyArray, self).__init__(minfreq, (maxfreq-minfreq)/npts, 0, u.Hz)
+            self.delta = (maxfreq-minfreq)/npts
+            self.unit = u.Hz
+            self.refpix = 0
+            self.refval = minfreq
+            #super(FrequencyArray, self).__init__(minfreq, (maxfreq-minfreq)/npts, 0, u.Hz)
+
+        def __call__(self, pixel_indices):
+            return (self.refval + self.delta * (pixel_indices -
+                                                self.refpix))
+
+        @property
+        def lookuptable(self):
+            if not hasattr(self, '_lookuptable'):
+                self._lookuptable = self(np.arange(npts))
+            return self._lookuptable
+
 
     class SyntheticSpectrum(Spectrum):
         """
@@ -95,6 +110,7 @@ try:
             linefreqs = u.Quantity(table['frequency'],
                                    unit=u.Unit(table['frequency'].unit))
             self.table = table[(linefreqs>self.minfreq) & (linefreqs<self.maxfreq)]
+            self.linefreqs = linefreqs
             self.width_frequency = (linewidth/c.c *
                                     u.Quantity(self.table['frequency'],
                                                unit=u.Unit(self.table['frequency'].unit)))
@@ -156,10 +172,10 @@ try:
             self.rad = rad
             linefreqs = rad.frequency
             linefreq_mask = (linefreqs>self.minfreq) & (linefreqs<self.maxfreq)
+            included_frequencies_mask = linefreq_mask[rad.inds_frequencies_included]
             self.linefreqs = linefreqs[linefreq_mask]
-            self.T_B = rad.T_B[linefreq_mask]
+            self.T_B = rad.T_B[included_frequencies_mask]
             self.width_frequency = (linewidth/c.c * self.linefreqs)
-
 
             data = self.get_profile()
 
@@ -178,7 +194,8 @@ try:
                 for freq,flux,width in zip(freqs,
                                            self.T_B,
                                            self.width_frequency):
-                    M += self.profile_function(flux.value, freq.to(u.Hz).value, width.to(u.Hz).value)(xpts)
+                    M += self.profile_function(flux.value, freq.to(u.Hz).value,
+                                               width.to(u.Hz).value)(xpts)
 
                 return M
 
@@ -224,6 +241,8 @@ try:
             >>> S2.plot()
             """
 
+            from .core import Radex
+
             rad = Radex(species=self.species, **kwargs)
 
             if linewidth is None:
@@ -241,5 +260,5 @@ try:
             self.data = self.get_profile()
 
             return self
-except ImportError:
-    pass
+except ImportError as exc:
+    logging.warn("Failed to import synthetic spectrum package: "+exc.args[0])

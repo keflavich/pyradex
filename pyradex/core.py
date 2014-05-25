@@ -7,7 +7,10 @@ import astropy.units as u
 from collections import defaultdict
 import itertools
 import os
-import utils # shouldn't this be relative somehow?
+
+from . import utils
+from . import synthspec
+
 try:
     from astropy import units as u
     from astropy import constants
@@ -15,7 +18,7 @@ try:
 except ImportError:
     u = False
 
-__all__ = ['pyradex','write_input','parse_outfile', 'call_radex']
+__all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex']
 
 
 # silly tool needed for fortran misrepresentation of strings
@@ -46,7 +49,7 @@ def pyradex(executable='radex', minfreq=100, maxfreq=130,
         If the molecule specified has both o-H2 and p-H2, you will get a
         WARNING if you specify 'H2'
         An ortho/para example:
-        collider_densities = {'oH2':900, 'pH2':1000} 
+        collider_densities = {'oH2':900, 'pH2':100} 
         which will yield H2 = 1000
 
     See write_input for additional parameters
@@ -327,13 +330,13 @@ class Radex(object):
         self.miniter = 10
         self.maxiter = 200
 
-    _valid_colliders = ['H2','OH2','PH2','E','H','HE','H+']
+    _valid_colliders = ['H2','PH2','OH2','E','H','HE','H+']
 
     @property
     def density(self):
         d = {'H2':self.radex.cphys.density[0],
-             'oH2':self.radex.cphys.density[1],
-             'pH2':self.radex.cphys.density[2],
+             'pH2':self.radex.cphys.density[1],
+             'hH2':self.radex.cphys.density[2],
              'e':self.radex.cphys.density[3],
              'H':self.radex.cphys.density[4],
              'He':self.radex.cphys.density[5],
@@ -405,8 +408,8 @@ class Radex(object):
     @property
     def mass_density(self):
         d = {'H2':self.radex.cphys.density[0]*0, # ignore H2, use o/p H2
-             'oH2':self.radex.cphys.density[1]*2,
-             'pH2':self.radex.cphys.density[2]*2,
+             'pH2':self.radex.cphys.density[1]*2,
+             'oH2':self.radex.cphys.density[2]*2,
              'e':self.radex.cphys.density[3]/1836.,
              'H':self.radex.cphys.density[4]*2,
              'He':self.radex.cphys.density[5]*4,
@@ -736,6 +739,15 @@ class Radex(object):
             raise NotImplementedError("Astropy's units are required for this conversion.")
 
     @property
+    def inds_frequencies_included(self):
+        """
+        The indices of the line frequencies fitted by RADEX
+        (RADEX can hold up to 99999 frequencies, but usually uses ~100)
+        """
+        OK_freqs = self.frequency != 0
+        return np.where(OK_freqs)[0]
+
+    @property
     def source_line_brightness_temperature(self):
         """
         The surface brightness of the source assuming it is observed with a
@@ -744,9 +756,10 @@ class Radex(object):
         if u:
             #return (self.line_flux * beamsize)
             # because each line has a different frequency, have to loop it
-            OK_freqs = self.frequency != 0
+            OK_freqs = self.inds_frequencies_included
             return u.Quantity([(x*u.sr).to(u.K, u.brightness_temperature(1*u.sr, f)).value
-                               for x,f in zip(self.source_line_surfbrightness[OK_freqs],self.frequency[OK_freqs])
+                               for x,f in zip(self.source_line_surfbrightness[OK_freqs],
+                                              self.frequency[OK_freqs])
                                ],
                               unit=u.K)
         else:
@@ -867,6 +880,24 @@ class Radex(object):
             T.add_column(astropy.table.Column(name='flux',data=self.line_flux_density[mask]))
 
         return T
+
+    def get_synthspec(self, fmin, fmax, npts=1000, **kwargs):
+        """
+        Generate a synthetic spectrum of the selected molecule over the
+        specified frequency range.  This task is good for quick-looks but has a
+        lot of overhead for generating models and should not be used for
+        fitting (unless you have a conveniently small amount of data)
+
+        Parameters
+        ----------
+        fmin : `~astropy.units.Quantity`
+        fmax : `~astropy.units.Quantity`
+            Frequency-equivalent quantity
+        """
+        wcs = synthspec.FrequencyArray(fmin, fmax, npts)
+        S = synthspec.SyntheticSpectrum.from_RADEX(wcs, self, **kwargs)
+
+        return S
 
 
 def density_distribution(meandens, **kwargs):
