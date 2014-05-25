@@ -203,8 +203,11 @@ try:
 
             return model(X)
 
-        def plot(self, *args, **kwargs):
+        def plot(self, update_data=False, *args, **kwargs):
             import pylab as pl
+
+            if update_data:
+                self.data = self.get_profile()
 
             pl.gca().set_xlabel(self.dispersion.unit.to_string())
             if hasattr(self.data,'unit'):
