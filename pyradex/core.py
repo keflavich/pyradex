@@ -18,7 +18,7 @@ try:
 except ImportError:
     u = False
 
-__all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex']
+__all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex', 'density_distribution']
 
 
 # silly tool needed for fortran misrepresentation of strings
@@ -900,12 +900,70 @@ class Radex(object):
         return S
 
 
-def density_distribution(meandens, **kwargs):
+def density_distribution(densarr, distr, moleculecolumn,
+                         tauthresh=0.8, line_ids=[], **kwargs):
     """
     Compute the LVG model for a single zone with an assumed density
     *distribution* but other properties fixed.
+
+    Parameters
+    ----------
+    dendarr : array
+        Array of densities corresponding to the distribution function
+    distr : array
+        The density distribution corresponding to the density array
+    moleculecolumn : quantity
+        The total column density of the molecule in question.  It will be
+        redistributed across the appropriate densities.  Units: cm^-2
+        [this is wrong - each density will assume a too-low optical depth]
     """
-    pass
+    try:
+        np.testing.assert_almost_equal(distr.sum(), 1)
+    except AssertionError:
+        raise ValueError("The distribution must be normalized.")
+
+    if not line_ids:
+        raise ValueError("Specify at least one line ID")
+
+    meandens = {'H2': (densarr*distr).sum()}
+
+
+    R = Radex(collider_densities=meandens, column=moleculecolumn, **kwargs)
+    R.run_radex()
+    if np.any(R.tau > tauthresh):
+        warnings.warn(("At least one line optical depth is >{tauthresh}.  "
+                       "Smoothing may be invalid.").format(tauthresh=tauthresh))
+
+    linestrengths = []
+    taus = []
+    texs = []
+    for dens,prob in zip(densarr,distr):
+        R.density = {'H2': dens}
+        try:
+            R.column = moleculecolumn * prob
+            R.run_radex()
+        except ValueError as ex:
+            if ex.args[0] == "Extremely low or extremely high column.":
+                if R.column > 1e20*u.cm**-2:
+                    raise ex
+                else:
+                    linestrengths.append(np.zeros_like(line_ids))
+                    taus.append(np.zeros_like(line_ids))
+                    texs.append(np.zeros_like(line_ids)+2.73)
+                    continue
+            else:
+                raise ex
+
+        linestrengths.append(R.source_line_brightness_temperature[line_ids])
+        taus.append(R.tau[line_ids])
+        texs.append(R.tex[line_ids])
+
+    linestrengths = np.array(linestrengths)
+    taus = np.array(taus)
+    texs = np.array(texs)
+
+    return R, linestrengths, linestrengths.sum(axis=0), texs, taus
+
 
 def grid():
     pass
