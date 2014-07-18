@@ -928,6 +928,9 @@ def density_distribution(densarr, distr, moleculecolumn,
     meandens = {'H2': (densarr*distr).sum()}
 
 
+    # Test whether the multi-slab model is reasonable by checking:
+    # if the column was all at the mean density, would any lines be
+    # optically thick?
     R = Radex(collider_densities=meandens, column=moleculecolumn, **kwargs)
     R.run_radex()
     if np.any(R.tau > tauthresh):
