@@ -336,7 +336,7 @@ class Radex(object):
     def density(self):
         d = {'H2':self.radex.cphys.density[0],
              'pH2':self.radex.cphys.density[1],
-             'hH2':self.radex.cphys.density[2],
+             'oH2':self.radex.cphys.density[2],
              'e':self.radex.cphys.density[3],
              'H':self.radex.cphys.density[4],
              'He':self.radex.cphys.density[5],
