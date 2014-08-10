@@ -11,7 +11,7 @@ from .utils import united,uvalue
 try:
     from astropy import units as u
     from astropy import constants
-    import astropy.table
+    from astropy.table import Table,Column
 except ImportError:
     u = False
 
@@ -108,28 +108,36 @@ class Despotic(object):
             emitterFile = os.path.expanduser(os.path.join(datapath, species+'.dat'))
         self.cloud.addEmitter(species, abundance, emitterFile=emitterFile)
 
-
         self.cloud.comp.computeDerived(self.cloud.nH)
 
         self.escapeProbGeom = escapeProbGeom
 
         self.deltav = deltav
 
+
+    def recompute(self):
+        self.cloud.comp.computeDerived(self.cloud.nH)
+        self.lineLum()
+
     @property
     def deltav(self):
-        try:
-            return united(self._dv,u.km/u.s)
-        except u.UnitsError:
-            return united(self._dv,u.km/u.s/u.pc)
+        if self.cloud.sigmaNT > 0:
+            return (self.cloud.sigmaNT*u.cm/u.s).to(u.km/u.s)
+        elif self.cloud.dVdr > 0:
+            return (self.cloud.dVdr*u.s**-1).to(u.km/u.s/u.pc)
+        else:
+            raise ValueError("The velocity gradient is zero")
 
     @deltav.setter
     def deltav(self, deltav):
 
         if self.escapeProbGeom == 'LVG':
             self._dv = united(self.cloud.dVdr,u.s**-1)
-            # See notes.rst: DESPOTIC must have a different dVdR to get the same results as RADEX
+            # See notes.rst: DESPOTIC must have a different dVdR to get the
+            # same results as RADEX
             # 1.0645 / sqrt(8*log(2)) = sqrt(2 * pi) / (8*log(2))
-            self.cloud.dVdr = uvalue(united(deltav,u.km/u.s/u.pc),u.s**-1) * np.sqrt(8*np.log(2)) * 2
+            self.cloud.dVdr = (uvalue(united(deltav,u.km/u.s/u.pc),u.s**-1) *
+                               np.sqrt(8*np.log(2))*2)
             # (2*np.pi)**0.5/(8*np.log(2))
 
         else:
@@ -170,6 +178,9 @@ class Despotic(object):
              'H':self.cloud.comp.xHI*self.nH,
              'He':self.cloud.comp.xHe*self.nH,
              'H+':self.cloud.comp.xHplus*self.nH}
+        if d['H2'] != 0 and (d['oH2'] != 0 or d['pH2'] != 0):
+            # either ortho + para or total H2, not both
+            d['H2'] = 0
         if u:
             for k in d:
                 d[k] = d[k] * u.cm**-3
@@ -191,6 +202,13 @@ class Despotic(object):
     def nH2(self, nh2):
         self.nh = nh2*2.
 
+    @property
+    def beta(self):
+        emitter = self.cloud.emitters[self.species]
+        ep = [emitter.escapeProb[upper,lower]
+              for (upper,lower) in zip(emitter.data.radUpper,
+                                       emitter.data.radLower)]
+        return ep
 
     @density.setter
     def density(self, collider_density):
@@ -235,14 +253,39 @@ class Despotic(object):
     def temperature(self):
         return self.cloud.Tg
 
-    def get_table(self,**kwargs):
+    @property
+    def upperlevelpop(self):
+        return self.cloud.emitters[self.species].levPop[1:]
+
+    @property
+    def lowerlevelpop(self):
+        return self.cloud.emitters[self.species].levPop[:-1]
+
+    def get_table(self, **kwargs):
 
         D = self.lineLum(**kwargs)
 
+        # remap names to match RADEX
+        name_mapping = {'upper':'upperlevel',
+                        'lower':'lowerlevel',
+                        'freq':'frequency',}
+
+
         names = D[0].keys()
-        T = astropy.table.Table(names=names,dtypes=[type(D[0][k]) for k in names])
+        T = Table(names=[name_mapping[n]
+                         if n in name_mapping
+                         else n
+                         for n in names],
+                  dtype=[type(D[0][k]) for k in names])
     
         for row in D:
             T.add_row([row[k] for k in names])
+
+        T.add_column(Column(name='upperlevelpop',
+                            data=self.upperlevelpop,
+                            dtype='float'))
+        T.add_column(Column(name='lowerlevelpop',
+                            data=self.lowerlevelpop,
+                            dtype='float'))
 
         return T

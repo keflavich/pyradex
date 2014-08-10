@@ -655,6 +655,10 @@ class Radex(object):
             self.radex.readdata()
 
         #self.radex.backrad()
+        
+        # Given the properties of *this* class, set the appropriate RADEX
+        # fortran function values
+        self._set_parameters()
             
         self._iter_counter = 1 if reuse_last else 0
         
