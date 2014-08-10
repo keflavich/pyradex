@@ -11,7 +11,14 @@ def grid_wrapper(molecule,
                  transition_indices=[],
                  orthopararatios=[],
                  observable_parameters=['tex','source_line_surfbrightness','tau'],
+                 deltav=1.0, # km/s
                  ):
+    """
+    Wrapper to build grids
+
+    Parameters
+    ----------
+    """
 
 
     ntemp = len(temperatures)
@@ -32,6 +39,7 @@ def grid_wrapper(molecule,
         R = pyradex.Radex(species=molecule, column=columns[0], abundance=abundances[0])
     else:
         R = pyradex.Radex(species=molecule, h2column=h2columns[0], abundance=abundances[0])
+    R.deltav = deltav
     R.run_radex()
 
     # get the table so we can look at the frequency grid

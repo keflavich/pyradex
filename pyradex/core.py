@@ -465,7 +465,8 @@ class Radex(object):
 
     @property
     def escapeProbGeom(self):
-        return self.radex.setup.method
+        mdict = {2:'lvg',1:'sphere',3:'slab'}
+        return mdict[int(self.radex.setup.method)]
 
     @escapeProbGeom.setter
     def escapeProbGeom(self, escapeProbGeom):
@@ -588,7 +589,10 @@ class Radex(object):
     @deltav.setter
     def deltav(self, dv):
         if u:
-            self._deltav = dv * u.km/u.s
+            if hasattr(dv,'unit'):
+                self._deltav = dv.to(u.km/u.s)
+            else:
+                self._deltav = dv * u.km/u.s
         else:
             self._deltav = dv
 
