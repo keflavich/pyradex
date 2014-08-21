@@ -327,8 +327,10 @@ class Radex(object):
         self.radex.freq.fmin = 0
         self.radex.freq.fmax = 1e10
 
-        self.miniter = 10
-        self.maxiter = 200
+        if not hasattr(self, 'miniter'):
+            self.miniter = 10
+        if not hasattr(self, 'maxiter'):
+            self.maxiter = 200
 
     _valid_colliders = ['H2','PH2','OH2','E','H','HE','H+']
 
@@ -631,7 +633,8 @@ class Radex(object):
         self.radex.cphys.tbg = tbg
         self.radex.backrad()
 
-    def run_radex(self, silent=True, reuse_last=False, reload_molfile=True):
+    def run_radex(self, silent=True, reuse_last=False, reload_molfile=True,
+                  abs_convergence_threshold=1e-16, rel_convergence_threshold=1e-8):
         """
         Run the iterative matrix solution using a python loop
 
@@ -673,7 +676,11 @@ class Radex(object):
                 break
 
             self.radex.matrix(self._iter_counter, converged)
-            if np.abs(last-self.level_population).sum() < 1e-16 and self._iter_counter>self.miniter:
+            level_diff = np.abs(last-self.level_population)
+            frac_level_diff = level_diff/self.level_population
+            if (((level_diff.sum() < abs_convergence_threshold) or
+                 (frac_level_diff.sum() < rel_convergence_threshold)) and
+                self._iter_counter>self.miniter):
                 if not silent:
                     print("Stopped changing after %i iterations" % self._iter_counter)
                 break
