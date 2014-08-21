@@ -182,8 +182,8 @@ def parse_outfile(filename):
     if len(data_list) == 0:
         raise ValueError("No lines included?")
     data_in_columns = map(list,zip(*data_list))
-    columns = [astropy.table.Column(data=C, name=name.lower(), units=units, dtype=dtype) 
-            for C,name,units,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
+    columns = [astropy.table.Column(data=C, name=name.lower(), unit=unit, dtype=dtype) 
+            for C,name,unit,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
     data = astropy.table.Table(columns, meta=header)
     return data
 
