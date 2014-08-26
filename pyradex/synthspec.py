@@ -11,9 +11,9 @@ from astropy import constants as c
 try:
     import specutils
     Spectrum = specutils.Spectrum1D
-    Spectrum1DLinearWCS = specutils.wcs.Spectrum1DLinearWCS
+    Spectrum1DLookupWCS = specutils.wcs.Spectrum1DLookupWCS
 
-    class FrequencyArray(Spectrum1DLinearWCS):
+    class FrequencyArray(Spectrum1DLookupWCS):
         """
         Generate a frequency array given a minimum frequency, maximum frequency,
         and # of points
