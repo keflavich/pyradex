@@ -4,6 +4,16 @@ Installation
 Installation *should* be relatively easy, but it may break down depending on
 your compiler.
 
+Installation requires astroquery_ and specutils_.  These can be pip installed:
+
+.. code-block:: bash
+
+   pip install astroquery
+   pip install https://github.com/astropy/specutils/archive/master.zip
+
+Compiling RADEX
+~~~~~~~~~~~~~~~
+
 This command should install the python-wrapped-fortran version of RADEX:
 
 .. code-block:: bash
@@ -12,7 +22,7 @@ This command should install the python-wrapped-fortran version of RADEX:
 
 If it doesn't work, there are a number of ways things could have gone wrong.
 
-If you try to `import pyradex` and see the error:
+If you try to `import pyradex` and see the error::
 
     ImportError: No module named radex 
    
@@ -81,3 +91,6 @@ e.g.:
    
 
 .. _issues: https://github.com/keflavich/pyradex/issues
+
+.. _astroquery: astroquery.readthedocs.org
+.. _specutils: https://github.com/astropy/specutils
