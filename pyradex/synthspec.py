@@ -11,6 +11,8 @@ from astropy import constants as c
 try:
     import specutils
     Spectrum = specutils.Spectrum1D
+    if not hasattr(specutils.wcs, 'Spectrum1DLookupWCS'):
+        raise ImportError("Wrong version of specutils.")
     Spectrum1DLookupWCS = specutils.wcs.Spectrum1DLookupWCS
 
     class FrequencyArray(Spectrum1DLookupWCS):
