@@ -431,7 +431,7 @@ class Radex(object):
         return self._species
 
     @species.setter
-    def species(self, value):
+    def species(self, species):
         self._species = species
         try:
             self.molpath = os.path.join(self.datapath,species+'.dat')
