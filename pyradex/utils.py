@@ -2,6 +2,7 @@ from astropy import units as u
 import sys
 import os
 import errno
+from astropy import log
 
 def mkdir_p(path):
     """ mkdir -p equivalent [used by get_datafile]"""
@@ -51,6 +52,9 @@ def verify_collisionratefile(fn):
     Verify that a RADEX collisional rate file is valid to avoid a RADEX crash
     """
     from astroquery import lamda
+
+    if not os.path.exists(fn):
+        raise IOError("File {0} does not exist.".format(fn))
 
     with open(fn,'r') as datafile:
         data = [s.strip() for s in datafile.readlines()]

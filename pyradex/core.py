@@ -18,7 +18,8 @@ try:
 except ImportError:
     u = False
 
-__all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex', 'density_distribution']
+__all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex',
+           'density_distribution']
 
 
 # silly tool needed for fortran misrepresentation of strings
@@ -273,7 +274,7 @@ class Radex(object):
             self.datapath = datapath
             if self.datapath != os.path.expanduser(datapath):
                 raise ValueError("Data path %s was not successfully stored; instead %s was." % (datapath,self.datapath))
-        self.molpath = os.path.join(self.datapath,species+'.dat')
+        self.species = species
         if self.molpath == '':
             raise ValueError("Must set a species name.")
         if not os.path.exists(self.molpath):
@@ -281,7 +282,6 @@ class Radex(object):
                              "  Current path is {0}".format(self.molpath))
 
         self.density = collider_densities
-        self.species = species
 
         self.outfile = outfile
         self.logfile = logfile
@@ -425,6 +425,22 @@ class Radex(object):
     @property
     def opr(self):
         return self.radex.cphys.density[1]/self.radex.cphys.density[2]
+
+    @property
+    def species(self):
+        return self._species
+
+    @species.setter
+    def species(self, value):
+        self._species = species
+        try:
+            self.molpath = os.path.join(self.datapath,species+'.dat')
+        except IOError:
+            log.warn("Did not find data file for species {0} "
+                     "in path {1}.  Downloading it.".format(species,
+                                                            self.datapath))
+            utils.get_datafile(species, self.datapath)
+            self.molpath = os.path.join(self.datapath,species+'.dat')
 
     @property
     def molpath(self):
