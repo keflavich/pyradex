@@ -69,6 +69,11 @@ def test_selfconsistent_density():
     rdx.density = {'oH2':990,'pH2':10}
     assert rdx.total_density.value == 1e3
 
+def test_consistent_inits():
+    rdx1 = pyradex.Radex(species='hco+', collider_densities={'H2':1e3}, column_per_bin=1e13)
+    rdx2 = pyradex.Radex(species='hco+', collider_densities={'H2':1e3}, column=1e13, h2column=1e21)
+
+
 if __name__ == "__main__":
     test_call()
     test_parse_example()

@@ -618,14 +618,14 @@ class Radex(object):
         #log.info("after TOTDENS:"+str(self.radex.cphys.totdens))
 
     @property
-    def column(self):
+    def column_per_bin(self):
         if u:
             return self.radex.cphys.cdmol * u.cm**-2
         else:
             return self.radex.cphys.cdmol
 
-    @column.setter
-    def column(self, col):
+    @column_per_bin.setter
+    def column_per_bin(self, col):
         if hasattr(col,'to'):
             col = col.to('cm**-2').value
         if col < 1e5 or col > 1e25:
@@ -633,18 +633,18 @@ class Radex(object):
         self.radex.cphys.cdmol = col
 
     @property
-    def column_per_bin(self):
-        return self.column / self.deltav
+    def column_per_kms(self):
+        return self.column_per_bin / self.deltav
 
-    @column_per_bin.setter
-    def column_per_bin(self, cddv):
+    @column_per_kms.setter
+    def column_per_kms(self, cddv):
         if u:
-            self.column = cddv * self.deltav.to(u.km/u.s).value
+            self.column_per_bin = cddv * self.deltav.to(u.km/u.s).value
         else:
-            self.column = cddv * self.deltav
+            self.column_per_bin = cddv * self.deltav
 
-        self.abundance = (self.column/(self.total_density *
-                                       self.length)).decompose().value
+        self.abundance = (self.column_per_bin/(self.total_density *
+                                               self.length)).decompose().value
 
     @property
     def abundance(self):
@@ -658,27 +658,8 @@ class Radex(object):
     @abundance.setter
     def abundance(self, abund):
         self._abundance = abund
-        col = self.h2column * abund
-        #col = abund * self.total_density * self.length
-        if u:
-            # need to divide the column per km/s by
-            self.column = col.to(u.cm**-2).value
-        else:
-            self.column = col
-
-    @property
-    def h2column(self):
-        return self.column / self.abundance
-        #return self.total_density * self.length
-
-    @h2column.setter
-    def h2column(self, nh2, unit='cm**-2'):
-        if u:
-            if not hasattr(nh2,'to'):
-                nh2 = nh2*u.Unit(unit)
-            self.column = nh2.to(u.cm**-2) * self.abundance
-        else:
-            self.column = nh2 * self.abundance
+        col = (self.total_density*self.length).to(u.cm**-2)*abund
+        self.column_per_bin = col.to(u.cm**-2)
 
     @property
     def deltav(self):
@@ -686,28 +667,15 @@ class Radex(object):
 
     @deltav.setter
     def deltav(self, dv):
-        if u:
-            if hasattr(dv,'unit'):
-                self._deltav = dv.to(u.km/u.s)
-            else:
-                self._deltav = dv * u.km/u.s
+        if hasattr(dv,'unit'):
+            self._deltav = dv.to(u.km/u.s)
         else:
-            self._deltav = dv
+            self._deltav = dv * u.km/u.s
 
     @property
     def length(self):
         """ Hard-coded, assumed length-scale """
-        if u:
-            return 1*u.pc
-        else:
-            return 1
-
-    #@property
-    #def length(self):
-    #    if self.escapeProbGeom == 'lvg':
-    #        return self.column_per_bin / self.total_density
-    #    else:
-    #        return self.h2column / self.total_density
+        return 1*u.pc
 
     @property
     def debug(self):
@@ -719,14 +687,13 @@ class Radex(object):
 
     @property
     def tbg(self):
-        if u:
-            return self.radex.cphys.tbg * u.K
-        else:
-            return self.radex.cphys.tbg
+        return self.radex.cphys.tbg * u.K
 
     @tbg.setter
     def tbg(self, tbg):
         #print("Set TBG=%f" % tbg)
+        if hasattr(tbg, 'value'):
+            tbg = tbg.to(u.K).value
         self.radex.cphys.tbg = tbg
         self.radex.backrad()
 
@@ -828,7 +795,8 @@ class Radex(object):
 
     @property
     def quantum_number(self):
-        return np.array([("".join(x)).strip() for x in grouper(self.radex.quant.qnum.T.ravel().tolist(),6)])
+        return np.array([("".join(x)).strip() for x in
+                         grouper(self.radex.quant.qnum.T.ravel().tolist(),6)])
 
     @property
     def upperlevelnumber(self):
@@ -902,17 +870,14 @@ class Radex(object):
         The surface brightness of the source assuming it is observed with a
         beam matched to its size and it has ff=1
         """
-        if u:
-            #return (self.line_flux * beamsize)
-            # because each line has a different frequency, have to loop it
-            OK_freqs = self.inds_frequencies_included
-            return u.Quantity([(x*u.sr).to(u.K, u.brightness_temperature(1*u.sr, f)).value
-                               for x,f in zip(self.source_line_surfbrightness[OK_freqs],
-                                              self.frequency[OK_freqs])
-                               ],
-                              unit=u.K)
-        else:
-            raise NotImplementedError("Astropy's units are required for this conversion.")
+        #return (self.line_flux * beamsize)
+        # because each line has a different frequency, have to loop it
+        OK_freqs = self.inds_frequencies_included
+        return u.Quantity([(x*u.sr).to(u.K, u.brightness_temperature(1*u.sr, f)).value
+                           for x,f in zip(self.source_line_surfbrightness[OK_freqs],
+                                          self.frequency[OK_freqs])
+                           ],
+                          unit=u.K)
 
     @property
     def T_B(self):
@@ -920,10 +885,7 @@ class Radex(object):
 
     @property
     def background_brightness(self):
-        if u:
-            return self.radex.radi.backi * u.erg * u.s**-1 * u.cm**-2 * u.Hz**-1 * u.sr**-1
-        else:
-            return self.radex.radi.backi
+        return self.radex.radi.backi * u.erg * u.s**-1 * u.cm**-2 * u.Hz**-1 * u.sr**-1
 
     @property
     def flux_density(self):
@@ -954,12 +916,8 @@ class Radex(object):
     @property
     def source_brightness(self):
 
-        if u:
-            thc = (2 * constants.h * constants.c).cgs / u.sr
-            fk = (constants.h * constants.c / constants.k_B).cgs
-        else:
-            thc = 3.9728913665386055e-16
-            fk = 1.4387769599838154
+        thc = (2 * constants.h * constants.c).cgs / u.sr
+        fk = (constants.h * constants.c / constants.k_B).cgs
 
         ftau = np.exp(-self.tau)
         xt = self._xt
@@ -971,12 +929,8 @@ class Radex(object):
 
     @property
     def source_brightness_beta(self):
-        if u:
-            thc = (2 * constants.h * constants.c).cgs / u.sr
-            fk = (constants.h * constants.c / constants.k_B).cgs
-        else:
-            thc = 3.9728913665386055e-16
-            fk = 1.4387769599838154
+        thc = (2 * constants.h * constants.c).cgs / u.sr
+        fk = (constants.h * constants.c / constants.k_B).cgs
         xt = self._xt
         xnu = self._xnu
         bnutex = thc*xt/(np.exp(fk*xnu/self.tex)-1.0)
