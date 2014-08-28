@@ -82,6 +82,19 @@ def test_consistent_parchanges():
     rdx.column_per_bin = 1e13
     np.testing.assert_almost_equal(rdx.abundance, 1e13/(1e3*(u.pc.to(u.cm))))
 
+def test_radex_results():
+    # default parameters for radex online
+    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
+                        temperature=30, tbackground=2.73)
+    rdx.run_radex()
+    #       LINE         E_UP       FREQ        WAVEL     T_EX      TAU        T_R       POP        POP       FLUX        FLUX
+    #                    (K)        (GHz)       (um)      (K)                  (K)        UP        LOW      (K*km/s) (erg/cm2/s)
+    # 1      -- 0          5.5    115.2712   2600.7576   56.131  1.786E-03  9.378E-02  3.640E-01  1.339E-01  9.983E-02  1.969E-09
+    np.testing.assert_approx_equal(rdx.tex[0].value, 56.131, 5)
+    np.testing.assert_approx_equal(rdx.tau[0], 1.786E-03, 4)
+    np.testing.assert_approx_equal(rdx.upperlevelpop[0], 3.640E-01, 4)
+    np.testing.assert_approx_equal(rdx.lowerlevelpop[0], 1.339E-01, 4)
+
 
 if __name__ == "__main__":
     test_call()
