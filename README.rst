@@ -257,9 +257,9 @@ the abundance, and the velocity gradient.  Length is therefore left as the
 dependent variable, consistent with the above.
 
 The Classes (`Despotic` & `Radex`) are constructed such that length is a
-dependent variables and all the others can be changed.  Since abundance is not
+dependent variable and all the others can be changed.  Since abundance is not
 an explicit input into RADEX, this is done with some property machinery behind
-the scenes.
+the scenes.  In v0.3, the length in Radex has been fixed to 1 pc.
     
 
 .. image:: https://d2weczhvl823v0.cloudfront.net/keflavich/pyradex/trend.png

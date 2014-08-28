@@ -6,7 +6,6 @@ def grid_wrapper(molecule,
                  temperatures=[],
                  densities=[],
                  columns=[],
-                 h2columns=[],
                  abundances=[],
                  transition_indices=[],
                  orthopararatios=[],
@@ -23,9 +22,7 @@ def grid_wrapper(molecule,
 
     ntemp = len(temperatures)
     ndens = len(densities)
-    coltype = 'h2' if h2columns else 'mol'
-    columns = columns or h2columns
-    ncols = len(columns) or len(h2columns)
+    ncols = len(columns)
     nabund = len(abundances)
     nopr = len(orthopararatios)
 
@@ -37,8 +34,6 @@ def grid_wrapper(molecule,
     # Just a quick first run to get things initialized
     if coltype == 'mol':
         R = pyradex.Radex(species=molecule, column=columns[0], abundance=abundances[0])
-    else:
-        R = pyradex.Radex(species=molecule, h2column=h2columns[0], abundance=abundances[0])
     R.deltav = deltav
     R.run_radex()
 
@@ -58,10 +53,7 @@ def grid_wrapper(molecule,
                     R.temperature = tem
                     for densi,dens in enumerate(densities):
                         R.density = {'oH2':dens*fortho,'pH2':dens*(1-fortho)}
-                        if coltype == 'mol':
-                            R.column = col
-                        else:
-                            R.h2column = col
+                        R.column_per_bin = col
                         R.abundance = abund # reset column to the appropriate value
                         R.run_radex(reuse_last=False, reload_molfile=True)
 

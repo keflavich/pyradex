@@ -628,6 +628,14 @@ class Radex(object):
         #log.info("after TOTDENS:"+str(self.radex.cphys.totdens))
 
     @property
+    def column(self):
+        return self.column_per_bin
+
+    @column.setter
+    def column(self, value):
+        self.column_per_bin = value
+
+    @property
     def column_per_bin(self):
         return self.radex.cphys.cdmol * u.cm**-2
 
