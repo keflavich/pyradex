@@ -373,7 +373,13 @@ class Radex(object):
         if not hasattr(self, 'maxiter'):
             self.maxiter = 200
 
-    _all_valid_colliders = ['H2','PH2','OH2','E','H','HE','H+']
+    _all_valid_colliders = {'H2':'H2',
+                            'PH2':'pH2',
+                            'OH2':'oH2',
+                            'E':'e',
+                            'H':'H',
+                            'HE':'He',
+                            'H+':'H+'}
 
     @property
     def density(self):
@@ -729,12 +735,12 @@ class Radex(object):
         Check whether the density of at least one collider in the associated
         LAMDA data file is nonzero
         """
-        valid_colliders = self.valid_colliders
+        valid_colliders = [x.lower() for x in self.valid_colliders]
 
         OK = False
         matched_colliders = []
         for collider in valid_colliders:
-            if self.density[collider] > 0:
+            if self.density[self._all_valid_colliders[collider.upper()]] > 0:
                 OK = True
                 matched_colliders.append(collider.lower())
 
@@ -743,7 +749,8 @@ class Radex(object):
                              + "have density 0.")
 
         for collider in self.density:
-            if (self.density[collider] > 0 and collider not in valid_colliders):
+            if (self.density[collider] > 0 and (collider.lower() not in
+                                                valid_colliders)):
                 if (collider.lower() in ('oh2','ph2') and 'h2' in
                     matched_colliders):
                     # All is OK: we're allowed to have mismatches of this sort

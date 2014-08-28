@@ -53,8 +53,8 @@ def get_colliders(fn):
     """
     from astroquery import lamda
 
-    tabledict = lamda.core.parse_lamda_datafile(fn)
-    colliders = tabledict['coll_rates'].keys()
+    collrates,radtrans,enlevs = lamda.core.parse_lamda_datafile(fn)
+    colliders = collrates.keys()
 
     return colliders
 
@@ -68,15 +68,12 @@ def verify_collisionratefile(fn):
     if not os.path.exists(fn):
         raise IOError("File {0} does not exist.".format(fn))
 
-    with open(fn,'r') as datafile:
-        data = [s.strip() for s in datafile.readlines()]
-
-        for qt in lamda.core.query_types:
-            try:
-                tbl = lamda.core._parse_datafile(data, qt)
-            except Exception as ex:
-                raise type(ex), type(ex)("Data file verification failed.  The molecular data file may be corrupt." +
-                                         "\nOriginal Error in the parser: " +
-                                         ex.args[0]), sys.exc_info()[2]
-            if len(tbl) == 0:
-                raise ValueError("No data found in the table for the category %s" % qt)
+    for qt in lamda.core.query_types:
+        try:
+            collrates,radtrans,enlevs = lamda.core.parse_lamda_datafile(fn)
+        except Exception as ex:
+            raise type(ex), type(ex)("Data file verification failed.  The molecular data file may be corrupt." +
+                                     "\nOriginal Error in the parser: " +
+                                     ex.args[0]), sys.exc_info()[2]
+        if len(collrates) == 0:
+            raise ValueError("No data found in the table for the category %s" % qt)
