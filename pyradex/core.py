@@ -200,11 +200,11 @@ class Radex(object):
 
     def __init__(self,
                  collider_densities={'ph2':990,'oh2':10},
+                 density=None,
                  total_density=None,
                  temperature=30,
                  species='hco+',
                  column=None,
-                 h2column=None,
                  column_per_bin=None,
                  tbackground=2.7315,
                  deltav=1.0,
@@ -216,7 +216,6 @@ class Radex(object):
                  debug=False,
                  mu=2.8,
                  source_area=None,
-                 **kwargs
                  ):
         """
         Direct wrapper of the radex FORTRAN code
@@ -227,21 +226,22 @@ class Radex(object):
             Dictionary giving the volume densities of the collider(s) in units
             of cm^-3.  Valid entries are h2,oh2,ph2,e,He,H,H+.  The keys are
             case-insensitive.
+        density: float
         total_density: float
             (optional) Alternative to ``collider_densities``: can specify a
             single number indicating the total density of H2.  This should
             not be used when electrons or H atoms are the intended collider.
+            These keywords are synonymous and therefore only one can be used.
         temperature: float
             Local gas temperature in K
         species: str
             A string specifying a valid chemical species.  This is used to look
             up the specified molecule
         column: float
-            The column density of the molecule of interest.  If the column is
-            specified, the abundance is equal to (column/(dv*total
-            density*length)).
-        h2column: float
-            The column of h2. 
+        column_per_bin : float
+            The column density of the molecule of interest per bin, where
+            a bin is (deltav km/s * 1 pc). These keywords are synonymous and
+            therefore only one can be specified.
         abundance: float
             The molecule's abundance relative to the total collider density in
             each velocity bin, i.e. column = abundance * density * length * dv.
@@ -267,14 +267,6 @@ class Radex(object):
         source_area: float / unit
             The emitting area of the source on the sky in steradians
         """
-        if 'density' in kwargs:
-            log.exception("`density` is not a valid keyword: use "
-                          "`collider_densities` (which is a dictionary) "
-                          "to specify densities.")
-            raise ValueError("Use `collider_densities` instead of `density`")
-        elif kwargs != {}:
-            raise ValueError("Keywords {0} are not recognized".format(kwargs.keys()))
-
 
         from pyradex.radex import radex
         self.radex = radex
@@ -297,14 +289,41 @@ class Radex(object):
                              "else RADEX will crash."
                              "  Current path is {0}".format(self.molpath))
 
+        if sum(x is not None for x in (collider_densities,density,total_density)) > 1:
+            raise ValueError("Can only specify one of density, total_density,"
+                             " and collider_densities")
+
+        if sum(x is not None for x in (column,column_per_bin)) > 1:
+            raise ValueError("Can only specify one of column, column_per_bin.")
+
+        n_specifications = sum(x is not None for x in (column, column_per_bin,
+                                                       collider_densities,
+                                                       density, total_density,
+                                                       abundance)) 
+        if (n_specifications > 2):
+            raise ValueError("Can only specify two of column, density, and abundance.")
+        if (n_specifications < 2):
+            raise ValueError("Must specify two of column, density, and abundance.")
+
+        self._locked_parameter = 'density'
+        self._is_locked = True
+
         if collider_densities:
             self.density = collider_densities
+            self._is_locked = False
             if total_density:
                 log.warn("`total_density` was specified, but `collider_densities` "
                          "was used instead.  Set `collider_densities=None` if you "
                          "want to use `total_density`.")
         elif total_density:
             self.density = total_density
+            self._is_locked = False
+        elif density:
+            self.density = density
+            self._is_locked = False
+        else:
+            self._locked_parameter = 'column'
+            self._is_locked = True
 
         self.outfile = outfile
         self.logfile = logfile
@@ -313,26 +332,17 @@ class Radex(object):
         self.deltav = deltav
         self._set_parameters()
 
-        if None not in (column,abundance,h2column) and column/h2column != abundance:
-            raise ValueError("Cannot specify column, h2column, and abundance"
-                             " unless they are consistent.")
-
         if column_per_bin is not None:
             self.column_per_bin = column_per_bin
-        elif sum(x is None for x in (column,abundance,h2column)) >= 2:
-            raise ValueError("Must specify at least two of:"
-                             " h2column, column, and abundance")
+        elif column is not None:
+            self.column_per_bin = column
         else:
-            if abundance:
-                self._abundance = abundance
-            else:
-                self._abundance = column/h2column
-            
-            if h2column:
-                self.h2column = h2column
+            self._locked_parameter = 'density'
 
-            if column:
-                self.column = column
+        self._is_locked = False
+
+        if abundance:
+            self.abundance = abundance
 
         self.temperature = temperature
         self.tbg = tbackground
@@ -340,6 +350,13 @@ class Radex(object):
         self.debug = debug
 
         self.source_area = source_area
+
+    @property
+    def locked_parameter(self):
+        return self._locked_parameter
+
+    def _lock_param(self, parname):
+        self._locked_parameter = parname
 
     def _set_parameters(self):
 
@@ -384,14 +401,14 @@ class Radex(object):
                         'HE': 5,
                         'H+': 6}
 
-        if isinstance(collider_density, (float,int)):
+        if isinstance(collider_density, (float,int,u.Quantity,np.ndarray)):
             log.warn("Assuming the density is n(H_2).")
             collider_density = {'H2': collider_density}
 
         collider_densities = defaultdict(lambda: 0)
         for k in collider_density:
             if hasattr(collider_density[k], 'value'):
-                collider_densities[k.upper()] = collider_density[k].value
+                collider_densities[k.upper()] = collider_density[k].to(u.cm**-3).value
             else:
                 collider_densities[k.upper()] = collider_density[k]
             if k.upper() not in self._all_valid_colliders:
@@ -443,6 +460,15 @@ class Radex(object):
         # skip H2 when computing by assuming OPR correctly distributes ortho & para
         # It's not obvious that RADEX does this correctly in readdata.f
         self.radex.cphys.totdens = self.radex.cphys.density.sum()
+
+        if not self._is_locked:
+            self._is_locked = True
+            if self.locked_parameter == 'column':
+                self.abundance = self.column_per_bin /(self.total_density*self.length)
+            elif self.locked_parameter == 'abundance':
+                self.column_per_bin = self.total_density * self.length * self.abundance
+            self._lock_param('density')
+            self._is_locked = False
 
     @property
     def valid_colliders(self):
@@ -613,20 +639,28 @@ class Radex(object):
             raise ValueError("Extremely low or extremely high column.")
         self.radex.cphys.cdmol = col
 
+        col = col * u.cm**-2
+        if not self._is_locked:
+            self._is_locked = True
+            if self.locked_parameter == 'density':
+                self.abundance = (col/(self.total_density *
+                                       self.length)).decompose().value
+            elif self.locked_parameter == 'abundance':
+                self.density = col / self.length / abund
+            self._lock_param('column')
+            self._is_locked = False
+
     @property
     def column_per_kms_perpc(self):
         return self.column_per_bin / self.deltav
 
-    @column_per_kms.setter
+    @column_per_kms_perpc.setter
     def column_per_kms_perpc(self, cddv):
 
         if not hasattr(cddv, 'to'):
             cddv = cddv * u.cm**-2 / (u.km/u.s) / u.pc
 
         self.column_per_bin = cddv * self.deltav.to(u.km/u.s) * self.length()
-
-        self.abundance = (self.column_per_bin/(self.total_density *
-                                               self.length)).decompose().value
 
     @property
     def abundance(self):
@@ -635,8 +669,16 @@ class Radex(object):
     @abundance.setter
     def abundance(self, abund):
         self._abundance = abund
-        col = (self.total_density*self.length).to(u.cm**-2)*abund
-        self.column_per_bin = col.to(u.cm**-2)
+        if not self._is_locked:
+            self._is_locked = True
+            if self.locked_parameter == 'column':
+                dens = self.column_per_bin / self.length / abund
+                self.density = dens
+            elif self.locked_parameter == 'density':
+                col = self.total_density*self.length*abund
+                self.column_per_bin = col.to(u.cm**-2)
+            self._lock_param('abundance')
+            self._is_locked=False
 
     @property
     def deltav(self):

@@ -2,6 +2,8 @@ import pyradex
 import pytest
 import os
 import distutils.spawn
+import numpy as np
+from astropy import units as u
 
 exepath = 'Radex/bin/radex'
 #if os.path.isfile(exepath) and os.access(exepath, os.X_OK):
@@ -38,24 +40,24 @@ def test_molecules(molecule):
     data.pprint(show_unit=True)
 
 def test_radex_class():
-    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15)
+    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15, collider_densities=None)
     assert hasattr(R,'radex')
 
 def test_change_abundance():
-    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15)
+    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15, collider_densities=None)
     totdens = R.total_density
     R.abundance = 1e-6
     assert totdens == R.total_density
 
 def test_consistent_abund():
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4)
+        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15,density=1e3)
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15,h2column=1e20)
+        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15,collider_densities={'H2':1e3})
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,h2column=None,column=None)
+        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column_per_bin=1e15)
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/',species='co',abundance=None,h2column=None,column=None)
+        R = pyradex.Radex(datapath='examples/',species='co',abundance=None,column=None)
 
 def test_selfconsistent_density():
     rdx = pyradex.Radex(species='hco+', collider_densities={'H2':1e3}, column_per_bin=1e13)
@@ -69,9 +71,13 @@ def test_selfconsistent_density():
     rdx.density = {'oH2':990,'pH2':10}
     assert rdx.total_density.value == 1e3
 
-def test_consistent_inits():
-    rdx1 = pyradex.Radex(species='hco+', collider_densities={'H2':1e3}, column_per_bin=1e13)
-    rdx2 = pyradex.Radex(species='hco+', collider_densities={'H2':1e3}, column=1e13, h2column=1e21)
+def test_consistent_parchanges():
+    rdx = pyradex.Radex(species='hco+', collider_densities={'H2':1e3}, column_per_bin=1e13)
+    np.testing.assert_almost_equal(rdx.abundance, 1e13/(1e3*(u.pc.to(u.cm))))
+    assert rdx.locked_parameter == 'column'
+    rdx.abundance=1e-9
+    assert rdx.locked_parameter == 'abundance'
+    np.testing.assert_almost_equal(rdx.total_density.to(u.cm**-3).value, 1e13/1e-9/u.pc.to(u.cm))
 
 
 if __name__ == "__main__":
