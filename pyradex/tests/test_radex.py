@@ -60,7 +60,7 @@ def test_consistent_abund():
         R = pyradex.Radex(datapath='examples/',species='co',abundance=None,column=None)
 
 def test_selfconsistent_density():
-    rdx = pyradex.Radex(species='hco+', collider_densities={'H2':1e3}, column_per_bin=1e13)
+    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e3}, column_per_bin=1e13)
     assert rdx.total_density.value == 1e3
     rdx.temperature = 30
     assert rdx.total_density.value == 1e3
@@ -72,7 +72,7 @@ def test_selfconsistent_density():
     assert rdx.total_density.value == 1e3
 
 def test_consistent_parchanges():
-    rdx = pyradex.Radex(species='hco+', collider_densities={'H2':1e3}, column_per_bin=1e13)
+    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e3}, column_per_bin=1e13)
     np.testing.assert_almost_equal(rdx.abundance, 1e13/(1e3*(u.pc.to(u.cm))))
     assert rdx.locked_parameter == 'column'
     rdx.abundance=1e-9
