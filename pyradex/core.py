@@ -345,10 +345,7 @@ class Radex(object):
 
         #self.radex.cphys.cdmol = self.column
         #self.radex.cphys.tkin = self.temperature
-        if u:
-            self.radex.cphys.deltav = self.deltav.to(u.cm/u.s).value
-        else:
-            self.radex.cphys.deltav = self.deltav*1e5
+        self.radex.cphys.deltav = self.deltav.to(u.cm/u.s).value
 
         # these parameters are only used for outputs and therefore can be ignored
         self.radex.freq.fmin = 0
@@ -370,9 +367,10 @@ class Radex(object):
              'H':self.radex.cphys.density[4],
              'He':self.radex.cphys.density[5],
              'H+':self.radex.cphys.density[6]}
-        if u:
-            for k in d:
-                d[k] = d[k] * u.cm**-3
+
+        for k in d:
+            d[k] = d[k] * u.cm**-3
+
         return d
 
     @density.setter
@@ -456,10 +454,7 @@ class Radex(object):
         The total density *by number of particles* 
         The *mass density* can be dramatically different!
         """
-        if u:
-            return self.radex.cphys.totdens * u.cm**-3
-        else:
-            return self.radex.cphys.totdens
+        return self.radex.cphys.totdens * u.cm**-3
 
     @property
     def mass_density(self):
@@ -482,10 +477,8 @@ class Radex(object):
              'H':self.radex.cphys.density[4]*2,
              'He':self.radex.cphys.density[5]*4,
              'H+':self.radex.cphys.density[6]}
-        if u:
-            return np.sum(d.values())*constants.m_p
-        else:
-            return np.sum(d.values())
+
+        return np.sum(d.values())*constants.m_p
 
 
     @property
@@ -572,10 +565,7 @@ class Radex(object):
 
     @property
     def tex(self):
-        if u:
-            return self.radex.radi.tex * u.K
-        else:
-            return self.radex.radi.tex
+        return self.radex.radi.tex * u.K
 
     Tex = tex
 
@@ -587,17 +577,11 @@ class Radex(object):
 
     @property
     def frequency(self):
-        if u:
-            return self.radex.radi.spfreq * u.GHz
-        else:
-            return self.radex.radi.spfreq
+        return self.radex.radi.spfreq * u.GHz
 
     @property
     def temperature(self):
-        if u:
-            return self.radex.cphys.tkin*u.K
-        else:
-            return self.radex.cphys.tkin
+        return self.radex.cphys.tkin*u.K
 
     @temperature.setter
     def temperature(self, tkin):
@@ -619,40 +603,33 @@ class Radex(object):
 
     @property
     def column_per_bin(self):
-        if u:
-            return self.radex.cphys.cdmol * u.cm**-2
-        else:
-            return self.radex.cphys.cdmol
+        return self.radex.cphys.cdmol * u.cm**-2
 
     @column_per_bin.setter
     def column_per_bin(self, col):
         if hasattr(col,'to'):
-            col = col.to('cm**-2').value
+            col = col.to(u.cm**-2).value
         if col < 1e5 or col > 1e25:
             raise ValueError("Extremely low or extremely high column.")
         self.radex.cphys.cdmol = col
 
     @property
-    def column_per_kms(self):
+    def column_per_kms_perpc(self):
         return self.column_per_bin / self.deltav
 
     @column_per_kms.setter
-    def column_per_kms(self, cddv):
-        if u:
-            self.column_per_bin = cddv * self.deltav.to(u.km/u.s).value
-        else:
-            self.column_per_bin = cddv * self.deltav
+    def column_per_kms_perpc(self, cddv):
+
+        if not hasattr(cddv, 'to'):
+            cddv = cddv * u.cm**-2 / (u.km/u.s) / u.pc
+
+        self.column_per_bin = cddv * self.deltav.to(u.km/u.s) * self.length()
 
         self.abundance = (self.column_per_bin/(self.total_density *
                                                self.length)).decompose().value
 
     @property
     def abundance(self):
-        #abund = self.column / (self.total_density * self.length)
-        #if u:
-        #    return abund.decompose().value
-        #else:
-        #    return abund
         return self._abundance
 
     @abundance.setter
@@ -844,16 +821,13 @@ class Radex(object):
         Return the line surface brightness in kelvins for a given beam area
         (Assumes the frequencies are rest frequencies)
         """
-        if u:
-            #return (self.line_flux * beamsize)
-            # because each line has a different frequency, have to loop it
-            OK_freqs = self.frequency != 0
-            return u.Quantity([x.to(u.K, u.brightness_temperature(beamsize, f)).value
-                               for x,f in zip(self.line_flux_density[OK_freqs],self.frequency[OK_freqs])
-                               ],
-                              unit=u.K)
-        else:
-            raise NotImplementedError("Astropy's units are required for this conversion.")
+        #return (self.line_flux * beamsize)
+        # because each line has a different frequency, have to loop it
+        OK_freqs = self.frequency != 0
+        return u.Quantity([x.to(u.K, u.brightness_temperature(beamsize, f)).value
+                           for x,f in zip(self.line_flux_density[OK_freqs],self.frequency[OK_freqs])
+                           ],
+                          unit=u.K)
 
     @property
     def inds_frequencies_included(self):
@@ -948,10 +922,7 @@ class Radex(object):
         """
         Line frequency in inverse cm
         """
-        if u:
-            return self.radex.radi.xnu * u.cm**-1
-        else:
-            return self.radex.radi.xnu
+        return self.radex.radi.xnu * u.cm**-1
 
     @property
     def _xt(self):
