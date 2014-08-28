@@ -78,6 +78,9 @@ def test_consistent_parchanges():
     rdx.abundance=1e-9
     assert rdx.locked_parameter == 'abundance'
     np.testing.assert_almost_equal(rdx.total_density.to(u.cm**-3).value, 1e13/1e-9/u.pc.to(u.cm))
+    rdx.density = 1e3
+    rdx.column_per_bin = 1e13
+    np.testing.assert_almost_equal(rdx.abundance, 1e13/(1e3*(u.pc.to(u.cm))))
 
 
 if __name__ == "__main__":
