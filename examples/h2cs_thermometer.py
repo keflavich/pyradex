@@ -50,7 +50,9 @@ for abundance in (10**-8.5,10**-9):
         for temperature in [10,50,100]:
             R.temperature = temperature
             R.run_radex()
-            S = pyradex.synthspec.SyntheticSpectrum(103.0*u.GHz,103.1*u.GHz,R.get_table(),linewidth=10*u.km/u.s)
+            wcs = pyradex.synthspec.FrequencyArray(103.0*u.GHz, 103.1*u.GHz, npts=1000)
+            S = pyradex.synthspec.SyntheticSpectrum.from_RADEX(wcs, R,
+                                                               linewidth=10*u.km/u.s)
             S.plot(label='%i K' % temperature)
 
         pl.legend(loc='best')

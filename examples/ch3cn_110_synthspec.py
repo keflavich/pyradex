@@ -25,14 +25,15 @@ for ii,temperature in enumerate(temperatures):
 
     R.temperature = temperature
     R.run_radex()
-    S = pyradex.synthspec.SyntheticSpectrum(110.326*u.GHz,110.388*u.GHz,R.get_table())
+    wcs = pyradex.synthspec.FrequencyArray(110.326*u.GHz,110.388*u.GHz, npts=1000)
+    S = pyradex.synthspec.SyntheticSpectrum.from_RADEX(wcs,R)
     
     # spectral colors
     color = mpl.cm.spectral(float(ii)/len(temperatures))
     S.plot(label='%i K' % temperature,color=color)
 
     for ii in xrange(nlines):
-        fluxes[ii].append(S.table[ii]['flux'])
+        fluxes[ii].append(S.T_B[ii].value)
 
 pl.savefig("CH3CN_6-5_synthetic_spectra.pdf",bbox_inches='tight')
 
@@ -42,7 +43,7 @@ pl.figure(2)
 pl.clf()
 pl.subplot(1,2,1)
 for ii in xrange(nlines):
-    pl.plot(temperatures,fluxes[ii],label=linenames[ii])
+    pl.plot(temperatures,np.array(fluxes[ii]),label=linenames[ii])
 
 # Line #4 is the "reference line" at lowest energy
 pl.subplot(1,2,2)

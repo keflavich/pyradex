@@ -181,6 +181,8 @@ try:
 
             data = self.get_profile()
 
+            self.table = rad.get_table()
+
             super(Spectrum,self).__init__(data=data, wcs=self.wcs,
                                           unit=u.Unit(rad.T_B.unit))
 
@@ -211,14 +213,15 @@ try:
             if update_data:
                 self.data = self.get_profile()
 
-            pl.gca().set_xlabel(self.dispersion.unit.to_string())
+            dispersion = self.wcs(np.arange(self.wcs.npts))
+            pl.gca().set_xlabel(dispersion.unit.to_string())
             if hasattr(self.data,'unit'):
                 pl.gca().set_ylabel(self.data.unit.to_string())
                 data = self.data.value
             else:
                 data = self.data
 
-            return pl.plot(self.dispersion.value, data, *args, **kwargs)
+            return pl.plot(dispersion.value, data, *args, **kwargs)
 
         def __call__(self, linewidth=None, velocity_offset=0*u.km/u.s, **kwargs):
             """

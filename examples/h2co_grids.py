@@ -43,7 +43,7 @@ for ii,tt in enumerate(temperatures):
         R.abundance = abundance # reset column to the appropriate value
         R.run_radex(reuse_last=False, reload_molfile=True)
 
-        TI = R.total_intensity
+        TI = R.source_brightness
         taugrid_6[jj,ii] = R.tau[0]
         texgrid_6[jj,ii] = R.tex[0].value
         fluxgrid_6[jj,ii] = TI[0].value
