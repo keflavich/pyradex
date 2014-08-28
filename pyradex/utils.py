@@ -47,6 +47,18 @@ def get_datafile(species, savedir='./'):
 
     return os.path.split(datapath)
 
+def get_colliders(fn):
+    """
+    Get the list of colliders in a LAMDA data file
+    """
+    from astroquery import lamda
+
+    tabledict = lamda.core.parse_lamda_datafile(fn)
+    colliders = tabledict['coll_rates'].keys()
+
+    return colliders
+
+
 def verify_collisionratefile(fn):
     """
     Verify that a RADEX collisional rate file is valid to avoid a RADEX crash

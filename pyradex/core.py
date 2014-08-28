@@ -11,12 +11,10 @@ import os
 from . import utils
 from . import synthspec
 
-try:
-    from astropy import units as u
-    from astropy import constants
-    import astropy.table
-except ImportError:
-    u = False
+from astropy import units as u
+from astropy import constants
+from astropy import log
+import astropy.table
 
 __all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex',
            'density_distribution']
@@ -202,10 +200,12 @@ class Radex(object):
 
     def __init__(self,
                  collider_densities={'ph2':990,'oh2':10},
+                 total_density=None,
                  temperature=30,
-                 species='co',
+                 species='hco+',
                  column=None,
                  h2column=None,
+                 column_per_bin=None,
                  tbackground=2.7315,
                  deltav=1.0,
                  abundance=None,
@@ -216,6 +216,7 @@ class Radex(object):
                  debug=False,
                  mu=2.8,
                  source_area=None,
+                 **kwargs
                  ):
         """
         Direct wrapper of the radex FORTRAN code
@@ -223,9 +224,13 @@ class Radex(object):
         Parameters
         ----------
         collider_densities: dict
-            Dictionary giving the volume densities of the collider(s) in units of
-            cm^-3.  Valid entries are h2,oh2,ph2,e,He,H,H+.  The keys are
+            Dictionary giving the volume densities of the collider(s) in units
+            of cm^-3.  Valid entries are h2,oh2,ph2,e,He,H,H+.  The keys are
             case-insensitive.
+        total_density: float
+            (optional) Alternative to ``collider_densities``: can specify a
+            single number indicating the total density of H2.  This should
+            not be used when electrons or H atoms are the intended collider.
         temperature: float
             Local gas temperature in K
         species: str
@@ -262,6 +267,15 @@ class Radex(object):
         source_area: float / unit
             The emitting area of the source on the sky in steradians
         """
+        if 'density' in kwargs:
+            log.exception("`density` is not a valid keyword: use "
+                          "`collider_densities` (which is a dictionary) "
+                          "to specify densities.")
+            raise ValueError("Use `collider_densities` instead of `density`")
+        elif kwargs != {}:
+            raise ValueError("Keywords {0} are not recognized".format(kwargs.keys()))
+
+
         from pyradex.radex import radex
         self.radex = radex
 
@@ -273,15 +287,24 @@ class Radex(object):
         if datapath is not None:
             self.datapath = datapath
             if self.datapath != os.path.expanduser(datapath):
-                raise ValueError("Data path %s was not successfully stored; instead %s was." % (datapath,self.datapath))
+                raise ValueError("Data path %s was not successfully stored;"
+                                 " instead %s was." % (datapath,self.datapath))
         self.species = species
         if self.molpath == '':
             raise ValueError("Must set a species name.")
         if not os.path.exists(self.molpath):
-            raise ValueError("Must specify a valid path to a molecular data file else RADEX will crash."
+            raise ValueError("Must specify a valid path to a molecular data file "
+                             "else RADEX will crash."
                              "  Current path is {0}".format(self.molpath))
 
-        self.density = collider_densities
+        if collider_densities:
+            self.density = collider_densities
+            if total_density:
+                log.warn("`total_density` was specified, but `collider_densities` "
+                         "was used instead.  Set `collider_densities=None` if you "
+                         "want to use `total_density`.")
+        elif total_density:
+            self.density = total_density
 
         self.outfile = outfile
         self.logfile = logfile
@@ -291,21 +314,25 @@ class Radex(object):
         self._set_parameters()
 
         if None not in (column,abundance,h2column) and column/h2column != abundance:
-            raise ValueError("Cannot specify column, h2column, and abundance unless they are consistent.")
+            raise ValueError("Cannot specify column, h2column, and abundance"
+                             " unless they are consistent.")
 
-        if sum(x is None for x in (column,abundance,h2column)) >= 2:
-            raise ValueError("Must specify at least two of: h2column, column, and abundance")
-
-        if abundance:
-            self._abundance = abundance
+        if column_per_bin is not None:
+            self.column_per_bin = column_per_bin
+        elif sum(x is None for x in (column,abundance,h2column)) >= 2:
+            raise ValueError("Must specify at least two of:"
+                             " h2column, column, and abundance")
         else:
-            self._abundance = column/h2column
-        
-        if h2column:
-            self.h2column = h2column
+            if abundance:
+                self._abundance = abundance
+            else:
+                self._abundance = column/h2column
+            
+            if h2column:
+                self.h2column = h2column
 
-        if column:
-            self.column = column
+            if column:
+                self.column = column
 
         self.temperature = temperature
         self.tbg = tbackground
@@ -332,7 +359,7 @@ class Radex(object):
         if not hasattr(self, 'maxiter'):
             self.maxiter = 200
 
-    _valid_colliders = ['H2','PH2','OH2','E','H','HE','H+']
+    _all_valid_colliders = ['H2','PH2','OH2','E','H','HE','H+']
 
     @property
     def density(self):
@@ -359,19 +386,27 @@ class Radex(object):
                         'HE': 5,
                         'H+': 6}
 
+        if isinstance(collider_density, (float,int)):
+            log.warn("Assuming the density is n(H_2).")
+            collider_density = {'H2': collider_density}
+
         collider_densities = defaultdict(lambda: 0)
         for k in collider_density:
-            collider_densities[k.upper()] = collider_density[k]
-            if k.upper() not in self._valid_colliders:
+            if hasattr(collider_density[k], 'value'):
+                collider_densities[k.upper()] = collider_density[k].value
+            else:
+                collider_densities[k.upper()] = collider_density[k]
+            if k.upper() not in self._all_valid_colliders:
                 raise ValueError('Collider %s is not one of the valid colliders: %s' %
-                                 (k,self._valid_colliders))
+                                 (k,self._all_valid_colliders))
 
-        if 'OH2' in collider_densities:
-            if not 'PH2' in collider_densities:
+        if (('OH2' in collider_densities and collider_densities['OH2'] !=0) or
+            ('PH2' in collider_densities and collider_densities['PH2'] !=0)):
+            if not 'PH2' in collider_densities or not 'OH2' in collider_densities:
                 raise ValueError("If o-H2 density is specified, p-H2 must also be.")
             # TODO: look up whether RADEX uses density[0] if density[1] and [2] are specified
             # (it looks like the answer is "no" based on a quick test)
-            self.radex.cphys.density[0] = 0 # collider_densities['OH2'] + collider_densities['PH2']
+            #self.radex.cphys.density[0] = 0 # collider_densities['OH2'] + collider_densities['PH2']
             # PARA is [1], ORTHO is [2]
             # See lines 91, 92 of io.f
             self.radex.cphys.density[1] = collider_densities['PH2']
@@ -380,9 +415,10 @@ class Radex(object):
             warnings.warn("Using a default ortho-to-para ratio (which "
                           "will only affect species for which independent "
                           "ortho & para collision rates are given)")
-            self.radex.cphys.density[0] = collider_densities['H2']
+            #self.radex.cphys.density[0] = collider_densities['H2']
 
-            T = self.temperature.value if hasattr(self.temperature,'value') else self.temperature
+            T = (self.temperature.value if hasattr(self.temperature,'value')
+                 else self.temperature)
             if T > 0:
                 opr = min(3.0,9.0*np.exp(-170.6/T))
             else:
@@ -391,6 +427,16 @@ class Radex(object):
             self.radex.cphys.density[1] = collider_densities['H2']*(1-fortho)
             self.radex.cphys.density[2] = collider_densities['H2']*(fortho)
 
+        # RADEX relies on n(H2) = n(oH2) + n(pH2)
+        # We have set n(oH2) and n(pH2) above
+        vc = [x.lower() for x in self.valid_colliders]
+        if 'h2' in vc:
+            self.radex.cphys.density[0] = self.radex.cphys.density[1:3].sum()
+            self.radex.cphys.density[1] = 0
+            self.radex.cphys.density[2] = 0
+        elif 'oh2' in vc or 'ph2' in vc:
+            self.radex.cphys.density[0] = 0
+
         self.radex.cphys.density[3] = collider_densities['E']
         self.radex.cphys.density[4] = collider_densities['H']
         self.radex.cphys.density[5] = collider_densities['HE']
@@ -398,10 +444,18 @@ class Radex(object):
 
         # skip H2 when computing by assuming OPR correctly distributes ortho & para
         # It's not obvious that RADEX does this correctly in readdata.f
-        self.radex.cphys.totdens = self.radex.cphys.density[1:].sum()
+        self.radex.cphys.totdens = self.radex.cphys.density.sum()
+
+    @property
+    def valid_colliders(self):
+        return self._valid_colliders
     
     @property
     def total_density(self):
+        """
+        The total density *by number of particles* 
+        The *mass density* can be dramatically different!
+        """
         if u:
             return self.radex.cphys.totdens * u.cm**-3
         else:
@@ -409,9 +463,21 @@ class Radex(object):
 
     @property
     def mass_density(self):
-        d = {'H2':self.radex.cphys.density[0]*0, # ignore H2, use o/p H2
-             'pH2':self.radex.cphys.density[1]*2,
-             'oH2':self.radex.cphys.density[2]*2,
+
+        vc = [x.lower() for x in self.valid_colliders]
+        if 'h2' in vc:
+            useh2 = 1
+            useoph2 = 0
+        elif 'oh2' in vc or 'ph2' in vc:
+            useoph2 = 0
+            useoph2 = 1
+        else:
+            useoph2 = 0
+            useoph2 = 0
+
+        d = {'H2':self.radex.cphys.density[0]*2*useh2,
+             'pH2':self.radex.cphys.density[1]*2*useoph2,
+             'oH2':self.radex.cphys.density[2]*2*useoph2,
              'e':self.radex.cphys.density[3]/1836.,
              'H':self.radex.cphys.density[4]*2,
              'He':self.radex.cphys.density[5]*4,
@@ -441,6 +507,12 @@ class Radex(object):
                                                             self.datapath))
             utils.get_datafile(species, self.datapath)
             self.molpath = os.path.join(self.datapath,species+'.dat')
+
+        self._valid_colliders = utils.get_colliders(self.molpath)
+        vc = [x.lower() for x in self._valid_colliders]
+        if 'h2' in vc and ('oh2' in vc or 'ph2' in vc):
+            log.warn("oH2/pH2 and h2 are both in the datafile: "
+                     "The resulting density/total density are invalid.")
 
     @property
     def molpath(self):
@@ -538,7 +610,12 @@ class Radex(object):
         if not os.path.exists(self.molpath):
             raise IOError("File not found: %s" % self.molpath)
         # must re-read molecular file and re-interpolate to new temperature
+        self._validate_colliders()
+        #log.info("before DENS:"+str(self.radex.cphys.density))
+        #log.info("before TOTDENS:"+str(self.radex.cphys.totdens))
         self.radex.readdata()
+        #log.info("after DENS:"+str(self.radex.cphys.density))
+        #log.info("after TOTDENS:"+str(self.radex.cphys.totdens))
 
     @property
     def column(self):
@@ -566,6 +643,9 @@ class Radex(object):
         else:
             self.column = cddv * self.deltav
 
+        self.abundance = (self.column/(self.total_density *
+                                       self.length)).decompose().value
+
     @property
     def abundance(self):
         #abund = self.column / (self.total_density * self.length)
@@ -577,8 +657,8 @@ class Radex(object):
 
     @abundance.setter
     def abundance(self, abund):
-        col = self.h2column * abund
         self._abundance = abund
+        col = self.h2column * abund
         #col = abund * self.total_density * self.length
         if u:
             # need to divide the column per km/s by
@@ -614,6 +694,7 @@ class Radex(object):
         else:
             self._deltav = dv
 
+    @property
     def length(self):
         """ Hard-coded, assumed length-scale """
         if u:
@@ -649,6 +730,42 @@ class Radex(object):
         self.radex.cphys.tbg = tbg
         self.radex.backrad()
 
+    def _validate_colliders(self):
+        """
+        Check whether the density of at least one collider in the associated
+        LAMDA data file is nonzero
+        """
+        valid_colliders = self.valid_colliders
+
+        OK = False
+        matched_colliders = []
+        for collider in valid_colliders:
+            if self.density[collider] > 0:
+                OK = True
+                matched_colliders.append(collider.lower())
+
+        if not OK:
+            raise ValueError("The colliders in the data file {0} ".format(self.molpath)
+                             + "have density 0.")
+
+        for collider in self.density:
+            if (self.density[collider] > 0 and collider not in valid_colliders):
+                if (collider.lower() in ('oh2','ph2') and 'h2' in
+                    matched_colliders):
+                    # All is OK: we're allowed to have mismatches of this sort
+                    continue
+                elif (collider.lower() == 'h2' and ('oh2' in matched_colliders
+                                                    or 'ph2' in
+                                                    matched_colliders)):
+                    # again, all OK
+                    continue
+                OK = False
+
+        if not OK:
+            raise ValueError("There are colliders with specified densities >0 "
+                             "that do not have corresponding collision rates.")
+
+
     def run_radex(self, silent=True, reuse_last=False, reload_molfile=True,
                   abs_convergence_threshold=1e-16, rel_convergence_threshold=1e-8):
         """
@@ -669,6 +786,7 @@ class Radex(object):
             rates are different and have not been updated by, e.g., changing
             the temperature (which automatically runs the `readdata` function)
         """
+        self._validate_colliders()
 
         if reload_molfile or self.radex.collie.ctot.sum()==0:
             self.radex.readdata()

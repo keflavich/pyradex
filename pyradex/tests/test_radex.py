@@ -57,6 +57,18 @@ def test_consistent_abund():
     with pytest.raises(ValueError):
         R = pyradex.Radex(datapath='examples/',species='co',abundance=None,h2column=None,column=None)
 
+def test_selfconsistent_density():
+    rdx = pyradex.Radex(species='hco+', collider_densities={'H2':1e3}, column_per_bin=1e13)
+    assert rdx.total_density.value == 1e3
+    rdx.temperature = 30
+    assert rdx.total_density.value == 1e3
+    rdx.density = rdx.density
+    assert rdx.total_density.value == 1e3
+    rdx.density = {'H2':1e3}
+    assert rdx.total_density.value == 1e3
+    rdx.density = {'oH2':990,'pH2':10}
+    assert rdx.total_density.value == 1e3
+
 if __name__ == "__main__":
     test_call()
     test_parse_example()

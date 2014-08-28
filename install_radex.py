@@ -93,6 +93,20 @@ def patch_radex():
             else:
                 f.write(line)
 
+    with open('Radex/src/readdata.f') as f:
+        lines = f.readlines()
+
+    with open('Radex/src/readdata.f','w') as f:
+        for line in lines:
+            if 'density(3) = density(1)/(1.d0+1.d0/opr)' in line:
+                f.write(line)
+                f.write('c        For conservation of total density, set n(H2) = 0\n')
+                f.write('         density(1) = 0.0\n')
+            else:
+                f.write(line)
+
+
+
 """
 Works for hpc:
     PATH=/Users/adam/repos/hpc/bin/:/usr/bin:~/virtual-python/bin/:/bin FFLAGS='-m64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-common -dynamic -m64 -g -O2' LDFLAGS='-m64 -undefined dynamic_lookup -bundle' python -c "import install_radex; install_radex.compile_radex(f77exec='/Users/adam/repos/hpc/bin/gfortran')"
