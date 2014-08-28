@@ -203,7 +203,7 @@ class Radex(object):
                  density=None,
                  total_density=None,
                  temperature=30,
-                 species='hco+',
+                 species='co',
                  column=None,
                  column_per_bin=None,
                  tbackground=2.7315,
