@@ -47,6 +47,8 @@ for abundance in (10**-8.5,10**-9):
                           column=None,
                           temperature=temperatures[0])
 
+        nh2 = (R.column / R.abundance).value
+
         pl.figure(1)
         pl.clf()
 
