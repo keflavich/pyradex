@@ -20,7 +20,7 @@ if not os.path.exists('ph2co-h2.dat'):
     urllib.urlretrieve('http://home.strw.leidenuniv.nl/~moldata/datafiles/ph2co-h2.dat')
 
 # 1e23 from Johnston 2014
-R = pyradex.Radex(species='ph2co-h2', abundance=abundance, h2column=1e23,
+R = pyradex.Radex(species='ph2co-h2', abundance=abundance,
                   temperature=50,
                   collider_densities={'oH2':2e4*fortho,'pH2':2e4*(1-fortho)})
 print R.escapeProbGeom # DEBUG

@@ -35,7 +35,7 @@ if not os.path.exists('oh2co-h2.dat'):
     urllib.urlretrieve('http://home.strw.leidenuniv.nl/~moldata/datafiles/oh2co-h2.dat')
 
 R = pyradex.Radex(species='oh2co-h2', collider_densities={'H2':1e6},
-                  abundance=10.**abundances[0], h2column=1e21,
+                  abundance=10.**abundances[0],
                   tbackground=background)
 R.run_radex()
 

@@ -12,7 +12,7 @@ def test_co():
     datapath,speciesdat = get_datafile('co', savedir=os.path.join(mydir,'data/'))
     print datapath,speciesdat
 
-    R = pyradex.Radex(h2column=1e21, species='co', abundance=1e-4, column=None,
+    R = pyradex.Radex(species='co', abundance=1e-4, column=None,
                       temperature=10,
                       collider_densities={'ph2':990,'oh2':10}, deltav=2.0,
                       datapath=datapath, escapeProbGeom='lvg')
@@ -27,7 +27,7 @@ def test_co():
     # make sure we're dealing with identical qtys
     assert uvalue(D.temperature,u.K) == uvalue(R.temperature,u.K)
     assert R.density == D.density
-    np.testing.assert_approx_equal(uvalue(D.cloud.colDen/2,u.cm**-2), uvalue(R.h2column,u.cm**-2))
+    #np.testing.assert_approx_equal(uvalue(D.cloud.colDen/2,u.cm**-2), uvalue(R.h2column,u.cm**-2))
 
     # make sure RADEX converged
     assert R.run_radex() < 200

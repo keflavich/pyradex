@@ -28,7 +28,7 @@ if not os.path.exists('ph2co-h2.dat'):
     import urllib
     urllib.urlretrieve('http://home.strw.leidenuniv.nl/~moldata/datafiles/ph2co-h2.dat')
 
-R = pyradex.Radex(species='ph2co-h2', abundance=abundance, h2column=1e23)
+R = pyradex.Radex(species='ph2co-h2', abundance=abundance)
 R.run_radex()
 
 # get the table so we can look at the frequency grid

@@ -39,15 +39,13 @@ density = 1e4
 deltav = 1.0 # km/s
 
 for abundance in (10**-8.5,10**-9):
-    for nh2 in (1e22,1e23):
 
         R = pyradex.Radex(species='ph2co-h2',
                           abundance=abundance,
                           collider_densities={'oH2':density,'pH2':0},
                           deltav=1.0,
                           column=None,
-                          temperature=temperatures[0],
-                          h2column=nh2)
+                          temperature=temperatures[0])
 
         pl.figure(1)
         pl.clf()

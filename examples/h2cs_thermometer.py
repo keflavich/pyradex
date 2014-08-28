@@ -36,16 +36,13 @@ temperatures = np.linspace(10,100,ntemp)
 density = 1e4
 
 abundance = 10**-8.5 # 10**-8.5
-nh2 = 1e22
 for abundance in (10**-8.5,10**-9):
-    for nh2 in (1e22,1e23):
 
         R = pyradex.Radex(species='ph2cs',
                           abundance=abundance,
                           collider_densities={'H2':density},
                           column=None,
-                          temperature=temperatures[0],
-                          h2column=nh2)
+                          temperature=temperatures[0])
 
         pl.figure(1)
         pl.clf()
@@ -97,11 +94,11 @@ for abundance in (10**-8.5,10**-9):
         pl.ylabel("Temperature")
         pl.xlabel("$S(3_{2,1}-2_{2,0})/S(3_{0,3}-2_{0,2})$")
         pl.legend(loc='best',fontsize=14)
-        pl.title("$N(H_2) = %s$ cm$^{-2}$, X(p-H$_2$CS)$=10^{%0.1f}$" % (latex_float(nh2),np.log10(abundance)))
+        pl.title("X(p-H$_2$CS)$=10^{%0.1f}$" % (np.log10(abundance)))
 
         pl.axis([0,0.5,10,200,])
 
-        pl.savefig("pH2CS_ratio_vs_temperature_N=%1.0e_X=%0.1e.pdf" % (nh2,abundance),bbox_inches='tight')
+        pl.savefig("pH2CS_ratio_vs_temperature_X=%0.1e.pdf" % (abundance),bbox_inches='tight')
 
         pl.figure(3)
         pl.clf()
@@ -116,5 +113,5 @@ for abundance in (10**-8.5,10**-9):
         #pl.plot(ax.get_xlim(),[0.25,0.25],'k-.',label='S/N$=5$, $\sigma=0.05$ K')
         ax.axis([10,100,0,3.2])
         pl.legend(loc='best',fontsize=14)
-        pl.title("$N(H_2) = %s$ cm$^{-2}$, X(p-H$_2$CS)$=10^{%0.1f}$" % (latex_float(nh2),np.log10(abundance)))
-        pl.savefig("pH2CS_321-220_vs_temperature_N=%1.0e_X=%0.1e.pdf" % (nh2,abundance),bbox_inches='tight')
+        pl.title("X(p-H$_2$CS)$=10^{%0.1f}$" % (np.log10(abundance)))
+        pl.savefig("pH2CS_321-220_vs_temperature_X=%0.1e.pdf" % (abundance),bbox_inches='tight')
