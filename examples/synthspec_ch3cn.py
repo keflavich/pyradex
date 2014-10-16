@@ -15,7 +15,8 @@ nlines = 5
 fluxes = {ii:[] for ii in xrange(nlines)}
 
 # Temperature range: 20-500 K is allowed (by CH3CN data file)
-temperatures = np.linspace(20,500)
+temperatures = np.linspace(20,500,8)
+temperatures = [20,50,100,300,500]
 
 # set up figure
 pl.figure(1)
@@ -25,15 +26,18 @@ for ii,temperature in enumerate(temperatures):
 
     R.temperature = temperature
     R.run_radex()
-    S = pyradex.synthspec.SyntheticSpectrum(91.95*u.GHz,92*u.GHz,R.get_table())
+    #wcs = pyradex.synthspec.FrequencyArray(91.95*u.GHz,92*u.GHz,1000)
+    wcs = np.linspace(91.95,92,1000)*u.GHz
+    S = pyradex.synthspec.SyntheticSpectrum.from_RADEX(wcs,R,linewidth=5*u.km/u.s)#R.get_table(),'ch3cn')
     
     # spectral colors
-    color = mpl.cm.spectral(float(ii)/len(temperatures))
-    S.plot(label='%i K' % temperature,color=color)
+    color = mpl.cm.spectral(float(ii)/(len(temperatures)))
+    S.plot(label='%i K' % temperature, color=color, linewidth=2, alpha=0.9)
 
     for ii in xrange(nlines):
         fluxes[ii].append(S.table[ii]['T_B'])
 
+pl.legend(loc='best')
 pl.savefig("CH3CN_synthetic_spectra.pdf",bbox_inches='tight')
 
 linenames = {ii:S.table[ii]['upperlevel']+" - "+S.table[ii]['lowerlevel'] for ii in xrange(nlines)}
