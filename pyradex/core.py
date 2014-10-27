@@ -900,6 +900,8 @@ class Radex(object):
         """
         The surface brightness of the source assuming it is observed with a
         beam matched to its size and it has ff=1
+
+        (this is consistent with the online RADEX calculator)
         """
         #return (self.line_flux * beamsize)
         # because each line has a different frequency, have to loop it
@@ -946,6 +948,9 @@ class Radex(object):
 
     @property
     def source_brightness(self):
+        """
+        RADEX compat?  (check)
+        """
 
         thc = (2 * constants.h * constants.c).cgs / u.sr
         fk = (constants.h * constants.c / constants.k_B).cgs
