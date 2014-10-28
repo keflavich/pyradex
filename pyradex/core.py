@@ -804,14 +804,14 @@ class Radex(object):
         
         # Given the properties of *this* class, set the appropriate RADEX
         # fortran function values
-        # 10000 loops, best of 3: 74 µs per loop
+        # 10000 loops, best of 3: 74 micros per loop
         self._set_parameters()
             
         self._iter_counter = 1 if reuse_last else 0
         
         converged = np.array(False)
 
-        # 1000000 loops, best of 3: 1.79 µs per loop
+        # 1000000 loops, best of 3: 1.79 micros per loop
         last = self.level_population.copy()
 
         while not converged:
@@ -820,7 +820,7 @@ class Radex(object):
                     print("Did not converge in %i iterations, stopping." % self.maxiter)
                 break
 
-            # 10000 loops, best of 3: 30.8 µs per loop
+            # 10000 loops, best of 3: 30.8 micros per loop
             self.radex.matrix(self._iter_counter, converged)
             level_diff = np.abs(last-self.level_population)
             frac_level_diff = level_diff/self.level_population

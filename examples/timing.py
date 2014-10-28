@@ -7,28 +7,52 @@ for n in 10**np.arange(12,18):
     setup = "import pyradex"
     nreps = 10
     ptiming = timeit.Timer(stmt="pyradex.pyradex(collider_densities={'oH2':900,'pH2':100},column=%e,temperature=20)" % n,setup=setup).repeat(3,nreps)
-    print "Python: ",np.min(ptiming)/nreps
+    print "Python external call:              ",np.min(ptiming)/nreps
     setup = """
     import pyradex
     R = pyradex.Radex(collider_densities={'oH2':900,'pH2':100}, column=%e, temperature=20)""" % n
     ftiming = timeit.Timer(stmt="R.run_radex(); T = R.tex",setup=textwrap.dedent(setup)).repeat(3,nreps)
-    print "Fortran-wrapped: ",np.min(ftiming)/nreps
+    print "Fortran-wrapped:                   ",np.min(ftiming)/nreps
     ftiming3 = timeit.Timer(stmt="R.run_radex(validate_colliders=False, reload_molfile=False); T = R.tex",setup=textwrap.dedent(setup)).repeat(3,nreps)
-    print "Fortran-wrapped, no reload: ",np.min(ftiming3)/nreps
+    print "Fortran-wrapped, no reload:        ",np.min(ftiming3)/nreps
+    ftiming4 = timeit.Timer(stmt="R.run_radex(validate_colliders=False, reload_molfile=False, reuse_last=True); T = R.tex",setup=textwrap.dedent(setup)).repeat(3,nreps)
+    print "Fortran-wrapped, no reload, reuse: ",np.min(ftiming4)/nreps
     #dominated by array creation...
     #ftiming2 = timeit.Timer(stmt="R(collider_densities={'oH2':900,'pH2':100}, column=%e)" % n, setup=textwrap.dedent(setup)).repeat(3,10)
     #print "Fortran (call method): ",np.min(ftiming2)
-    print "py/fortran: ",np.min(ptiming)/np.min(ftiming)#,"py/fortran (call method): ",np.min(ptiming)/np.min(ftiming2)
-    print "py/fortran, no reload: ",np.min(ptiming)/np.min(ftiming3)#,"py/fortran (call method): ",np.min(ptiming)/np.min(ftiming2)
+    print "py/fortran:                   ",np.min(ptiming)/np.min(ftiming)#,"py/fortran (call method): ",np.min(ptiming)/np.min(ftiming2)
+    print "py/fortran, no reload:        ",np.min(ptiming)/np.min(ftiming3)#,"py/fortran (call method): ",np.min(ptiming)/np.min(ftiming2)
+    print "py/fortran, no reload, reuse: ",np.min(ptiming)/np.min(ftiming4)#,"py/fortran (call method): ",np.min(ptiming)/np.min(ftiming2)
 
-    # Can check correctness too:
-    # x = pyradex.pyradex(collider_densities={'oH2':900,'pH2':100},column=n, temperature=20)
-    # print x['pop_up'][0], x['t_ex'][0]
-    # R.column=n; R.temperature=20
-    # R.run_radex(reload_molfile=False, validate_colliders=False)
-    # print R.level_population[1], R.tex[0]
-    # R.run_radex()
-    # print R.level_population[1], R.tex[0]
+# Can check correctness too:
+
+py_pop = [pyradex.pyradex(collider_densities={'oH2':900,'pH2':100},column=n, temperature=20)['pop_up'][0]
+          for n in 10**np.arange(12,18)]
+
+R = pyradex.Radex(collider_densities={'oH2':900,'pH2':100}, column=1e15, temperature=20)
+
+R_noreload_pop = []
+for n in 10**np.arange(12,18):
+    R.column = n
+    R.run_radex(reload_molfile=False, validate_colliders=False)
+    R_noreload_pop.append(R.level_population[1])
+
+R_pop = []
+for n in 10**np.arange(12,18):
+    R.column = n
+    R.run_radex(reload_molfile=True, validate_colliders=True)
+    R_pop.append(R.level_population[1])
+
+R_reuse_pop = []
+for n in 10**np.arange(12,18):
+    R.column = n
+    R.run_radex(reload_molfile=False, validate_colliders=False, reuse_last=True)
+    R_reuse_pop.append(R.level_population[1])
+
+for p1,p2,p3,p4 in zip(py_pop, R_noreload_pop, R_pop, R_reuse_pop):
+    np.testing.assert_almost_equal(p1, p2, decimal=4)
+    np.testing.assert_almost_equal(p2, p3)
+    np.testing.assert_almost_equal(p3, p4)
 
 
 gridtest = """
