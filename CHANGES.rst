@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.3.1 - October 28, 2014: allow 'validate_colliders' to be disabled so that
+        fast grids can be run.  Fast grids require validate_colliders=False,
+        reload_molfile=False.
+
 0.3.0 - August 28, 2014: MAJOR internal refactor and API change.  `astropy`
         is now required, and there is no longer a 'total h2 column' concept
         associated with the RADEX code.  For compatibility with DESPOTIC, there

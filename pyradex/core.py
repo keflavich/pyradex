@@ -768,7 +768,8 @@ class Radex(object):
 
 
     def run_radex(self, silent=True, reuse_last=False, reload_molfile=True,
-                  abs_convergence_threshold=1e-16, rel_convergence_threshold=1e-8):
+                  abs_convergence_threshold=1e-16, rel_convergence_threshold=1e-8,
+                  validate_colliders=True):
         """
         Run the iterative matrix solution using a python loop
 
@@ -786,22 +787,31 @@ class Radex(object):
             Re-read the molecular line file?  This is needed if the collision
             rates are different and have not been updated by, e.g., changing
             the temperature (which automatically runs the `readdata` function)
+        validate_colliders: bool
+            Validate the colliders before running the code.  This should always
+            be done unless running in a grid, in which case it can cause a
+            slowdown (~30%).
         """
-        self._validate_colliders()
+        if validate_colliders:
+            # 100 loops, best of 3: 7.48 ms per loop
+            self._validate_colliders()
 
         if reload_molfile or self.radex.collie.ctot.sum()==0:
+            # 100 loops, best of 3: 15.3 ms per loop
             self.radex.readdata()
 
         #self.radex.backrad()
         
         # Given the properties of *this* class, set the appropriate RADEX
         # fortran function values
+        # 10000 loops, best of 3: 74 µs per loop
         self._set_parameters()
             
         self._iter_counter = 1 if reuse_last else 0
         
         converged = np.array(False)
 
+        # 1000000 loops, best of 3: 1.79 µs per loop
         last = self.level_population.copy()
 
         while not converged:
@@ -810,6 +820,7 @@ class Radex(object):
                     print("Did not converge in %i iterations, stopping." % self.maxiter)
                 break
 
+            # 10000 loops, best of 3: 30.8 µs per loop
             self.radex.matrix(self._iter_counter, converged)
             level_diff = np.abs(last-self.level_population)
             frac_level_diff = level_diff/self.level_population
