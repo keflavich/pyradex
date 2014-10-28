@@ -203,7 +203,9 @@ class Radex(object):
     def __call__(self, return_table=True, **kwargs):
         # reset the parameters appropriately
         self.__init__(**kwargs)
-        niter = self.run_radex()
+        # No need to re-validate: it is already done when self.temperature is
+        # set in __init__
+        niter = self.run_radex(reload_molfile=False, validate_colliders=False)
 
         if return_table:
             return self.get_table()
