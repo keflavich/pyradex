@@ -124,36 +124,32 @@ Timing information
 ------------------
 i.e., how fast is it?::
 
-    %timeit T = pyradex.radex(collider_densities={'H2':1000})
-    1 loops, best of 3: 149 ms per loop
-
+    %timeit T = pyradex.pyradex(collider_densities={'H2':1000})
+    10 loops, best of 3: 31.8 ms per loop
 
     for n in 10**np.arange(6):
-       %timeit T = pyradex.radex(collider_densities={'H2':n})
+       %timeit T = pyradex.pyradex(collider_densities={'H2':n})
 
-    10 loops, best of 3: 149 ms per loop
-    10 loops, best of 3: 150 ms per loop
-    10 loops, best of 3: 149 ms per loop
-    10 loops, best of 3: 151 ms per loop
-    10 loops, best of 3: 150 ms per loop
-    10 loops, best of 3: 149 ms per loop
+    10 loops, best of 3: 32.1 ms per loop
+    10 loops, best of 3: 32.5 ms per loop
+    10 loops, best of 3: 32 ms per loop
+    10 loops, best of 3: 32.1 ms per loop
+    10 loops, best of 3: 32.4 ms per loop
+    10 loops, best of 3: 31.9 ms per loop
 
     for n in 10**np.arange(12,18):
-       ....:     %timeit T = pyradex.radex(collider_densities={'H2':1000}, column_density=n)
+        %timeit T = pyradex.pyradex(collider_densities={'H2':1000}, column=n)
 
-    10 loops, best of 3: 149 ms per loop
-    10 loops, best of 3: 149 ms per loop
-    10 loops, best of 3: 149 ms per loop
-    10 loops, best of 3: 150 ms per loop
-    10 loops, best of 3: 152 ms per loop
-    10 loops, best of 3: 157 ms per loop
+    10 loops, best of 3: 31.8 ms per loop
+    10 loops, best of 3: 32.2 ms per loop
+    10 loops, best of 3: 32.5 ms per loop
+    10 loops, best of 3: 32.2 ms per loop
+    10 loops, best of 3: 32.7 ms per loop
+    10 loops, best of 3: 33.1 ms per loop
     
-These results indicate that, even in highly optically thick cases where more
-iterations are required, the execution time is dominated by the python
-overheads.
 
 If you redo these tests comparing the fortran wrapper to the "naive" version,
-the difference is enormous.  The following tests can be seen in `timing.py
+the difference can be enormous.  The following tests can be seen in `timing.py
 <examples/timing.py>`__:
 
 ::
@@ -182,28 +178,35 @@ Making Grids
 ------------
 Is more efficient with scripts, but you can still do it...  ::
 
+    R = pyradex.Radex(species='co', collider_densities={'H2':1000}, column=1e15)
     for n in 10**np.arange(12,18):
-        T = pyradex.radex(collider_densities={'H2':1000}, column_density=n)
-        T.pprint()
+        T = R(collider_densities={'H2':1000}, column=n)
+        T[:1].pprint()
     
-    Row# Line# E_UP   FREQ      WAVE    T_EX    TAU      T_R   POP_UP POP_LOW FLUX_Kkms  FLUX_Inu
-    ---- ----- ---- -------- --------- ----- --------- ------- ------ ------- --------- ---------
-       1     0  5.5 115.2712 2600.7576 5.044 0.0004447 0.00086 0.4709    0.47 0.0009155 1.806e-11
-    Row# Line# E_UP   FREQ      WAVE    T_EX   TAU      T_R    POP_UP POP_LOW FLUX_Kkms  FLUX_Inu
-    ---- ----- ---- -------- --------- ----- -------- -------- ------ ------- --------- ---------
-       1     0  5.5 115.2712 2600.7576 5.047 0.004444 0.008589  0.471  0.4698  0.009143 1.803e-10
-    Row# Line# E_UP   FREQ      WAVE    T_EX   TAU     T_R   POP_UP POP_LOW FLUX_Kkms  FLUX_Inu
-    ---- ----- ---- -------- --------- ----- ------- ------- ------ ------- --------- ---------
-       1     0  5.5 115.2712 2600.7576 5.075 0.04415 0.08473 0.4721  0.4681    0.0902 1.779e-09
-    Row# Line# E_UP   FREQ      WAVE    T_EX  TAU    T_R   POP_UP POP_LOW FLUX_Kkms  FLUX_Inu
-    ---- ----- ---- -------- --------- ----- ------ ------ ------ ------- --------- ---------
-       1     0  5.5 115.2712 2600.7576 5.336 0.4152 0.7475 0.4817  0.4527    0.7957 1.569e-08
-    Row# Line# E_UP   FREQ      WAVE    T_EX  TAU  T_R  POP_UP POP_LOW FLUX_Kkms  FLUX_Inu
-    ---- ----- ---- -------- --------- ----- ----- ---- ------ ------- --------- ---------
-       1     0  5.5 115.2712 2600.7576 6.929 2.927 3.49 0.5057  0.3745     3.715 7.327e-08
-    Row# Line# E_UP   FREQ      WAVE    T_EX  TAU  T_R  POP_UP POP_LOW FLUX_Kkms  FLUX_Inu
-    ---- ----- ---- -------- --------- ----- ----- ---- ------ ------- --------- ---------
-       1     0  5.5 115.2712 2600.7576 9.294 18.09 5.96 0.4696  0.2839     6.345 1.252e-07
+             Tex             tau         frequency  upperstateenergy upperlevel lowerlevel upperlevelpop  lowerlevelpop       brightness           T_B
+          K                             GHz            K                                                             erg / (cm2 Hz s sr)        K
+    ------------- ----------------- ----------- ---------------- ---------- ---------- -------------- -------------- ------------------- ----------------
+    11.0274813968 0.000166783361591 115.2712018             5.53          1          0 0.540537331305 0.297561763825   5.20877418593e-18 0.00127591598469
+         Tex            tau         frequency  upperstateenergy upperlevel lowerlevel upperlevelpop  lowerlevelpop       brightness           T_B
+          K                            GHz            K                                                             erg / (cm2 Hz s sr)        K
+    ------------- ---------------- ----------- ---------------- ---------- ---------- -------------- -------------- ------------------- ---------------
+    11.0274813968 0.00166783361591 115.2712018             5.53          1          0 0.540537331305 0.297561763825    5.2048669339e-17 0.0127495888324
+         Tex            tau        frequency  upperstateenergy upperlevel lowerlevel upperlevelpop  lowerlevelpop       brightness          T_B
+          K                           GHz            K                                                             erg / (cm2 Hz s sr)       K
+    ------------- --------------- ----------- ---------------- ---------- ---------- -------------- -------------- ------------------- --------------
+    10.9980972475 0.0166790919823 115.2712018             5.53          1          0 0.538730147174 0.296964688622   5.14681095066e-16 0.126073777202
+         Tex           tau        frequency  upperstateenergy upperlevel lowerlevel upperlevelpop  lowerlevelpop       brightness          T_B
+          K                          GHz            K                                                             erg / (cm2 Hz s sr)       K
+    ------------- -------------- ----------- ---------------- ---------- ---------- -------------- -------------- ------------------- -------------
+    11.7797140751 0.150601068675 115.2712018             5.53          1          0 0.530489509066 0.282823341198   4.78772386104e-15 1.17277754545
+         Tex           tau        frequency  upperstateenergy upperlevel lowerlevel upperlevelpop  lowerlevelpop       brightness          T_B
+          K                          GHz            K                                                             erg / (cm2 Hz s sr)       K
+    ------------- -------------- ----------- ---------------- ---------- ---------- -------------- -------------- ------------------- -------------
+    15.0692631019 0.955344506002 115.2712018             5.53          1          0 0.454752879863 0.218821739485   2.92170292028e-14 7.15686133711
+         Tex           tau       frequency  upperstateenergy upperlevel lowerlevel upperlevelpop  lowerlevelpop       brightness          T_B
+          K                         GHz            K                                                             erg / (cm2 Hz s sr)       K
+    ------------- ------------- ----------- ---------------- ---------- ---------- -------------- -------------- ------------------- -------------
+    22.6356250741 4.17742617995 115.2712018             5.53          1          0 0.318586709967 0.135596426565   7.69430015071e-14 18.8475833332
 
 If you want to create a grid with the directly wrapped version, do loops with
 constant temperature: every time you load a new temperature, RADEX must read in
