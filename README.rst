@@ -154,24 +154,60 @@ the difference can be enormous.  The following tests can be seen in `timing.py
 
 ::
 
-    Python:  0.892609834671
-    Fortran:  0.0151958465576
-    py/fortran:  58.7403822016
-    Python:  0.902825832367
-    Fortran:  0.0102920532227
-    py/fortran:  87.7206727205
-    Python:  0.876524925232
-    Fortran:  0.0730140209198
-    py/fortran:  12.0048850096
-    Python:  0.836034059525
-    Fortran:  0.0925290584564
-    py/fortran:  9.03536762906
-    Python:  0.880390882492
-    Fortran:  0.0725519657135
-    py/fortran:  12.1346248008
-    Python:  0.96048283577
-    Fortran:  0.0753719806671
-    py/fortran:  12.7432346512
+    Python external call:               0.0322824001312
+    Fortran-wrapped:                    0.0172580003738
+    Fortran-wrapped, no reload:         0.000889205932617
+    Fortran-wrapped, no reload, reuse:  0.000833201408386
+    Fortran (call method):  0.0281622171402
+    py/fortran:                    1.87057593185
+    py/fortran, __call__ method:   1.14630179757
+    py/fortran, no reload:         36.3047511798
+    py/fortran, no reload, reuse:  38.7450138782
+    Python external call:               0.0320783853531
+    Fortran-wrapped:                    0.0175447940826
+    Fortran-wrapped, no reload:         0.000887608528137
+    Fortran-wrapped, no reload, reuse:  0.000830006599426
+    Fortran (call method):  0.0281030893326
+    py/fortran:                    1.82837058115
+    py/fortran, __call__ method:   1.14145405772
+    py/fortran, no reload:         36.1402401354
+    py/fortran, no reload, reuse:  38.6483497544
+    Python external call:               0.032553601265
+    Fortran-wrapped:                    0.0220848083496
+    Fortran-wrapped, no reload:         0.00535380840302
+    Fortran-wrapped, no reload, reuse:  0.000832319259644
+    Fortran (call method):  0.0326553106308
+    py/fortran:                    1.47402688534
+    py/fortran, __call__ method:   0.996885365232
+    py/fortran, no reload:         6.08045690365
+    py/fortran, no reload, reuse:  39.1119163563
+    Python external call:               0.0325154066086
+    Fortran-wrapped:                    0.0213151931763
+    Fortran-wrapped, no reload:         0.00545928478241
+    Fortran-wrapped, no reload, reuse:  0.000832891464233
+    Fortran (call method):  0.0328080892563
+    py/fortran:                    1.525456811
+    py/fortran, __call__ method:   0.991078948688
+    py/fortran, no reload:         5.95598286306
+    py/fortran, no reload, reuse:  39.0391881834
+    Python external call:               0.032644200325
+    Fortran-wrapped:                    0.0224514961243
+    Fortran-wrapped, no reload:         0.00538649559021
+    Fortran-wrapped, no reload, reuse:  0.000833201408386
+    Fortran (call method):  0.0326545953751
+    py/fortran:                    1.45398774961
+    py/fortran, __call__ method:   0.999681666549
+    py/fortran, no reload:         6.06037817693
+    py/fortran, no reload, reuse:  39.1792428535
+    Python external call:               0.0330309152603
+    Fortran-wrapped:                    0.0212877035141
+    Fortran-wrapped, no reload:         0.00561258792877
+    Fortran-wrapped, no reload, reuse:  0.000843000411987
+    Fortran (call method):  0.0330217123032
+    py/fortran:                    1.5516429585
+    py/fortran, __call__ method:   1.00027869412
+    py/fortran, no reload:         5.88514882609
+    py/fortran, no reload, reuse:  39.1825612308
     
 
 Making Grids

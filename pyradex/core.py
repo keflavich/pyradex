@@ -4,6 +4,7 @@ import tempfile
 import numpy as np
 import warnings
 import astropy.units as u
+_quantity = u.Quantity
 from collections import defaultdict
 import itertools
 import os
@@ -31,6 +32,12 @@ class QuantityOff(object):
 class ImmutableDict(dict):
     def __setitem__(self, key, value):
         raise AttributeError("Setting items for this dictionary is not supported.")
+
+def unitless(x):
+    if hasattr(x, 'value'):
+        return x.value
+    else:
+        return x
 
 # silly tool needed for fortran misrepresentation of strings
 # http://stackoverflow.com/questions/434287/what-is-the-most-pythonic-way-to-iterate-over-a-list-in-chunks
@@ -127,9 +134,9 @@ def write_input(temperature=10, column=1e12, collider_densities={'H2':1},
     """
 
     if hasattr(minfreq, 'unit'):
-        minfreq = minfreq.to('GHz',u.spectral()).value
+        minfreq = unitless(minfreq.to('GHz',u.spectral()))
     if hasattr(maxfreq, 'unit'):
-        maxfreq = maxfreq.to('GHz',u.spectral()).value
+        maxfreq = unitless(maxfreq.to('GHz',u.spectral()))
 
     infile = tempfile.NamedTemporaryFile(mode='w', delete=delete_tempfile)
     outfile = tempfile.NamedTemporaryFile(mode='w', delete=delete_tempfile)
@@ -372,6 +379,7 @@ class Radex(object):
 
     _u_gradient = u.cm**-2 / (u.km/u.s) / u.pc
     _u_kms = u.km/u.s
+    _u_cms = u.cm/u.s
 
     @property
     def locked_parameter(self):
@@ -384,7 +392,10 @@ class Radex(object):
 
         #self.radex.cphys.cdmol = self.column
         #self.radex.cphys.tkin = self.temperature
-        self.radex.cphys.deltav = self.deltav.to(u.cm/u.s).value
+        if hasattr(self.deltav, 'to'):
+            self.radex.cphys.deltav = unitless(self.deltav.to(self._u_cms))
+        else:
+            self.radex.cphys.deltav = self.deltav * (self._u_cms.to(self._u_kms))
 
         # these parameters are only used for outputs and therefore can be ignored
         self.radex.freq.fmin = 0
@@ -430,16 +441,13 @@ class Radex(object):
                         'HE': 5,
                         'H+': 6}
 
-        if isinstance(collider_density, (float,int,u.Quantity,np.ndarray)):
+        if isinstance(collider_density, (float,int,_quantity,np.ndarray)):
             log.warn("Assuming the density is n(H_2).")
             collider_density = {'H2': collider_density}
 
         collider_densities = defaultdict(lambda: 0)
         for k in collider_density:
-            if hasattr(collider_density[k], 'value'):
-                collider_densities[k.upper()] = collider_density[k].to(u.cm**-3).value
-            else:
-                collider_densities[k.upper()] = collider_density[k]
+            collider_densities[k.upper()] = unitless(u.Quantity(collider_density[k], self._u_cc))
             if k.upper() not in self._all_valid_colliders:
                 raise ValueError('Collider %s is not one of the valid colliders: %s' %
                                  (k,self._all_valid_colliders))
@@ -644,7 +652,7 @@ class Radex(object):
     @temperature.setter
     def temperature(self, tkin):
         if hasattr(tkin,'to'):
-            tkin = tkin.to(u.K).value
+            tkin = unitless(u.Quantity(tkin, u.K))
         if tkin <= 0 or tkin > 1e4:
             raise ValueError('Must have kinetic temperature > 0 and < 10^4 K')
         self.radex.cphys.tkin = tkin
@@ -674,7 +682,7 @@ class Radex(object):
     @column_per_bin.setter
     def column_per_bin(self, col):
         if hasattr(col,'to'):
-            col = col.to(u.cm**-2).value
+            col = unitless(u.Quantity(col, self._u_sc))
         if col < 1e5 or col > 1e25:
             raise ValueError("Extremely low or extremely high column.")
         self.radex.cphys.cdmol = col
@@ -683,8 +691,11 @@ class Radex(object):
         if not self._is_locked:
             self._is_locked = True
             if self.locked_parameter == 'density':
-                self.abundance = (col/(self.total_density *
-                                       self.length)).decompose().value
+                ab = (col/(self.total_density * self.length))
+                if hasattr(ab, 'decompose'):
+                    self.abundance = ab.decompose().value
+                else:
+                    self.abundance = ab / (self._u_cc*u.pc).to(self._u_sc)
             elif self.locked_parameter == 'abundance':
                 self.density = col / self.length / abund
             self._lock_param('column')
@@ -700,7 +711,7 @@ class Radex(object):
 
         cddv = u.Quantity(cddv, self._u_gradient)
 
-        self.column_per_bin = cddv * self.deltav.to(self._u_kms) * self.length()
+        self.column_per_bin = cddv * u.Quantity(self.deltav, self._u_kms) * self.length()
 
     @property
     def abundance(self):
@@ -716,7 +727,7 @@ class Radex(object):
                 self.density = dens
             elif self.locked_parameter == 'density':
                 col = self.total_density*self.length*abund
-                self.column_per_bin = col.to(u.cm**-2)
+                self.column_per_bin = u.Quantity(col, u.cm**-2)
             self._lock_param('abundance')
             self._is_locked=False
 
@@ -750,7 +761,7 @@ class Radex(object):
     def tbg(self, tbg):
         #print("Set TBG=%f" % tbg)
         if hasattr(tbg, 'value'):
-            tbg = tbg.to(u.K).value
+            tbg = unitless(u.Quantity(tbg, u.K))
         self.radex.cphys.tbg = tbg
         self.radex.backrad()
 
@@ -766,7 +777,7 @@ class Radex(object):
         OK = False
         matched_colliders = []
         for collider in valid_colliders:
-            if density[self._all_valid_colliders[collider.upper()]].value > 0:
+            if unitless(density[self._all_valid_colliders[collider.upper()]]) > 0:
                 OK = True
                 matched_colliders.append(collider.lower())
 
@@ -775,7 +786,7 @@ class Radex(object):
                              + "have density 0.")
 
         for collider in density:
-            if (density[collider].value > 0
+            if (unitless(density[collider]) > 0
                 and (collider.lower() not in valid_colliders)):
                 if (collider.lower() in ('oh2','ph2') and 'h2' in
                     matched_colliders):
@@ -917,10 +928,14 @@ class Radex(object):
         """
         #return (self.line_flux * beamsize)
         # because each line has a different frequency, have to loop it
-        return u.Quantity([x.to(u.K, u.brightness_temperature(beamsize, f)).value
-                           for x,f in zip(self.line_flux_density,self.frequency)
-                           ],
-                          unit=u.K)
+        try:
+            return u.Quantity([x.to(u.K, u.brightness_temperature(beamsize, f)).value
+                               for x,f in zip(self.line_flux_density,self.frequency)
+                               ],
+                              unit=u.K)
+        except AttributeError as ex:
+            raise NotImplementedError("line brightness temperature is not implemented "
+                                      "without reference to astropy units yet")
 
     @property
     def inds_frequencies_included(self):
@@ -940,10 +955,9 @@ class Radex(object):
         """
         #return (self.line_flux * beamsize)
         # because each line has a different frequency, have to loop it
-        OK_freqs = self.inds_frequencies_included
-        return ((self.source_line_surfbrightness[OK_freqs]*u.sr).
+        return ((self.source_line_surfbrightness*u.sr).
                  to(u.K, u.brightness_temperature(1*u.sr,
-                                                  self.frequency[OK_freqs])))
+                                                  self.frequency)))
 
     @property
     def T_B(self):
