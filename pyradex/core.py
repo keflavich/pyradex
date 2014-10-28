@@ -635,7 +635,7 @@ class Radex(object):
 
     @property
     def frequency(self):
-        return u.Quantity(self.radex.radi.spfreq, u.GHz)
+        return u.Quantity(self.radex.radi.spfreq[self._mask], u.GHz)
 
     @property
     def temperature(self):
@@ -917,9 +917,8 @@ class Radex(object):
         """
         #return (self.line_flux * beamsize)
         # because each line has a different frequency, have to loop it
-        OK_freqs = self.frequency != 0
         return u.Quantity([x.to(u.K, u.brightness_temperature(beamsize, f)).value
-                           for x,f in zip(self.line_flux_density[OK_freqs],self.frequency[OK_freqs])
+                           for x,f in zip(self.line_flux_density,self.frequency)
                            ],
                           unit=u.K)
 
@@ -929,8 +928,7 @@ class Radex(object):
         The indices of the line frequencies fitted by RADEX
         (RADEX can hold up to 99999 frequencies, but usually uses ~100)
         """
-        OK_freqs = self.frequency != 0
-        return np.where(OK_freqs)[0]
+        return np.where(self._mask)[0]
 
     @property
     def source_line_brightness_temperature(self):
@@ -954,7 +952,7 @@ class Radex(object):
 
     @property
     def background_brightness(self):
-        return u.Quantity(self.radex.radi.backi, self._u_brightness)
+        return u.Quantity(self.radex.radi.backi[self._mask], self._u_brightness)
 
     @property
     def flux_density(self):
@@ -996,11 +994,14 @@ class Radex(object):
         fk = self._fk_value
         thc = self._thc_value
 
+        mask = self._mask
+
         with QuantityOff():
-            ftau = np.exp(-self.tau)
-            xt = self._xt
-            xnu = self._xnu
-            bnutex = thc*xt/(np.exp(fk*xnu/self.tex)-1.0)
+            ftau = np.exp(-self.tau[mask])
+            xt = self._xt[mask]
+            xnu = self._xnu[mask]
+            earg = fk*xnu/self.tex[mask]
+            bnutex = thc*xt/(np.exp(earg)-1.0)
             toti = self.background_brightness*ftau+bnutex*(1.0-ftau)
 
         return u.Quantity(toti, self._u_brightness)
@@ -1010,11 +1011,14 @@ class Radex(object):
         fk = self._fk_value
         thc = self._thc_value
 
+        mask = self._mask
+
         with QuantityOff():
-            ftau = np.exp(-self.tau)
-            xt = self._xt
-            xnu = self._xnu
-            bnutex = thc*xt/(np.exp(fk*xnu/self.tex)-1.0)
+            ftau = np.exp(-self.tau[mask])
+            xt = self._xt[mask]
+            xnu = self._xnu[mask]
+            earg = fk*xnu/self.tex[mask]
+            bnutex = thc*xt/(np.exp(earg)-1.0)
             toti = self.background_brightness*ftau+bnutex*(1-self.beta)
 
         return u.Quantity(toti, self._u_brightness)
@@ -1045,8 +1049,12 @@ class Radex(object):
     def statistical_weight(self):
         return self.radex.rmolec.gstat
 
+    @property
+    def _mask(self):
+        return self.radex.radi.spfreq != 0
+
     def get_table(self):
-        mask = self.frequency.value != 0
+        mask = self._mask
         columns = [
             astropy.table.Column(name='Tex',data=self.tex[mask], unit=u.K),
             astropy.table.Column(name='tau',data=self.tau[mask], unit=''),
@@ -1056,7 +1064,7 @@ class Radex(object):
             astropy.table.Column(name='lowerlevel',data=self.quantum_number[self.lowerlevelindex[mask]], unit=''),
             astropy.table.Column(name='upperlevelpop',data=self.level_population[self.upperlevelindex[mask]], unit=''),
             astropy.table.Column(name='lowerlevelpop',data=self.level_population[self.lowerlevelindex[mask]], unit=''),
-            astropy.table.Column(name='brightness',data=self.source_line_surfbrightness[mask]),
+            astropy.table.Column(name='brightness',data=self.source_line_surfbrightness),
             astropy.table.Column(name='T_B',data=self.T_B), # T_B is pre-masked
         ]
         if self.source_area:
