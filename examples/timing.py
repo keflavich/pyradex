@@ -49,12 +49,13 @@ for n in 10**np.arange(12,18):
     print "Fortran-wrapped, no reload:        ",np.min(ftiming3)/nreps
     ftiming4 = timeit.Timer(stmt="R.run_radex(validate_colliders=False, reload_molfile=False, reuse_last=True); T = R.tex",setup=textwrap.dedent(setup)).repeat(3,nreps)
     print "Fortran-wrapped, no reload, reuse: ",np.min(ftiming4)/nreps
-    #dominated by array creation...
-    #ftiming2 = timeit.Timer(stmt="R(collider_densities={'oH2':900,'pH2':100}, column=%e)" % n, setup=textwrap.dedent(setup)).repeat(3,10)
-    #print "Fortran (call method): ",np.min(ftiming2)
-    print "py/fortran:                   ",np.min(ptiming)/np.min(ftiming)#,"py/fortran (call method): ",np.min(ptiming)/np.min(ftiming2)
-    print "py/fortran, no reload:        ",np.min(ptiming)/np.min(ftiming3)#,"py/fortran (call method): ",np.min(ptiming)/np.min(ftiming2)
-    print "py/fortran, no reload, reuse: ",np.min(ptiming)/np.min(ftiming4)#,"py/fortran (call method): ",np.min(ptiming)/np.min(ftiming2)
+    # dominated by array creation...
+    ftiming2 = timeit.Timer(stmt="R(collider_densities={'oH2':900,'pH2':100}, column=%e)" % n, setup=textwrap.dedent(setup)).repeat(3,nreps)
+    print "Fortran (call method): ",np.min(ftiming2)/nreps
+    print "py/fortran:                   ",np.min(ptiming)/np.min(ftiming)
+    print "py/fortran, __call__ method:  ",np.min(ptiming)/np.min(ftiming2)
+    print "py/fortran, no reload:        ",np.min(ptiming)/np.min(ftiming3)
+    print "py/fortran, no reload, reuse: ",np.min(ptiming)/np.min(ftiming4)
 
 gridtest = """
 # build a small grid
@@ -68,7 +69,7 @@ for ii,T in enumerate([5,10,20]):
                                   temperature=T,
                                   species='co')
                 grid[ii,jj,kk,mm] = result['tau'][0]
-print grid                
+print grid[0,0,0,:]
 """
 
 setup = """
@@ -96,7 +97,7 @@ for ii,T in enumerate([5,10,20]):
                             reload_molfile=False,
                             reuse_last=True)
                 grid[ii,jj,kk,mm] = R.tau[0]
-print grid                
+print grid[0,0,0,:]
 """
 
 ftiming2 = timeit.Timer(stmt=gridtest_class,setup=setup).repeat(3,1)
