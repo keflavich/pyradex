@@ -21,12 +21,6 @@ def test_parse_example():
     data = pyradex.parse_outfile(data_path('example.out'))
     data.pprint(show_unit=True)
 
-def test_numpy_ok():
-    a = np.array([True,True,False,False], dtype='bool')
-    b = np.array([1,2])
-    with pytest.raises(ValueError):
-        x = b[a]
-
 @pytest.mark.skipif(exepath=='radex',reason='radex not installed')
 def test_call():
     data = pyradex.pyradex(executable=exepath,species='Radex/data/hco+',minfreq=50)

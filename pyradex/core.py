@@ -631,7 +631,7 @@ class Radex(object):
 
     @property
     def tex(self):
-        return u.Quantity(self.radex.radi.tex, u.K)
+        return u.Quantity(self.radex.radi.tex[self._mask], u.K)
 
     Tex = tex
 
@@ -639,7 +639,7 @@ class Radex(object):
     def tau(self):
         # taul(iline) = cddv*(xpop(n)*gstat(m)/gstat(n)-xpop(m))
         #$         /(fgaus*xt/aeinst(iline))
-        return self.radex.radi.taul
+        return self.radex.radi.taul[self._mask]
 
     @property
     def frequency(self):
@@ -882,15 +882,15 @@ class Radex(object):
 
     @property
     def upperlevelnumber(self):
-        return self.radex.imolec.iupp
+        return self.radex.imolec.iupp[self._mask]
 
     @property
     def lowerlevelnumber(self):
-        return self.radex.imolec.ilow
+        return self.radex.imolec.ilow[self._mask]
 
     @property
     def upperlevelindex(self):
-        return self.radex.imolec.iupp-1
+        return self.radex.imolec.iupp[self._mask]-1
 
     @property
     def upperlevelpop(self):
@@ -898,7 +898,7 @@ class Radex(object):
 
     @property
     def lowerlevelindex(self):
-        return self.radex.imolec.ilow-1
+        return self.radex.imolec.ilow[self._mask]-1
 
     @property
     def lowerlevelpop(self):
@@ -906,7 +906,7 @@ class Radex(object):
 
     @property
     def upperstateenergy(self):
-        return self.radex.rmolec.eup
+        return self.radex.rmolec.eup[self._mask]
 
     @property
     def source_area(self):
@@ -1008,13 +1008,11 @@ class Radex(object):
         fk = self._fk_value
         thc = self._thc_value
 
-        mask = self._mask
-
         with QuantityOff():
-            ftau = np.exp(-self.tau[mask])
-            xt = self._xt[mask]
-            xnu = self._xnu[mask]
-            earg = fk*xnu/self.tex[mask]
+            ftau = np.exp(-self.tau)
+            xt = self._xt
+            xnu = self._xnu
+            earg = fk*xnu/self.tex
             bnutex = thc*xt/(np.exp(earg)-1.0)
             toti = self.background_brightness*ftau+bnutex*(1.0-ftau)
 
@@ -1025,13 +1023,11 @@ class Radex(object):
         fk = self._fk_value
         thc = self._thc_value
 
-        mask = self._mask
-
         with QuantityOff():
-            ftau = np.exp(-self.tau[mask])
-            xt = self._xt[mask]
-            xnu = self._xnu[mask]
-            earg = fk*xnu/self.tex[mask]
+            ftau = np.exp(-self.tau)
+            xt = self._xt
+            xnu = self._xnu
+            earg = fk*xnu/self.tex
             bnutex = thc*xt/(np.exp(earg)-1.0)
             toti = self.background_brightness*ftau+bnutex*(1-self.beta)
 
@@ -1048,7 +1044,7 @@ class Radex(object):
         """
         Line frequency in inverse cm
         """
-        return u.Quantity(self.radex.radi.xnu, u.cm**-1)
+        return u.Quantity(self.radex.radi.xnu[self._mask], u.cm**-1)
 
     @property
     def _xt(self):
@@ -1068,16 +1064,15 @@ class Radex(object):
         return self.radex.radi.spfreq != 0
 
     def get_table(self):
-        mask = self._mask
         columns = [
-            astropy.table.Column(name='Tex',data=self.tex[mask], unit=u.K),
-            astropy.table.Column(name='tau',data=self.tau[mask], unit=''),
-            astropy.table.Column(name='frequency',data=self.frequency[mask], unit=u.GHz),
-            astropy.table.Column(name='upperstateenergy',data=self.upperstateenergy[mask], unit=u.K),
-            astropy.table.Column(name='upperlevel',data=self.quantum_number[self.upperlevelindex[mask]], unit=''),
-            astropy.table.Column(name='lowerlevel',data=self.quantum_number[self.lowerlevelindex[mask]], unit=''),
-            astropy.table.Column(name='upperlevelpop',data=self.level_population[self.upperlevelindex[mask]], unit=''),
-            astropy.table.Column(name='lowerlevelpop',data=self.level_population[self.lowerlevelindex[mask]], unit=''),
+            astropy.table.Column(name='Tex',data=self.tex, unit=u.K),
+            astropy.table.Column(name='tau',data=self.tau, unit=''),
+            astropy.table.Column(name='frequency',data=self.frequency, unit=u.GHz),
+            astropy.table.Column(name='upperstateenergy',data=self.upperstateenergy, unit=u.K),
+            astropy.table.Column(name='upperlevel',data=self.quantum_number[self.upperlevelindex], unit=''),
+            astropy.table.Column(name='lowerlevel',data=self.quantum_number[self.lowerlevelindex], unit=''),
+            astropy.table.Column(name='upperlevelpop',data=self.level_population[self.upperlevelindex], unit=''),
+            astropy.table.Column(name='lowerlevelpop',data=self.level_population[self.lowerlevelindex], unit=''),
             astropy.table.Column(name='brightness',data=self.source_line_surfbrightness),
             astropy.table.Column(name='T_B',data=self.T_B), # T_B is pre-masked
         ]
