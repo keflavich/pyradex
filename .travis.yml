@@ -109,8 +109,8 @@ install:
     # COVERAGE DEPENDENCIES
     - if [[ $SETUP_CMD == 'test --coverage' ]]; then $PIP_INSTALL coverage coveralls; fi
 
-    - if [[ $SETUP_CMD != egg_info ]]; python setup.py build_radex_exe; fi
-    - if [[ $SETUP_CMD != egg_info ]]; python setup.py install_radex; fi
+    - if [[ $SETUP_CMD != egg_info ]]; then python setup.py build_radex_exe; fi
+    - if [[ $SETUP_CMD != egg_info ]]; then python setup.py install_radex; fi
 
 script:
    - python setup.py $SETUP_CMD
