@@ -1,7 +1,5 @@
 language: python
 
-python:
-    - 2.7
 env:
     global:
         # The following versions are the 'default' for tests, unless
