@@ -68,6 +68,11 @@ before_install:
     - if [[ $SETUP_CMD == build_sphinx* ]]; then sudo apt-get install graphviz texlive-latex-extra dvipng; fi
 
 install:
+    # Fortran needed for radex building
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq python-numpy cython libatlas-dev liblapack-dev gfortran
+    - sudo apt-get install -qq python-scipy
+    - sudo apt-get install -qq cython
 
     # CONDA
     - conda create --yes -n test -c astropy-ci-extras python=$TRAVIS_PYTHON_VERSION
@@ -89,7 +94,7 @@ install:
     - if [[ $SETUP_CMD != egg_info ]]; then $CONDA_INSTALL numpy=$NUMPY_VERSION requests ; fi
     - if [[ ($SETUP_CMD != egg_info) && ($TRAVIS_PYTHON_VERSION == 2.7) ]]; then $CONDA_INSTALL numpy=$NUMPY_VERSION keyring ; fi
     - if [[ ($SETUP_CMD != egg_info) && ($TRAVIS_PYTHON_VERSION != 2.7) ]]; then $PIP_INSTALL keyring ; fi
-    - if [[ $SETUP_CMD != egg_info ]]; then $CONDA_INSTALL numpy=$NUMPY_VERSION cython ; fi
+    - if [[ $SETUP_CMD != egg_info ]]; then $CONDA_INSTALL numpy=$NUMPY_VERSION cython requests ; fi
     # - if [[ $SETUP_CMD != egg_info ]]; then $PIP_INSTALL ...; fi
 
     - if [[ $SETUP_CMD != egg_info ]] ; then $PIP_INSTALL git+http://github.com/astropy/astroquery.git#egg=astroquery; fi
@@ -104,8 +109,8 @@ install:
     # COVERAGE DEPENDENCIES
     - if [[ $SETUP_CMD == 'test --coverage' ]]; then $PIP_INSTALL coverage coveralls; fi
 
-    - python setup.py build_radex_exe
-    - python setup.py install_radex
+    - if [[ $SETUP_CMD != egg_info ]]; python setup.py build_radex_exe
+    - if [[ $SETUP_CMD != egg_info ]]; python setup.py install_radex
 
 script:
    - python setup.py $SETUP_CMD
