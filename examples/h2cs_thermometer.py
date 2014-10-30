@@ -50,7 +50,7 @@ for abundance in (10**-8.5,10**-9):
         for temperature in [10,50,100]:
             R.temperature = temperature
             R.run_radex()
-            wcs = pyradex.synthspec.FrequencyArray(103.0*u.GHz, 103.1*u.GHz, npts=1000)
+            wcs = np.linspace(103.0, 103.1, 1000)*u.GHz
             S = pyradex.synthspec.SyntheticSpectrum.from_RADEX(wcs, R,
                                                                linewidth=10*u.km/u.s)
             S.plot(label='%i K' % temperature)

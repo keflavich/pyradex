@@ -25,7 +25,7 @@ for ii,temperature in enumerate(temperatures):
 
     R.temperature = temperature
     R.run_radex()
-    wcs = pyradex.synthspec.FrequencyArray(110.326*u.GHz,110.388*u.GHz, npts=1000)
+    wcs = np.linspace(110.326, 110.388, 1000)*u.GHz
     S = pyradex.synthspec.SyntheticSpectrum.from_RADEX(wcs,R)
     
     # spectral colors
