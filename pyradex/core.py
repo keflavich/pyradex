@@ -1149,7 +1149,7 @@ def density_distribution(densarr, distr, moleculecolumn,
             R.run_radex()
         except ValueError as ex:
             if ex.args[0] == "Extremely low or extremely high column.":
-                if R.column > u.Quantity(1e20, u.cm**2):
+                if R.column > u.Quantity(1e20, u.cm**-2):
                     raise ex
                 else:
                     linestrengths.append(np.zeros_like(line_ids))
