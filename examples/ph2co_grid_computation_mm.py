@@ -70,7 +70,8 @@ def compute_grid(densities=densities, temperatures=temperatures, fortho=fortho,
             #R.abundance = abundance # reset column to the appropriate value
             R.column_per_bin = columnperbin
             R.deltav = deltav
-            R.run_radex(reuse_last=False, reload_molfile=True)
+            R.run_radex(reuse_last=True, reload_molfile=True,
+                        validate_colliders=False)
 
             TI = R.source_line_surfbrightness
             taugrid_303[jj,ii] = R.tau[key_303]
@@ -108,7 +109,7 @@ if __name__ == "__main__":
                     (1e15, 10, ),
         ]
 
-    for geom in ('lvg','sphere'):
+    for geom in ('lvg','sphere','slab'):
         for opr in (0.01, 3):
             for colh2co, dv in johnstonpars:
                 (TI, taugrid_303,texgrid_303,fluxgrid_303,
@@ -121,15 +122,18 @@ if __name__ == "__main__":
                 ax = fig.gca()
 
                 im = ax.imshow((fluxgrid_303/fluxgrid_321).T, vmin=1.0, vmax=10, aspect=fluxgrid_303.shape[0]/float(fluxgrid_303.shape[1]),
-                               norm=matplotlib.colors.LogNorm())
-                fig.colorbar(im)
+                               norm=matplotlib.colors.LogNorm(), cmap='cubehelix')
+                cb = fig.colorbar(im)
+                cb.set_ticks([1.3,1.6]+range(1,11))
+                cb.set_ticklabels([1.3,1.6]+range(1,11))
                 c = ax.contour((fluxgrid_303/fluxgrid_321).T, levels=[1.4,1.5,1.6,1.7,1.8], colors=['w']*3)
                 ax.clabel(c, inline=1, fontsize=10, color='w') 
                 ax.xaxis.set_major_formatter(FuncFormatter(lambda x,y: "{0:0.2f}".format(np.log10(densities[int(x)])) if x<len(densities) else ""))
                 ax.yaxis.set_major_formatter(FuncFormatter(lambda x,y: str(temperatures[int(x)]) if x<len(temperatures) else ""))
                 ax.set_ylabel("Temperature (K)")
                 ax.set_xlabel("Log Density (cm$^{-3}$)")
-                ax.set_title("N(p-H$_2$CO) = $10^{{{0}}}$, geom={1}, dv={2}, opr={3}".format(np.log10(R.column_per_bin.value),
+                ax.set_title("H$_2$CO $3_{{0,3}}$-$2_{{0,2}}$ / $3_{{2,1}}-2_{{2,0}}$\n"
+                             "N(p-H$_2$CO) = $10^{{{0}}}$, geom={1}, dv={2}, opr={3}".format(np.log10(R.column_per_bin.value),
                                                                                              R.escapeProbGeom,
                                                                                              R.deltav.value,
                                                                                              opr))
@@ -144,15 +148,18 @@ if __name__ == "__main__":
                 ax = fig.gca()
 
                 im = ax.imshow((fluxgrid_303/fluxgrid_322).T, vmin=1.0, vmax=10, aspect=fluxgrid_303.shape[0]/float(fluxgrid_303.shape[1]),
-                               norm=matplotlib.colors.LogNorm())
-                fig.colorbar(im)
+                               norm=matplotlib.colors.LogNorm(), cmap='cubehelix')
+                cb = fig.colorbar(im, ticks=np.arange(1,11))
+                cb.set_ticks([1.3,1.6]+range(1,11))
+                cb.set_ticklabels([1.3,1.6]+range(1,11))
                 c = ax.contour((fluxgrid_303/fluxgrid_322).T, levels=[1.4,1.5,1.6,1.7,1.8], colors=['w']*3)
                 ax.clabel(c, inline=1, fontsize=10, color='w') 
                 ax.xaxis.set_major_formatter(FuncFormatter(lambda x,y: "{0:0.2f}".format(np.log10(densities[int(x)])) if x<len(densities) else ""))
                 ax.yaxis.set_major_formatter(FuncFormatter(lambda x,y: str(temperatures[int(x)]) if x<len(temperatures) else ""))
                 ax.set_ylabel("Temperature (K)")
                 ax.set_xlabel("Log Density (cm$^{-3}$)")
-                ax.set_title("N(p-H$_2$CO) = $10^{{{0}}}$, geom={1}, dv={2}, opr={3}".format(np.log10(R.column_per_bin.value),
+                ax.set_title("H$_2$CO $3_{{0,3}}$-$2_{{0,2}}$ / $3_{{2,2}}-2_{{2,1}}$\n"
+                             "N(p-H$_2$CO) = $10^{{{0}}}$, geom={1}, dv={2}, opr={3}".format(np.log10(R.column_per_bin.value),
                                                                                              R.escapeProbGeom,
                                                                                              R.deltav.value,
                                                                                              opr))
