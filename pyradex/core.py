@@ -697,7 +697,7 @@ class Radex(object):
                 else:
                     self.abundance = ab / (self._u_cc*u.pc).to(self._u_sc)
             elif self.locked_parameter == 'abundance':
-                self.density = col / self.length / abund
+                self.density = col / self.length / self.abundance
             self._lock_param('column')
             self._is_locked = False
 
