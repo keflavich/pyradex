@@ -1,9 +1,6 @@
 import pyradex
-import pylab as pl
 import numpy as np
-import matplotlib
 import astropy.units as u
-import os
 
 def test_synthspec():
     R = pyradex.Radex(column=1e15)
