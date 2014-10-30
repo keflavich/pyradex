@@ -123,6 +123,7 @@ if __name__ == "__main__":
 
                 im = ax.imshow((fluxgrid_303/fluxgrid_321).T, vmin=1.0, vmax=10, aspect=fluxgrid_303.shape[0]/float(fluxgrid_303.shape[1]),
                                norm=matplotlib.colors.LogNorm(), cmap='cubehelix')
+                ax.plot(densities,[300]*len(densities), 'r--', linewidth=2, alpha=0.5)
                 cb = fig.colorbar(im)
                 cb.set_ticks([1.3,1.6]+range(1,11))
                 cb.set_ticklabels([1.3,1.6]+range(1,11))
@@ -137,6 +138,7 @@ if __name__ == "__main__":
                                                                                              R.escapeProbGeom,
                                                                                              R.deltav.value,
                                                                                              opr))
+                ax.axis([densities.min(), densities.max(), temperatures.min(), temperatures.max()])
                 pl.savefig("paraH2CO_thermometry_303to321_geom{1}_col{0}_deltav{2}_opr{3}_denstemgrid.png".format(np.log10(R.column_per_bin.value),
                                                                                                          R.escapeProbGeom,
                                                                                                          R.deltav.value,
@@ -149,6 +151,7 @@ if __name__ == "__main__":
 
                 im = ax.imshow((fluxgrid_303/fluxgrid_322).T, vmin=1.0, vmax=10, aspect=fluxgrid_303.shape[0]/float(fluxgrid_303.shape[1]),
                                norm=matplotlib.colors.LogNorm(), cmap='cubehelix')
+                ax.plot(densities,[300]*len(densities), 'r--', linewidth=2, alpha=0.5)
                 cb = fig.colorbar(im, ticks=np.arange(1,11))
                 cb.set_ticks([1.3,1.6]+range(1,11))
                 cb.set_ticklabels([1.3,1.6]+range(1,11))
@@ -163,6 +166,7 @@ if __name__ == "__main__":
                                                                                              R.escapeProbGeom,
                                                                                              R.deltav.value,
                                                                                              opr))
+                ax.axis([densities.min(), densities.max(), temperatures.min(), temperatures.max()])
                 fig.savefig("paraH2CO_thermometry_303to322_geom{1}_col{0}_deltav{2}_opr{3}_denstemgrid.png".format(np.log10(R.column_per_bin.value),
                                                                                                          R.escapeProbGeom,
                                                                                                          R.deltav.value,
