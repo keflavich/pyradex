@@ -59,6 +59,26 @@ class BuildRadexExecutable(Command):
         import install_radex
         install_radex.build_radex_executable()
 
+
+class InstallFjdu(Command):
+    """
+    Compile Fujun Du's "myradex"
+    """
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        cwd = os.getcwd()
+        os.chdir('myRadex')
+        os.system('make wrapper')
+        os.chdir(cwd)
+
+
 import subprocess
 import shutil
 import os
@@ -95,6 +115,9 @@ setup(name='pyradex',
       install_requires=['astropy>=0.4.1', 'requests>=2.4.1',],
       cmdclass={'test': PyTest,
                 'install_radex': InstallRadex,
-                'build_radex_exe': BuildRadexExecutable},
+                'build_radex_exe': BuildRadexExecutable,
+                'install_myradex': InstallFjdu,
+                'install_fjdu': InstallFjdu,
+               },
       #include_package_data=True,
       )

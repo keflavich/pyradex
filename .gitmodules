@@ -1,0 +1,3 @@
+[submodule "myRadex"]
+	path = myRadex
+	url = git@github.com:keflavich/myRadex.git
