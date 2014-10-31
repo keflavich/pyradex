@@ -77,7 +77,14 @@ class InstallFjdu(Command):
         os.chdir('myRadex')
         os.system('make wrapper')
         os.chdir(cwd)
-        os.link('myRadex/wrapper_my_radex.so', 'pyradex/fjdu/myradex.so')
+        try:
+            os.link('myRadex/wrapper_my_radex.so', 'pyradex/fjdu/myradex.so')
+        except OSError as ex:
+            if ex.errno == 17:
+                # file exists
+                pass
+            else:
+                raise ex
 
 
 import subprocess
@@ -111,6 +118,7 @@ setup(name='pyradex',
       url='http://github.com/keflavich/pyradex/',
       packages=['pyradex','pyradex.radex','pyradex.tests'],
       package_data={'pyradex.radex':['radex.so'],
+                    'pyradex.fjdu':['myradex.so'],
                     'pyradex.tests':['data/example.out']},
       requires=['requests', 'astroquery', ],
       install_requires=['astropy>=0.4.1', 'requests>=2.4.1',],
