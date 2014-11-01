@@ -5,6 +5,7 @@ import os
 import distutils.spawn
 import numpy as np
 from astropy import units as u
+from astropy import log
 
 def data_path(filename):
     data_dir = os.path.join(os.path.dirname(__file__), 'data')
@@ -21,6 +22,7 @@ def test_thin_co():
     ftbl = FF()
 
     diff = rtbl['upperlevelpop'] - ftbl['upperlevelpop']
+    log.info(diff)
     #np.testing.assert_allclose(diff, 0)
 
 def test_thick_co():
@@ -34,4 +36,5 @@ def test_thick_co():
     ftbl = FF()
 
     diff = rtbl['upperlevelpop'] - ftbl['upperlevelpop']
+    log.info(diff)
     #np.testing.assert_allclose(diff, 0)
