@@ -11,7 +11,11 @@ from .. import utils
 import astropy.units as u
 
 class Fjdu(base_class.RadiativeTransferApproximator):
-    def __init__(self, datapath=None, species='co', **kwargs):
+    def __init__(self, datapath=None, species='co',
+                 density=1e3,
+                 temperature=30,
+                 column=None,
+                 **kwargs):
 
         if os.getenv('RADEX_DATAPATH') and datapath is None:
             datapath = os.getenv('RADEX_DATAPATH')
@@ -20,7 +24,8 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         self.species = species
 
         self.set_default_params()
-        self.set_params(**kwargs)
+        self.set_params(temperature=temperature, density=density,
+                        column=column, **kwargs)
         from pyradex.fjdu import wrapper_my_radex
         myradex_wrapper = wrapper_my_radex.myradex_wrapper
         self._myradex = myradex_wrapper
@@ -57,20 +62,32 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         self._level_population = f_occupations
 
 
-    _default_params = (('tkin', 1e3),
+    _default_params = (('tkin', 0.0),
                        ('dv_CGS', 1e5),
-                       ('dens_X_CGS', 1e6),
-                       ('Ncol_X_CGS', 1e15),
-                       ('H2_density_CGS', 1e9),
-                       ('HI_density_CGS', 1e1),
+                       ('dens_X_CGS', 0.0),
+                       ('Ncol_X_CGS', 0.0),
+                       ('H2_density_CGS', 0.0),
+                       ('HI_density_CGS', 0.0),
                        ('oH2_density_CGS', 0.0),
-                       ('pH2_densty_CGS', 0.0),
+                       ('pH2_density_CGS', 0.0),
                        ('HII_density_CGS', 0.0),
-                       ('Electron_density_CGS', 1e6),
+                       ('Electron_density_CGS', 0.0),
                        ('n_levels', 0),
                        ('n_item', 0),
                        ('n_transitions', 0),
                       )
+
+    _keyword_map = {'temperature': 'tkin',
+                    'deltav': 'dv_cgs',
+                    'column': 'ncol_x_cgs'}
+
+    _density_keyword_map = {'h2': 'h2_density_cgs',
+                            'h': 'hi_density_cgs',
+                            'oh2': 'oh2_density_cgs',
+                            'ph2': 'ph2_density_cgs',
+                            'hii': 'hii_density_cgs',
+                            'e': 'electron_density_cgs',
+                           }
 
     def set_default_params(self):
         self._params = lower_keys(dict(self._default_params))
@@ -91,7 +108,11 @@ class Fjdu(base_class.RadiativeTransferApproximator):
             raise TypeError('Parameters must be a dictionary.')
         default = lower_keys(dict(self._default_params))
         for k in value:
-            if k.lower() not in default:
+            if k.lower() in self._keyword_map:
+                self._params[self._keyword_map[k]] = value[k]
+            elif k.lower() in ('density','collider_densities'):
+                self.density = value[k]
+            elif k.lower() not in default:
                 raise ValueError("{0} is not a valid key.".format(k))
             else:
                 self._params[k] = value[k]
@@ -102,15 +123,30 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         dd = {'H2': u.Quantity(self.params['h2_density_cgs'], self._u_cc),
               'OH2': u.Quantity(self.params['oh2_density_cgs'], self._u_cc),
               'PH2': u.Quantity(self.params['ph2_density_cgs'], self._u_cc),
-              'E': u.Quantity(self.params['Electron_density_cgs'], self._u_cc),
-              'H+': u.Quantity(self.params['HII_density_cgs'], self._u_cc),
-              'H': u.Quantity(self.params['HI_density_cgs'], self._u_cc),
+              'E': u.Quantity(self.params['electron_density_cgs'], self._u_cc),
+              'H+': u.Quantity(self.params['hii_density_cgs'], self._u_cc),
+              'H': u.Quantity(self.params['hi_density_cgs'], self._u_cc),
               'He': u.Quantity(0, self._u_cc),}
         return ImmutableDict(dd)
 
     @density.setter
     def density(self, value):
-        raise NotImplementedError
+        if isinstance(value, dict):
+            # dictionary of collider densities
+            for k in value:
+                if k.lower() in self._density_keyword_map:
+                    key = self._density_keyword_map[k.lower()]
+                    self._params[key.lower()] = value[k]
+                elif k.lower() in self._density_keyword_map.values():
+                    self._params[k.lower()] = value[k]
+                else:
+                    raise KeyError("Collider {0} not recognized.".format(k))
+            self._params['dens_x_cgs'] = self.total_density
+        else:
+            self._params['dens_x_cgs'] = value
+            for k in self._density_keyword_map.values():
+                self._params[k] = 0.0
+            self._params['h2_density_cgs'] = value
 
     @property
     def temperature(self):

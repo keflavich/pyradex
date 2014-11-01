@@ -56,7 +56,28 @@ class RadiativeTransferApproximator(object):
         The total density *by number of particles* 
         The *mass density* can be dramatically different!
         """
-        return np.sum(self.density.values())
+        vc = [x.lower() for x in self.valid_colliders]
+        if 'h2' in vc:
+            useh2 = 1
+            useoph2 = 0
+        elif 'oh2' in vc or 'ph2' in vc:
+            useh2 = 0
+            useoph2 = 1
+        else:
+            # Weird case: no H2 colliders at all
+            useoph2 = 0
+            useh2 = 0
+
+        weights = {'H2': useh2,
+                   'PH2': useoph2,
+                   'OH2': useoph2,
+                   'E': 1,
+                   'H': 1,
+                   'He': 1,
+                   'H+': 1,}
+
+        return np.sum((self.density[k]*weights[k] for k in self.density))
+
 
     @property
     def mass_density(self):
@@ -66,11 +87,12 @@ class RadiativeTransferApproximator(object):
             useh2 = 1
             useoph2 = 0
         elif 'oh2' in vc or 'ph2' in vc:
-            useoph2 = 0
+            useh2 = 0
             useoph2 = 1
         else:
+            # Weird case: no H2 colliders at all
             useoph2 = 0
-            useoph2 = 0
+            useh2 = 0
 
         weights = {'H2': 2*useh2,
                    'PH2': 2*useoph2,
