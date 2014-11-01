@@ -10,6 +10,15 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     def __init__(self, **kwargs):
         self.set_default_params()
 
+    def __call__(self, return_table=True, **kwargs):
+
+        niter = self.run_radex(**kwargs)
+
+        if return_table:
+            return self.get_table()
+        else:
+            return niter
+
     def load_datfile(self, filename=None, verbose=False):
         filename = filename or self.molpath
         if filename is not None:
@@ -159,6 +168,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         return 'lvg'
         
     def run_radex(self, **kwargs):
+        self.set_params(**kwargs)
         energies, f_occupations, data_transitions, cooling_rate = \
                 myradex_wrapper.run_one_params(**self.params)
         self._energies = u.Quantity(energies, u.K) # excitation temperature

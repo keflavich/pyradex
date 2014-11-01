@@ -12,6 +12,7 @@ import os
 from . import utils
 from . import synthspec
 from .utils import QuantityOff,ImmutableDict,unitless,grouper
+from .base_class import RadiativeTransferApproximator
 
 from astropy import units as u
 from astropy import constants
@@ -182,7 +183,7 @@ def parse_outfile(filename):
     data = astropy.table.Table(columns, meta=header)
     return data
 
-class Radex(object):
+class Radex(RadiativeTransferApproximator):
 
     def __call__(self, return_table=True, **kwargs):
         # reset the parameters appropriately
