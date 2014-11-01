@@ -796,13 +796,13 @@ class Radex(RadiativeTransferApproximator):
 
     @property
     def upperlevelnumber(self):
-        return self.radex.imolec.iupp[self._mask]
-        #self.quantum_number[self.upperlevelindex]
+        # wrong return self.radex.imolec.iupp[self._mask]
+        return self.quantum_number[self.upperlevelindex]
 
     @property
     def lowerlevelnumber(self):
-        return self.radex.imolec.ilow[self._mask]
-        # self.quantum_number[self.lowerlevelindex],
+        # wrong return self.radex.imolec.ilow[self._mask]
+        return self.quantum_number[self.lowerlevelindex]
 
     @property
     def upperlevelindex(self):
