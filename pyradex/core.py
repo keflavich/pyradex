@@ -366,6 +366,12 @@ class Radex(RadiativeTransferApproximator):
     def set_params(self, density=None, collider_densities=None,
                    column=None, column_per_bin=None, temperature=None,
                    abundance=None):
+
+        # This MUST happen before density is set, otherwise OPR will be 
+        # incorrectly set.
+        if temperature is not None:
+            self.radex.cphys.tkin = unitless(temperature)
+
         if collider_densities is not None:
             self.density = collider_densities
         elif density is not None:
