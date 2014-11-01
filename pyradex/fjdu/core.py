@@ -1,14 +1,19 @@
-try:
-    from myradex import myradex_wrapper
-except ImportError:
-    pass
+from __future__ import print_function
+import numpy as np
+import os
+from astropy import constants
+from astropy import log
+import astropy.table
 from .. import base_class
+from ..utils import ImmutableDict,unitless,lower_keys
 
-from .utils import ImmutableDict,unitless,lower_keys
+import astropy.units as u
 
 class Fjdu(base_class.RadiativeTransferApproximator):
     def __init__(self, **kwargs):
         self.set_default_params()
+        from myradex import myradex_wrapper
+        self._myradex = myradex_wrapper
 
     def __call__(self, return_table=True, **kwargs):
 
@@ -24,9 +29,9 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         if filename is not None:
             self.dpath = os.path.dirname(filename) or self.dpath
             self.fname = os.path.basename(filename)
-        nlevels, nitems, ntrans = myradex_wrapper.config_basic(self.dpath,
-                                                               self.fname,
-                                                               verbose)
+        nlevels, nitems, ntrans = self._myradex.config_basic(self.dpath,
+                                                             self.fname,
+                                                             verbose)
         self.params['n_levels'] = nlevels
         self.params['n_items'] = nitems
         self.params['n_transitions'] = ntrans
@@ -59,7 +64,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     def params(self, value):
         if not isinstance(value, dict):
             raise TypeError('Parameters must be a dictionary.')
-        default = lower_keys(dict(_default_params))
+        default = lower_keys(dict(self._default_params))
         self._params = default
         for k in value:
             if k.lower() not in default:
@@ -67,7 +72,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
             else:
                 self._params[k] = value[k]
 
-    @params
+    @property
     def density(self):
 
         dd = {'H2': u.Quantity(self.params['h2_density_cgs'], self._u_cc),
@@ -170,9 +175,9 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     def run_radex(self, **kwargs):
         self.set_params(**kwargs)
         energies, f_occupations, data_transitions, cooling_rate = \
-                myradex_wrapper.run_one_params(**self.params)
+                self._myradex.run_one_params(**self.params)
         self._energies = u.Quantity(energies, u.K) # excitation temperature
-        self._data_dict = cast_into_dic("".join(myradex_wrapper.column_names),
+        self._data_dict = cast_into_dic("".join(self._myradex.column_names),
                                         data_transitions)
         self._level_population = f_occupations
 

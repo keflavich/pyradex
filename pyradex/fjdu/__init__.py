@@ -1,1 +1,2 @@
-import myradex
+import core
+from core import Fjdu

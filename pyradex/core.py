@@ -6,7 +6,6 @@ import warnings
 import astropy.units as u
 _quantity = u.Quantity
 from collections import defaultdict
-import itertools
 import os
 
 from . import utils

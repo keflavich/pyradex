@@ -3,6 +3,9 @@ import sys
 import os
 import errno
 from astropy import log
+import itertools
+import astropy.units as u
+_quantity = u.Quantity
 
 def mkdir_p(path):
     """ mkdir -p equivalent [used by get_datafile]"""
@@ -105,4 +108,4 @@ def grouper(iterable, n, fillvalue=None):
 
 def lower_keys(d):
     """ copy dictionary with lower-case keys """
-    return {k.lower(): k[d] for k in d}
+    return {k.lower(): d[k] for k in d}
