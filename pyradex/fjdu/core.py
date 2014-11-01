@@ -75,6 +75,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                        ('n_levels', 0),
                        ('n_item', 0),
                        ('n_transitions', 0),
+                       ('geotype', 'LVG'),
                       )
 
     _keyword_map = {'temperature': 'tkin',
@@ -93,10 +94,16 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         self._params = lower_keys(dict(self._default_params))
 
     def set_params(self, **kwargs):
-        # To trigger use of params.setter
-        pars = self.params
-        pars.update(kwargs)
-        self.params = pars
+        default = lower_keys(dict(self._default_params))
+        for k in kwargs:
+            if k.lower() in self._keyword_map:
+                self._params[self._keyword_map[k]] = kwargs[k]
+            elif k.lower() in ('density','collider_densities'):
+                self.density = kwargs[k]
+            elif k.lower() not in default:
+                raise ValueError("{0} is not a valid key.".format(k))
+            else:
+                self._params[k] = kwargs[k]
 
     @property
     def params(self):
@@ -106,16 +113,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     def params(self, value):
         if not isinstance(value, dict):
             raise TypeError('Parameters must be a dictionary.')
-        default = lower_keys(dict(self._default_params))
-        for k in value:
-            if k.lower() in self._keyword_map:
-                self._params[self._keyword_map[k]] = value[k]
-            elif k.lower() in ('density','collider_densities'):
-                self.density = value[k]
-            elif k.lower() not in default:
-                raise ValueError("{0} is not a valid key.".format(k))
-            else:
-                self._params[k] = value[k]
+        self.set_params(**value)
 
     @property
     def density(self):
@@ -238,7 +236,14 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
     @property
     def escprobProbGeom(self):
-        return 'lvg'
+        return self._params['geotype']
+
+    @escprobProbGeom.setter
+    def escprobProbGeom(self, value):
+        if value in ('LVG','spherical','slab'):
+            self._params['geotype'] = value
+        else:
+            raise ValueError("Geometry must be spherical, slab, or LVG")
         
     _um_to_ghz = u.um.to(u.GHz, equivalencies=u.spectral())
 
