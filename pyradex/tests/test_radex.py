@@ -95,6 +95,8 @@ def test_radex_results():
     rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
                         temperature=30, tbackground=2.73)
     rdx.run_radex()
+    assert rdx.temperature.value == 30.0 # no approximates allowed
+    assert rdx.column.value == 1e14
     #       LINE         E_UP       FREQ        WAVEL     T_EX      TAU        T_R       POP        POP       FLUX        FLUX
     #                    (K)        (GHz)       (um)      (K)                  (K)        UP        LOW      (K*km/s) (erg/cm2/s)
     # 1      -- 0          5.5    115.2712   2600.7576   56.131  1.786E-03  9.378E-02  3.640E-01  1.339E-01  9.983E-02  1.969E-09
