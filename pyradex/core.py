@@ -11,6 +11,7 @@ import os
 
 from . import utils
 from . import synthspec
+from .utils import QuantityOff,ImmutableDict,unitless,grouper
 
 from astropy import units as u
 from astropy import constants
@@ -20,30 +21,6 @@ import astropy.table
 __all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex',
            'density_distribution']
 
-class QuantityOff(object):
-    """ Context manager to disable quantities """
-    def __enter__(self):
-        self._quantity = u.Quantity
-        u.Quantity = lambda value,unit: value
-
-    def __exit__(self, type, value, traceback):
-        u.Quantity = self._quantity
- 
-class ImmutableDict(dict):
-    def __setitem__(self, key, value):
-        raise AttributeError("Setting items for this dictionary is not supported.")
-
-def unitless(x):
-    if hasattr(x, 'value'):
-        return x.value
-    else:
-        return x
-
-# silly tool needed for fortran misrepresentation of strings
-# http://stackoverflow.com/questions/434287/what-is-the-most-pythonic-way-to-iterate-over-a-list-in-chunks
-def grouper(iterable, n, fillvalue=None):
-    args = [iter(iterable)] * n
-    return itertools.izip_longest(*args, fillvalue=fillvalue)
         
 
 def pyradex(executable='radex', minfreq=100, maxfreq=130,

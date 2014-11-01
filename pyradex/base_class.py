@@ -183,15 +183,7 @@ class RadiativeTransferApproximator(object):
 
     @property
     def tbg(self):
-        return u.Quantity(self.radex.cphys.tbg, u.K)
-
-    @tbg.setter
-    def tbg(self, tbg):
-        #print("Set TBG=%f" % tbg)
-        if hasattr(tbg, 'value'):
-            tbg = unitless(u.Quantity(tbg, u.K))
-        self.radex.cphys.tbg = tbg
-        self.radex.backrad()
+        raise NotImplementedError
 
     def _validate_colliders(self):
         """
@@ -233,46 +225,13 @@ class RadiativeTransferApproximator(object):
 
 
     @property
-    def quantum_number(self):
-        return np.array([("".join(x)).strip() for x in
-                         grouper(self.radex.quant.qnum.T.ravel().tolist(),6)])
-
-    @property
-    def upperlevelnumber(self):
-        return self.radex.imolec.iupp[self._mask]
-
-    @property
-    def lowerlevelnumber(self):
-        return self.radex.imolec.ilow[self._mask]
-
-    @property
-    def upperlevelindex(self):
-        return self.radex.imolec.iupp[self._mask]-1
-
-    @property
-    def upperlevelpop(self):
-        return self.level_population[self.upperlevelindex]
-
-    @property
-    def lowerlevelindex(self):
-        return self.radex.imolec.ilow[self._mask]-1
-
-    @property
-    def lowerlevelpop(self):
-        return self.level_population[self.lowerlevelindex]
-
-    @property
-    def upperstateenergy(self):
-        return self.radex.rmolec.eup[self._mask]
-
-    @property
     def source_area(self):
-        return self._source_area
+        if hasattr(self, '_source_area'):
+            return self._source_area
 
     @source_area.setter
     def source_area(self, source_area):
         self._source_area = source_area
-
 
     @property
     def source_line_surfbrightness(self):
@@ -315,7 +274,7 @@ class RadiativeTransferApproximator(object):
 
     @property
     def background_brightness(self):
-        return u.Quantity(self.radex.radi.backi[self._mask], self._u_brightness)
+        raise NotImplementedError
 
     @property
     def flux_density(self):
@@ -343,50 +302,22 @@ class RadiativeTransferApproximator(object):
         return self.source_line_surfbrightness * self.source_area
 
 
-    _thc = (2 * constants.h * constants.c).cgs / u.sr
-    _fk = (constants.h * constants.c / constants.k_B).cgs
-    _thc_value = _thc.value
-    _fk_value = _fk.value
-
     @property
     def source_brightness(self):
         """
         RADEX compat?  (check)
         """
 
-        fk = self._fk_value
-        thc = self._thc_value
-
-        with QuantityOff():
-            ftau = np.exp(-self.tau)
-            xt = self._xt
-            xnu = self._xnu
-            earg = fk*xnu/self.tex
-            bnutex = thc*xt/(np.exp(earg)-1.0)
-            toti = self.background_brightness*ftau+bnutex*(1.0-ftau)
-
-        return u.Quantity(toti, self._u_brightness)
+        raise NotImplementedError
 
     @property
     def source_brightness_beta(self):
-        fk = self._fk_value
-        thc = self._thc_value
 
-        with QuantityOff():
-            ftau = np.exp(-self.tau)
-            xt = self._xt
-            xnu = self._xnu
-            earg = fk*xnu/self.tex
-            bnutex = thc*xt/(np.exp(earg)-1.0)
-            toti = self.background_brightness*ftau+bnutex*(1-self.beta)
-
-        return u.Quantity(toti, self._u_brightness)
+        raise NotImplementedError
 
     @property
     def beta(self):
-        # this will probably be faster if vectorized (translated completely
-        # from fortran to python)
-        return np.array([self.radex.escprob(t) for t in self.tau])
+        raise NotImplementedError
 
     def get_table(self):
         columns = [

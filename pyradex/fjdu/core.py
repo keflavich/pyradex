@@ -2,11 +2,11 @@ try:
     from myradex import myradex_wrapper
 except ImportError:
     pass
+from .. import base_class
 
-def lower_keys(d):
-    return {k.lower(): k[d] for k in d}
+from .utils import ImmutableDict,unitless,lower_keys
 
-class fjdu(object):
+class Fjdu(base_class.RadiativeTransferApproximator):
     def __init__(self, **kwargs):
         self.set_default_params()
 
@@ -214,30 +214,10 @@ class fjdu(object):
     def source_line_brightness(self):
         return u.Quantity(self._data_dict['flux'], self._u_brightness)
 
+    @property
+    def beta(self):
+        return self._data_dict['beta']
 
-    def get_table(self):
-        columns = [
-            astropy.table.Column(name='Tex',data=self.tex, unit=u.K),
-            astropy.table.Column(name='tau',data=self.tau, unit=''),
-            astropy.table.Column(name='frequency',data=self.frequency, unit=u.GHz),
-            astropy.table.Column(name='upperstateenergy',data=self.upperstateenergy,
-                                 unit=u.K),
-            astropy.table.Column(name='upperlevel',data=self.quantum_number[self.upperlevelindex],
-                                 unit=''),
-            astropy.table.Column(name='lowerlevel',data=self.quantum_number[self.lowerlevelindex],
-                                 unit=''),
-            astropy.table.Column(name='upperlevelpop',data=self.level_population[self.upperlevelindex],
-                                 unit=''),
-            astropy.table.Column(name='lowerlevelpop',data=self.level_population[self.lowerlevelindex],
-                                 unit=''),
-            astropy.table.Column(name='brightness',
-                                 data=self.source_line_surfbrightness), 
-            astropy.table.Column(name='T_B',data=self.T_B), # T_B is pre-masked
-        ]
-
-        T = astropy.table.Table(columns)
-
-        return T
 
 def cast_into_dic(col_names, arr):
     '''col_names is column_info, and arr is data_transitions'''
