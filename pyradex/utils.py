@@ -89,6 +89,15 @@ class QuantityOff(object):
 
     def __exit__(self, type, value, traceback):
         u.Quantity = self._quantity
+
+class NoVerify(object):
+    """ Context manager to disable verification of molecule files """
+    def __enter__(self):
+        self._verify_collisionratefile = verify_collisionratefile
+        globals()['verify_collisionratefile'] = lambda x: True
+
+    def __exit__(self, type, value, traceback):
+        globals()['verify_collisionratefile'] = self._verify_collisionratefile
  
 class ImmutableDict(dict):
     def __setitem__(self, key, value):

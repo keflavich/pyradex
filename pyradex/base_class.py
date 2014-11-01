@@ -5,6 +5,7 @@ _quantity = u.Quantity
 import os
 
 from .utils import QuantityOff,ImmutableDict,unitless,grouper
+from . import utils
 
 from astropy import units as u
 from astropy import constants
@@ -126,7 +127,7 @@ class RadiativeTransferApproximator(object):
 
     @property
     def datapath(self):
-        return os.path.basedir(self.molpath)
+        return os.path.dirname(self.molpath)
 
     @datapath.setter
     def datapath(self, radat):
@@ -334,16 +335,27 @@ class RadiativeTransferApproximator(object):
 
     def get_table(self):
         columns = [
-            astropy.table.Column(name='Tex',data=self.tex, unit=u.K),
-            astropy.table.Column(name='tau',data=self.tau, unit=''),
-            astropy.table.Column(name='frequency',data=self.frequency, unit=u.GHz),
-            astropy.table.Column(name='upperstateenergy',data=self.upperstateenergy, unit=u.K),
-            astropy.table.Column(name='upperlevel',data=self.quantum_number[self.upperlevelindex], unit=''),
-            astropy.table.Column(name='lowerlevel',data=self.quantum_number[self.lowerlevelindex], unit=''),
-            astropy.table.Column(name='upperlevelpop',data=self.level_population[self.upperlevelindex], unit=''),
-            astropy.table.Column(name='lowerlevelpop',data=self.level_population[self.lowerlevelindex], unit=''),
-            astropy.table.Column(name='brightness',data=self.source_line_surfbrightness),
-            astropy.table.Column(name='T_B',data=self.T_B), # T_B is pre-masked
+            astropy.table.Column(name='Tex', data=self.tex, unit=u.K),
+            astropy.table.Column(name='tau', data=self.tau, unit=''),
+            astropy.table.Column(name='frequency', data=self.frequency,
+                                 unit=u.GHz),
+            astropy.table.Column(name='upperstateenergy',
+                                 data=self.upperstateenergy, unit=u.K),
+            astropy.table.Column(name='upperlevel',
+                                 data=self.upperlevel,
+                                 unit=''),
+            astropy.table.Column(name='lowerlevel',
+                                 data=self.lowerlevel,
+                                 unit=''),
+            astropy.table.Column(name='upperlevelpop',
+                                 data=self.upperlevelpop,
+                                 unit=''),
+            astropy.table.Column(name='lowerlevelpop',
+                                 data=self.lowerlevelpop,
+                                 unit=''),
+            astropy.table.Column(name='brightness',
+                                 data=self.source_line_surfbrightness),
+            astropy.table.Column(name='T_B', data=self.T_B), # T_B is pre-masked
         ]
         if self.source_area:
             columns.append(astropy.table.Column(name='flux',data=self.line_flux_density[mask]))

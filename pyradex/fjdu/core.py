@@ -6,13 +6,23 @@ from astropy import log
 import astropy.table
 from .. import base_class
 from ..utils import ImmutableDict,unitless,lower_keys
+from .. import utils
 
 import astropy.units as u
 
 class Fjdu(base_class.RadiativeTransferApproximator):
-    def __init__(self, **kwargs):
+    def __init__(self, datapath=None, species='co', **kwargs):
+
+        if os.getenv('RADEX_DATAPATH') and datapath is None:
+            datapath = os.getenv('RADEX_DATAPATH')
+
+        self.datapath = os.path.dirname(datapath)
+        self.species = species
+
         self.set_default_params()
-        from myradex import myradex_wrapper
+        self.set_params(**kwargs)
+        from pyradex.fjdu import wrapper_my_radex
+        myradex_wrapper = wrapper_my_radex.myradex_wrapper
         self._myradex = myradex_wrapper
 
     def __call__(self, return_table=True, **kwargs):
@@ -24,17 +34,28 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         else:
             return niter
 
-    def load_datfile(self, filename=None, verbose=False):
+    def load_datafile(self, filename=None, verbose=False):
         filename = filename or self.molpath
-        if filename is not None:
-            self.dpath = os.path.dirname(filename) or self.dpath
-            self.fname = os.path.basename(filename)
-        nlevels, nitems, ntrans = self._myradex.config_basic(self.dpath,
+        self.datapath = (os.path.dirname(filename) or self.datapath)+"/"
+        self.fname = os.path.basename(filename)
+
+        nlevels, nitems, ntrans = self._myradex.config_basic(self.datapath,
                                                              self.fname,
                                                              verbose)
-        self.params['n_levels'] = nlevels
-        self.params['n_items'] = nitems
-        self.params['n_transitions'] = ntrans
+        self.set_params(**{'n_levels': nlevels,
+                           'n_item': nitems,
+                           'n_transitions': ntrans})
+
+    def run_radex(self, **kwargs):
+        self.set_params(**kwargs)
+        self.load_datafile()
+        energies, f_occupations, data_transitions, cooling_rate = \
+                self._myradex.run_one_params(**self.params)
+        self._energies = u.Quantity(energies, u.K) # excitation temperature
+        self._data_dict = cast_into_dic("".join(self._myradex.column_names),
+                                        data_transitions)
+        self._level_population = f_occupations
+
 
     _default_params = (('tkin', 1e3),
                        ('dv_CGS', 1e5),
@@ -48,13 +69,17 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                        ('Electron_density_CGS', 1e6),
                        ('n_levels', 0),
                        ('n_item', 0),
-                       ('n_transitions', 0))
+                       ('n_transitions', 0),
+                      )
 
     def set_default_params(self):
-        self.params = dict(self._default_params)
+        self._params = lower_keys(dict(self._default_params))
 
     def set_params(self, **kwargs):
-        self.params.update(kwargs)
+        # To trigger use of params.setter
+        pars = self.params
+        pars.update(kwargs)
+        self.params = pars
 
     @property
     def params(self):
@@ -65,7 +90,6 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         if not isinstance(value, dict):
             raise TypeError('Parameters must be a dictionary.')
         default = lower_keys(dict(self._default_params))
-        self._params = default
         for k in value:
             if k.lower() not in default:
                 raise ValueError("{0} is not a valid key.".format(k))
@@ -164,28 +188,27 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     @molpath.setter
     def molpath(self, molfile):
         if "~" in molfile:
-            molfile = os.path.expandpath(molfile)
+            molfile = os.path.expanduser(molfile)
         utils.verify_collisionratefile(molfile)
         self._molpath = molfile
+
+    @property
+    def datapath(self):
+        return self._datapath
+
+    @datapath.setter
+    def datapath(self, datapath):
+        self._datapath = datapath
 
     @property
     def escprobProbGeom(self):
         return 'lvg'
         
-    def run_radex(self, **kwargs):
-        self.set_params(**kwargs)
-        energies, f_occupations, data_transitions, cooling_rate = \
-                self._myradex.run_one_params(**self.params)
-        self._energies = u.Quantity(energies, u.K) # excitation temperature
-        self._data_dict = cast_into_dic("".join(self._myradex.column_names),
-                                        data_transitions)
-        self._level_population = f_occupations
-
     _um_to_ghz = u.um.to(u.GHz, equivalencies=u.spectral())
 
     @property
     def frequency(self):
-        return u.Quantity(self._data_dict[lam]*_um_to_ghz, unit=u.GHz)
+        return u.Quantity(self._data_dict['lam']*self._um_to_ghz, unit=u.GHz)
 
     @property
     def level_population(self):
@@ -224,14 +247,23 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     @property
     def source_line_brightness_temperature(self):
         return u.Quantity(self._data_dict['flux_K'], u.K)
+    
+    @property
+    def source_brightness(self):
+        return u.Quantity(self._data_dict['flux'], self._u_brightness)
 
     @property
-    def source_line_brightness(self):
-        return u.Quantity(self._data_dict['flux'], self._u_brightness)
+    def background_brightness(self):
+        # No background in fjdu?
+        return u.Quantity(0, self._u_brightness)
 
     @property
     def beta(self):
         return self._data_dict['beta']
+
+    @property
+    def statistical_weight(self):
+        return self._data_dict['gup']
 
 
 def cast_into_dic(col_names, arr):
