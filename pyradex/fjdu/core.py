@@ -244,7 +244,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
     @property
     def frequency(self):
-        return u.Quantity(self._data_dict['lam']*self._um_to_ghz, unit=u.GHz)
+        return u.Quantity(self._um_to_ghz/self._data_dict['lam'], unit=u.GHz)
 
     @property
     def level_population(self):

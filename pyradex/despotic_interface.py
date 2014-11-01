@@ -1,19 +1,12 @@
-try:
-    import despotic
-except ImportError:
-    despotic=False
 import numpy as np
 import warnings
 import os
 from collections import defaultdict
 from .utils import united,uvalue
 
-try:
-    from astropy import units as u
-    from astropy import constants
-    from astropy.table import Table,Column
-except ImportError:
-    u = False
+from astropy import units as u
+from astropy import constants
+from astropy.table import Table,Column
 
 class Despotic(object):
     """
@@ -75,8 +68,7 @@ class Despotic(object):
             Path to the molecular data files
         """
 
-        if not despotic:
-            raise ImportError("Despotic could not be imported.  Please check that it is installed.")
+        import despotic
         
         self.cloud = despotic.cloud()
         self.cloud.nH = float(np.sum([collider_densities[k]*2 if 'h2' in k.lower()
