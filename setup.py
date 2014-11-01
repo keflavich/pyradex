@@ -77,7 +77,7 @@ class InstallFjdu(Command):
         os.chdir('myRadex')
         os.system('make wrapper')
         os.chdir(cwd)
-        for fn in ('wrapper_my_radex.pyf', 'wrapper_my_radex.so'):
+        for fn in ('wrapper_my_radex.so',):
             try:
                 os.link('myRadex/{0}'.format(fn), 'pyradex/fjdu/{0}'.format(fn))
             except OSError as ex:
