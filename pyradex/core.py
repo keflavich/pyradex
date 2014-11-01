@@ -330,6 +330,10 @@ class Radex(object):
         self._locked_parameter = 'density'
         self._is_locked = True
 
+        # This MUST happen before density is set, otherwise OPR will be 
+        # incorrectly set.
+        self.radex.cphys.tkin = unitless(temperature)
+
         if collider_densities:
             self.density = collider_densities
             self._is_locked = False
@@ -366,6 +370,8 @@ class Radex(object):
         if abundance:
             self.abundance = abundance
 
+        # This has to happen here, because the colliders are read in at
+        # this point and rates interpolated
         self.temperature = temperature
         self.tbg = tbackground
 
@@ -469,8 +475,7 @@ class Radex(object):
                           "ortho & para collision rates are given)")
             #self.radex.cphys.density[0] = collider_densities['H2']
 
-            T = (self.temperature.value if hasattr(self.temperature,'value')
-                 else self.temperature)
+            T = unitless(self.temperature)
             if T > 0:
                 opr = min(3.0,9.0*np.exp(-170.6/T))
             else:

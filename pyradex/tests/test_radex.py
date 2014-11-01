@@ -4,6 +4,7 @@ import os
 import distutils.spawn
 import numpy as np
 from astropy import units as u
+from astropy import log
 
 exepath = 'Radex/bin/radex'
 #if os.path.isfile(exepath) and os.access(exepath, os.X_OK):
@@ -94,6 +95,29 @@ def test_radex_results():
     np.testing.assert_approx_equal(rdx.tau[0], 1.786E-03, 4)
     np.testing.assert_approx_equal(rdx.upperlevelpop[0], 3.640E-01, 4)
     np.testing.assert_approx_equal(rdx.lowerlevelpop[0], 1.339E-01, 4)
+
+def test_consistent_init():
+    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
+                        temperature=30, tbackground=2.73)
+    log.debug('crate at init: {0}'.format(rdx.radex.collie.crate[0,1]))
+    log.debug(str((rdx.density, rdx.temperature, rdx.column, rdx._cddv)))
+    rdx.run_radex()
+    log.debug('crate at run: {0}'.format(rdx.radex.collie.crate[0,1]))
+    tex0 = rdx.tex[0].value
+    crate0 = np.copy(rdx.radex.collie.crate)
+    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
+                        temperature=25, tbackground=2.73)
+    log.debug('crate at temchange: {0}'.format(rdx.radex.collie.crate[0,1]))
+    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
+                        temperature=30, tbackground=2.73)
+    log.debug('crate at init2: {0}'.format(rdx.radex.collie.crate[0,1]))
+    log.debug(str((rdx.density, rdx.temperature, rdx.column, rdx._cddv)))
+    rdx.run_radex()
+    log.debug('crate at run2: {0}'.format(rdx.radex.collie.crate[0,1]))
+    tex1 = rdx.tex[0].value
+    crate1 = np.copy(rdx.radex.collie.crate)
+    assert tex0==tex1
+    assert np.all(crate0 == crate1)
 
 
 if __name__ == "__main__":
