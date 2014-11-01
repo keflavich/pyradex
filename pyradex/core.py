@@ -454,6 +454,8 @@ class Radex(RadiativeTransferApproximator):
                         'HE': 5,
                         'H+': 6}
 
+        self._use_thermal_opr = False
+
         if isinstance(collider_density, (float,int,_quantity,np.ndarray)):
             log.warn("Assuming the density is n(H_2).")
             collider_density = {'H2': collider_density}
@@ -476,10 +478,12 @@ class Radex(RadiativeTransferApproximator):
             # See lines 91, 92 of io.f
             self.radex.cphys.density[1] = collider_densities['PH2']
             self.radex.cphys.density[2] = collider_densities['OH2']
+            self._use_thermal_opr = False
         elif 'H2' in collider_densities:
             warnings.warn("Using a default ortho-to-para ratio (which "
                           "will only affect species for which independent "
                           "ortho & para collision rates are given)")
+            self._use_thermal_opr = True
             #self.radex.cphys.density[0] = collider_densities['H2']
 
             T = unitless(self.temperature)
@@ -488,6 +492,7 @@ class Radex(RadiativeTransferApproximator):
             else:
                 opr = 3.0
             fortho = opr/(1+opr)
+            log.debug("Set OPR to {0} and fortho to {1}".format(opr,fortho))
             self.radex.cphys.density[1] = collider_densities['H2']*(1-fortho)
             self.radex.cphys.density[2] = collider_densities['H2']*(fortho)
 
@@ -630,6 +635,13 @@ class Radex(RadiativeTransferApproximator):
         self.radex.readdata()
         #log.info("after DENS:"+str(self.radex.cphys.density))
         #log.info("after TOTDENS:"+str(self.radex.cphys.totdens))
+
+        if self._use_thermal_opr:
+            # Reset the density to a thermal value
+            lp = self._locked_parameter
+            self.density = (unitless(self.density['H2']) or
+                            unitless(self.density['oH2']+self.density['pH2']))
+            self._locked_parameter = lp
 
     @property
     def column(self):
