@@ -12,8 +12,8 @@ import astropy.units as u
 
 class Fjdu(base_class.RadiativeTransferApproximator):
     def __init__(self, datapath=None, species='co',
-                 density=1e3,
-                 temperature=30,
+                 density=None,
+                 temperature=None,
                  column=None,
                  **kwargs):
 
@@ -265,11 +265,11 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         return u.Quantity(self._data_dict['Eup'], u.K)
 
     @property
-    def upperlevel(self):
+    def upperlevelnumber(self):
         return self._data_dict['iup']
 
     @property
-    def lowerlevel(self):
+    def lowerlevelnumber(self):
         return self._data_dict['ilow']
 
     @property

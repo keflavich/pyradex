@@ -186,7 +186,7 @@ class Radex(RadiativeTransferApproximator):
 
     def __call__(self, return_table=True, **kwargs):
         # reset the parameters appropriately
-        self.__init__(**kwargs)
+        self.set_params(**kwargs)
         # No need to re-validate: it is already done when self.temperature is
         # set in __init__
         niter = self.run_radex(reload_molfile=False, validate_colliders=False)
@@ -197,10 +197,10 @@ class Radex(RadiativeTransferApproximator):
             return niter
 
     def __init__(self,
-                 collider_densities={'ph2':990,'oh2':10},
+                 collider_densities=None,
                  density=None,
                  total_density=None,
-                 temperature=30,
+                 temperature=None,
                  species='co',
                  column=None,
                  column_per_bin=None,
@@ -214,7 +214,6 @@ class Radex(RadiativeTransferApproximator):
                  debug=False,
                  mu=2.8,
                  source_area=None,
-                 enable_units=True,
                  ):
         """
         Direct wrapper of the radex FORTRAN code
@@ -357,6 +356,31 @@ class Radex(RadiativeTransferApproximator):
     _u_gradient = u.cm**-2 / (u.km/u.s) / u.pc
     _u_kms = u.km/u.s
     _u_cms = u.cm/u.s
+
+    def set_params(self, density=None, collider_densities=None,
+                   column=None, column_per_bin=None, temperature=None,
+                   abundance=None):
+        if collider_densities is not None:
+            self.density = collider_densities
+        elif density is not None:
+            if collider_densities is not None:
+                raise ValueError('Can specify only one of density,'
+                                 ' collider_densities')
+            self.density = density
+
+        if column is not None:
+            self.column = column
+        elif column_per_bin is not None:
+            if column is not None:
+                raise ValueError("Can specify only one of column,"
+                                 "column per bin")
+            self.column_per_bin = column_per_bin
+
+        if temperature is not None:
+            self.temperature = temperature
+
+        if abundance is not None:
+            self.abundance = abundance
 
     @property
     def locked_parameter(self):
