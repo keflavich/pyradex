@@ -13,11 +13,17 @@ Installation procedure for the f2py-wrapped version
 You need to have `gfortran` and `f2py` on your path.  If you've successfully
 built numpy from source, you should have both.
 
-All you need to do is:
+You need to clone this repository first with `--recursive` enabled so that `myRadex <https://github.com/fjdu/myRadex>`_ is downloaded:
 
 .. code-block:: bash
 
-   $ python setup.py install_radex install
+   git clone --recursive https://github.com/keflavich/pyradex.git
+
+Then `cd` to the source directory and run:
+
+.. code-block:: bash
+
+   $ python setup.py install_radex install_myradex install
 
 This will call a procedure `install_radex` that downloads the latest version of
 RADEX from the radex homepage, patches the source, and builds a file `radex.so`,
@@ -306,3 +312,4 @@ the scenes.  In v0.3, the length in Radex has been fixed to 1 pc.
    :target: https://bitdeli.com/free
 
 .. _install: install.rst
+
