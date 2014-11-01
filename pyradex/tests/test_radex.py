@@ -119,6 +119,27 @@ def test_consistent_init():
     assert tex0==tex1
     assert np.all(crate0 == crate1)
 
+def test_thermal_opr():
+    # Check if H2 is specified as total H2, the thermal fraction of O/P H2 is used
+    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
+                        temperature=30, tbackground=2.73)
+    opr = 9.0*np.exp(-170.6/30)
+    fortho = opr/(1+opr)
+    np.testing.assert_almost_equal(rdx.density['oH2'].value, fortho*1e4)
+    np.testing.assert_almost_equal(rdx.density['pH2'].value, (1-fortho)*1e4)
+
+    rdx.temperature = 50
+    opr = 9.0*np.exp(-170.6/50)
+    fortho = opr/(1+opr)
+    np.testing.assert_almost_equal(rdx.density['oH2'].value, fortho*1e4)
+    np.testing.assert_almost_equal(rdx.density['pH2'].value, (1-fortho)*1e4)
+
+    # Check that if ortho is specified, density remains unchanged
+    rdx = pyradex.Radex(species='co', collider_densities={'oH2':1e4, 'pH2':0}, column_per_bin=1e14, deltav=1.0,
+                        temperature=30, tbackground=2.73)
+    assert rdx.density['oH2'].value == 1e4
+    rdx.temperature = 50
+    assert rdx.density['oH2'].value == 1e4
 
 if __name__ == "__main__":
     test_call()
