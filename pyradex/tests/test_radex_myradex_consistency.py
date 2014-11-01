@@ -15,8 +15,10 @@ def test_thin_co():
     density = {'oH2': 100,
                'pH2': 900,
               }
-    RR = pyradex.Radex(datapath='examples/', species='co', column=1e10, density=density, temperature=20)
-    FF = pyradex.fjdu.Fjdu(datapath='examples/', species='co', column=1e10, density=density, temperature=20)
+    RR = pyradex.Radex(datapath='examples/', species='co', column=1e10,
+                       density=density, temperature=20)
+    FF = pyradex.fjdu.Fjdu(datapath='examples/', species='co',
+                           column=1e10, density=density, temperature=20)
 
     rtbl = RR()
     ftbl = FF()
@@ -29,8 +31,10 @@ def test_thick_co():
     density = {'oH2': 100,
                'pH2': 900,
               }
-    RR = pyradex.Radex(datapath='examples/', species='co', column=1e17, density=density, temperature=20)
-    FF = pyradex.fjdu.Fjdu(datapath='examples/', species='co', column=1e17, density=density, temperature=20)
+    RR = pyradex.Radex(datapath='examples/', species='co', column=1e17,
+                       density=density, temperature=20)
+    FF = pyradex.fjdu.Fjdu(datapath='examples/', species='co',
+                           column=1e17, density=density, temperature=20)
 
     rtbl = RR()
     ftbl = FF()
