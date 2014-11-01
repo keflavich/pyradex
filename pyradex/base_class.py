@@ -76,7 +76,7 @@ class RadiativeTransferApproximator(object):
                    'He': 1,
                    'H+': 1,}
 
-        return np.sum((self.density[k]*weights[k] for k in self.density))
+        return u.Quantity([self.density[k]*weights[k] for k in self.density]).sum()
 
 
     @property

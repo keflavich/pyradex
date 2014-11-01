@@ -75,7 +75,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                        ('n_levels', 0),
                        ('n_item', 0),
                        ('n_transitions', 0),
-                       ('geotype', 'LVG'),
+                       ('geotype', 'lvg'),
                       )
 
     _keyword_map = {'temperature': 'tkin',
@@ -139,7 +139,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                     self._params[k.lower()] = value[k]
                 else:
                     raise KeyError("Collider {0} not recognized.".format(k))
-            self._params['dens_x_cgs'] = self.total_density
+            self._params['dens_x_cgs'] = self.total_density.value
         else:
             self._params['dens_x_cgs'] = value
             for k in self._density_keyword_map.values():
@@ -148,7 +148,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
     @property
     def temperature(self):
-        return u.Quantity(self.params[tkin], u.K)
+        return u.Quantity(self.params['tkin'], u.K)
 
     @temperature.setter
     def temperature(self, tkin):
@@ -235,15 +235,15 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         self._datapath = datapath
 
     @property
-    def escprobProbGeom(self):
+    def escapeprobProbGeom(self):
         return self._params['geotype']
 
-    @escprobProbGeom.setter
-    def escprobProbGeom(self, value):
-        if value in ('LVG','spherical','slab'):
+    @escapeprobProbGeom.setter
+    def escapeprobProbGeom(self, value):
+        if value in ('lvg','spherical','slab'):
             self._params['geotype'] = value
         else:
-            raise ValueError("Geometry must be spherical, slab, or LVG")
+            raise ValueError("Geometry must be spherical, slab, or lvg")
         
     _um_to_ghz = u.um.to(u.GHz, equivalencies=u.spectral())
 
