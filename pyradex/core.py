@@ -538,7 +538,7 @@ class Radex(object):
              'pH2':self.radex.cphys.density[1]*2*useoph2,
              'oH2':self.radex.cphys.density[2]*2*useoph2,
              'e':self.radex.cphys.density[3]/1836.,
-             'H':self.radex.cphys.density[4]*2,
+             'H':self.radex.cphys.density[4],
              'He':self.radex.cphys.density[5]*4,
              'H+':self.radex.cphys.density[6]}
 
@@ -548,6 +548,10 @@ class Radex(object):
     @property
     def opr(self):
         return self.radex.cphys.density[1]/self.radex.cphys.density[2]
+
+    @property
+    def oprh2(self):
+        return self.opr
 
     @property
     def species(self):
