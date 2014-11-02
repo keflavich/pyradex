@@ -75,5 +75,6 @@ for density in ({'oH2': 100, 'pH2': 900, },
                 Line2D([0],[0], linewidth=2, color='k', linestyle='--')),
                ('Radex', "Fujun Du's MyRadex"), loc='best')
     fig1.savefig("fjdu_vs_radex_CO_n{0}.png".format(int(np.log10(FF.total_density.value))))
+    fig2.savefig("fjdu_vs_radex_CO_diffs_n{0}.png".format(int(np.log10(FF.total_density.value))))
     pl.draw()
     pl.show()
