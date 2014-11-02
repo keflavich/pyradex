@@ -13,11 +13,17 @@ Installation procedure for the f2py-wrapped version
 You need to have `gfortran` and `f2py` on your path.  If you've successfully
 built numpy from source, you should have both.
 
-All you need to do is:
+You need to clone this repository first with `--recursive` enabled so that `myRadex <https://github.com/fjdu/myRadex>`_ is downloaded:
 
 .. code-block:: bash
 
-   $ python setup.py install_radex install
+   git clone --recursive https://github.com/keflavich/pyradex.git
+
+Then `cd` to the source directory and run:
+
+.. code-block:: bash
+
+   $ python setup.py install_radex install_myradex install
 
 This will call a procedure `install_radex` that downloads the latest version of
 RADEX from the radex homepage, patches the source, and builds a file `radex.so`,
@@ -74,6 +80,38 @@ Result::
 Note that because of how RADEX was written, i.e. with common blocks, the values
 stored in each of these objects is identical!  You cannot have two independent
 copies of the RADEX class *ever*.
+
+Examples
+--------
+There is a rich examples gallery.  We have a few notebooks:
+
+    http://nbviewer.ipython.org/github/keflavich/pyradex/blob/master/examples/pH2CO_interactive.ipynb
+    http://nbviewer.ipython.org/github/keflavich/pyradex/blob/master/examples/FittingTheGrid.ipynb
+    http://nbviewer.ipython.org/github/keflavich/pyradex/blob/master/examples/Interactive.ipynb
+    http://nbviewer.ipython.org/github/keflavich/pyradex/blob/master/examples/oH2CO-interactive.ipynb
+    http://nbviewer.ipython.org/github/keflavich/pyradex/blob/master/examples/pH2CO_interactive.ipynb
+    http://nbviewer.ipython.org/github/keflavich/pyradex/blob/master/examples/ph2co_interactive_mm.ipynb
+
+and a series of more involved examples:
+
+    examples/ch3cn_110_synthspec.py
+    examples/h2co_grids.py
+    examples/h2cs_thermometer.py
+    examples/interactive_setup_mm.py
+    examples/oh2co_density_grid.py
+    examples/oh2co_distributions.py
+    examples/oh2co_grids_2.py
+    examples/ph2co_grid_computation.py
+    examples/ph2co_grid_computation_mm.py
+    examples/ph2co_grids.py
+    examples/ph2co_grids_2.py
+    examples/ph2co_required_sn.py
+    examples/simple_co.py
+    examples/simple_co_column.py
+    examples/synthspec_ch3cn.py
+    examples/timing.py
+
+Most of these were written to make sensitivity estimates for observing proposals.
 
 Recommended installation procedure for the command-line version
 ---------------------------------------------------------------
@@ -306,3 +344,4 @@ the scenes.  In v0.3, the length in Radex has been fixed to 1 pc.
    :target: https://bitdeli.com/free
 
 .. _install: install.rst
+
