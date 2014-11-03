@@ -3,6 +3,7 @@ import pyradex.fjdu
 import pylab as pl
 import numpy as np
 from matplotlib.lines import Line2D
+from utils import in_ipynb_kernel
 
 
 for density in ({'oH2': 100, 'pH2': 900, },
@@ -12,10 +13,14 @@ for density in ({'oH2': 100, 'pH2': 900, },
     RR = pyradex.Radex(species='co', column=1e10, density=density, temperature=20)
     FF = pyradex.fjdu.Fjdu(species='co', column=1e10, density=density, temperature=20)
 
-    fig1 = pl.figure(1)
-    fig1.clf()
-    fig2 = pl.figure(2)
-    fig2.clf()
+    if in_ipynb_kernel():
+        fig1 = pl.figure()
+        fig2 = pl.figure()
+    else:
+        fig1 = pl.figure(1)
+        fig1.clf()
+        fig2 = pl.figure(2)
+        fig2.clf()
     fig1,(ax1a,ax1b,ax1c) = pl.subplots(nrows=3, num=1)
     fig2,(ax2a,ax2b,ax2c) = pl.subplots(nrows=3, num=2)
 
@@ -70,7 +75,7 @@ for density in ({'oH2': 100, 'pH2': 900, },
         ax.set_xlim(0,10)
 
     ax1a.set_title("Density = $10^{{{0}}}$ cm$^{{-3}}$".format(int(np.log10(FF.total_density.value))))
-    ax2a.set_title("Density = $10^{{{0}}}$ cm$^{{-3}}$".format(int(np.log10(FF.total_density.value))))
+    ax2a.set_title("Difference: Density = $10^{{{0}}}$ cm$^{{-3}}$".format(int(np.log10(FF.total_density.value))))
     ax1a.legend((Line2D([0],[0], linewidth=2, color='k', linestyle='-'),
                 Line2D([0],[0], linewidth=2, color='k', linestyle='--')),
                ('Radex', "Fujun Du's MyRadex"), loc='best')
