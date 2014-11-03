@@ -301,16 +301,20 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
     @property
     def source_line_brightness_temperature(self):
-        return u.Quantity(self._data_dict['flux_K'], u.K)
+        return u.Quantity(self._data_dict['Tr'], u.K)
     
+    #@property
+    #def source_line_surfbrightness(self):
+    #    return u.Quantity(self._data_dict['flux'], self._u_brightness)
+
     @property
     def source_brightness(self):
-        return u.Quantity(self._data_dict['flux'], self._u_brightness)
+        return u.Quantity(self._data_dict['flux_dens'], self._u_brightness)
 
     @property
     def background_brightness(self):
-        # No background in fjdu?
-        return u.Quantity(0, self._u_brightness)
+        return u.Quantity(self._data_dict['Jback'], self._u_brightness)
+    #    return self.tbg.to(self._u_brightness)
 
     @property
     def beta(self):
