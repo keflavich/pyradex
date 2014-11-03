@@ -14,6 +14,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     def __init__(self, datapath=None, species='co',
                  density=None,
                  temperature=None,
+                 tbg=2.73,
                  column=None,
                  **kwargs):
 
@@ -26,6 +27,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         self.set_default_params()
         self.set_params(temperature=temperature, density=density,
                         column=column, **kwargs)
+        self.tbg = tbg
         from pyradex.fjdu import wrapper_my_radex
         myradex_wrapper = wrapper_my_radex.myradex_wrapper
         self._myradex = myradex_wrapper
@@ -46,6 +48,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
         nlevels, nitems, ntrans = self._myradex.config_basic(self.datapath,
                                                              self.fname,
+                                                             unitless(self.tbg),
                                                              verbose)
         self.set_params(**{'n_levels': nlevels,
                            'n_item': nitems,
@@ -201,6 +204,17 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                 self.column_per_bin = u.Quantity(col, u.cm**-2)
             self._lock_param('abundance')
             self._is_locked=False
+
+    @property
+    def tbg(self):
+        return u.Quantity(self._tbg, u.K)
+
+    @tbg.setter
+    def tbg(self, tbg):
+        if hasattr(tbg, 'value'):
+            self._tbg = unitless(u.Quantity(tbg, u.K))
+        else:
+            self._tbg = tbg
 
     @property
     def deltav(self):

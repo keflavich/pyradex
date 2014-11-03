@@ -75,17 +75,13 @@ class InstallFjdu(Command):
     def run(self):
         cwd = os.getcwd()
         os.chdir('myRadex')
+        if os.path.exists('wrapper_my_radex.so'):
+            os.remove('wrapper_my_radex.so')
         os.system('make wrapper')
         os.chdir(cwd)
         for fn in ('wrapper_my_radex.so',):
-            try:
-                os.link('myRadex/{0}'.format(fn), 'pyradex/fjdu/{0}'.format(fn))
-            except OSError as ex:
-                if ex.errno == 17:
-                    # file exists
-                    pass
-                else:
-                    raise ex
+            os.remove('pyradex/fjdu/{0}'.format(fn))
+            os.link('myRadex/{0}'.format(fn), 'pyradex/fjdu/{0}'.format(fn))
 
 
 import subprocess
