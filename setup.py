@@ -80,8 +80,10 @@ class InstallFjdu(Command):
         os.system('make wrapper')
         os.chdir(cwd)
         for fn in ('wrapper_my_radex.so',):
-            os.remove('pyradex/fjdu/{0}'.format(fn))
-            os.link('myRadex/{0}'.format(fn), 'pyradex/fjdu/{0}'.format(fn))
+            outpath = 'pyradex/fjdu/{0}'.format(fn)
+            if os.path.exists(outpath):
+                os.remove(outpath)
+            os.link('myRadex/{0}'.format(fn), outpath)
 
 
 import subprocess
