@@ -365,7 +365,13 @@ class Radex(RadiativeTransferApproximator):
 
     def set_params(self, density=None, collider_densities=None,
                    column=None, column_per_bin=None, temperature=None,
-                   abundance=None):
+                   abundance=None, species=None, deltav=None):
+
+        if species is not None:
+            self.species = species
+
+        if deltav is not None:
+            self.deltav = deltav
 
         # This MUST happen before density is set, otherwise OPR will be 
         # incorrectly set.

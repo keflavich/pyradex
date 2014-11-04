@@ -103,6 +103,8 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                 self._params[self._keyword_map[k]] = kwargs[k]
             elif k.lower() in ('density','collider_densities'):
                 self.density = kwargs[k]
+            elif k == 'species':
+                self.species = kwargs[k]
             elif k.lower() not in default:
                 raise ValueError("{0} is not a valid key.".format(k))
             else:
