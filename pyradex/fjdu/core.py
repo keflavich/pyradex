@@ -99,7 +99,10 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     def set_params(self, **kwargs):
         default = lower_keys(dict(self._default_params))
         for k in kwargs:
-            if k.lower() in self._keyword_map:
+            if k == 'deltav':
+                # deltav requires unit conversion
+                self.deltav = kwargs[k]
+            elif k.lower() in self._keyword_map:
                 self._params[self._keyword_map[k]] = kwargs[k]
             elif k.lower() in ('density','collider_densities'):
                 self.density = kwargs[k]
@@ -220,14 +223,14 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
     @property
     def deltav(self):
-        return u.Quantity(self.params['dv_cgs']/self._kms_to_cms, self._u_kms)
+        return u.Quantity(self.params['dv_cgs']*self._kms_to_cms, self._u_kms)
 
     _kms_to_cms = 1e-5
     _u_cms = u.cm/u.s
 
     @deltav.setter
     def deltav(self, dv):
-        self.params['dv_cgs'] = unitless(u.Quantity(dv*self._kms_to_cms,
+        self._params['dv_cgs'] = unitless(u.Quantity(dv/self._kms_to_cms,
                                                     self._u_cms))
 
     @property
