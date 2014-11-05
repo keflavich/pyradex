@@ -6,11 +6,12 @@ import warnings
 import astropy.units as u
 _quantity = u.Quantity
 from collections import defaultdict
-import itertools
 import os
 
 from . import utils
 from . import synthspec
+from .utils import QuantityOff,ImmutableDict,unitless,grouper
+from .base_class import RadiativeTransferApproximator
 
 from astropy import units as u
 from astropy import constants
@@ -20,30 +21,6 @@ import astropy.table
 __all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex',
            'density_distribution']
 
-class QuantityOff(object):
-    """ Context manager to disable quantities """
-    def __enter__(self):
-        self._quantity = u.Quantity
-        u.Quantity = lambda value,unit: value
-
-    def __exit__(self, type, value, traceback):
-        u.Quantity = self._quantity
- 
-class ImmutableDict(dict):
-    def __setitem__(self, key, value):
-        raise AttributeError("Setting items for this dictionary is not supported.")
-
-def unitless(x):
-    if hasattr(x, 'value'):
-        return x.value
-    else:
-        return x
-
-# silly tool needed for fortran misrepresentation of strings
-# http://stackoverflow.com/questions/434287/what-is-the-most-pythonic-way-to-iterate-over-a-list-in-chunks
-def grouper(iterable, n, fillvalue=None):
-    args = [iter(iterable)] * n
-    return itertools.izip_longest(*args, fillvalue=fillvalue)
         
 
 def pyradex(executable='radex', minfreq=100, maxfreq=130,
@@ -185,7 +162,7 @@ header_names = ['J_up','J_low','E_UP','FREQ', 'WAVE', 'T_EX', 'TAU', 'T_R', 'POP
 header_units = [None,       None, u.K,   u.GHz,  u.um,   u.K,    None,  u.K,   None,     None,     u.K*u.km/u.s, u.erg/u.cm**2/u.s]
 dtypes       = [str,   str,    float, float,  float,  float,  float, float,  float,    float,     float,         float]
 
-def parse_outfile(filename):
+def parse_outfile(filename, return_dict=False):
     with open(filename,'r') as f:
         alllines = f.readlines()
         header = {L.split(":")[0][2:].strip():L.split(":")[1].strip()
@@ -200,16 +177,18 @@ def parse_outfile(filename):
     if len(data_list) == 0:
         raise ValueError("No lines included?")
     data_in_columns = map(list,zip(*data_list))
+    if return_dict:
+        return {name: C for C,name in zip(data_in_columns, header_names)}
     columns = [astropy.table.Column(data=C, name=name.lower(), unit=unit, dtype=dtype) 
             for C,name,unit,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
     data = astropy.table.Table(columns, meta=header)
     return data
 
-class Radex(object):
+class Radex(RadiativeTransferApproximator):
 
     def __call__(self, return_table=True, **kwargs):
         # reset the parameters appropriately
-        self.__init__(**kwargs)
+        self.set_params(**kwargs)
         # No need to re-validate: it is already done when self.temperature is
         # set in __init__
         niter = self.run_radex(reload_molfile=False, validate_colliders=False)
@@ -220,10 +199,10 @@ class Radex(object):
             return niter
 
     def __init__(self,
-                 collider_densities={'ph2':990,'oh2':10},
+                 collider_densities=None,
                  density=None,
                  total_density=None,
-                 temperature=30,
+                 temperature=None,
                  species='co',
                  column=None,
                  column_per_bin=None,
@@ -237,7 +216,6 @@ class Radex(object):
                  debug=False,
                  mu=2.8,
                  source_area=None,
-                 enable_units=True,
                  ):
         """
         Direct wrapper of the radex FORTRAN code
@@ -387,6 +365,43 @@ class Radex(object):
     _u_kms = u.km/u.s
     _u_cms = u.cm/u.s
 
+    def set_params(self, density=None, collider_densities=None,
+                   column=None, column_per_bin=None, temperature=None,
+                   abundance=None, species=None, deltav=None):
+
+        if species is not None:
+            self.species = species
+
+        if deltav is not None:
+            self.deltav = deltav
+
+        # This MUST happen before density is set, otherwise OPR will be 
+        # incorrectly set.
+        if temperature is not None:
+            self.radex.cphys.tkin = unitless(temperature)
+
+        if collider_densities is not None:
+            self.density = collider_densities
+        elif density is not None:
+            if collider_densities is not None:
+                raise ValueError('Can specify only one of density,'
+                                 ' collider_densities')
+            self.density = density
+
+        if column is not None:
+            self.column = column
+        elif column_per_bin is not None:
+            if column is not None:
+                raise ValueError("Can specify only one of column,"
+                                 "column per bin")
+            self.column_per_bin = column_per_bin
+
+        if temperature is not None:
+            self.temperature = temperature
+
+        if abundance is not None:
+            self.abundance = abundance
+
     @property
     def locked_parameter(self):
         return self._locked_parameter
@@ -530,58 +545,10 @@ class Radex(object):
         """
         return u.Quantity(self.radex.cphys.totdens, self._u_cc)
 
-    @property
-    def mass_density(self):
-
-        vc = [x.lower() for x in self.valid_colliders]
-        if 'h2' in vc:
-            useh2 = 1
-            useoph2 = 0
-        elif 'oh2' in vc or 'ph2' in vc:
-            useoph2 = 0
-            useoph2 = 1
-        else:
-            useoph2 = 0
-            useoph2 = 0
-
-        d = {'H2':self.radex.cphys.density[0]*2*useh2,
-             'pH2':self.radex.cphys.density[1]*2*useoph2,
-             'oH2':self.radex.cphys.density[2]*2*useoph2,
-             'e':self.radex.cphys.density[3]/1836.,
-             'H':self.radex.cphys.density[4]*2,
-             'He':self.radex.cphys.density[5]*4,
-             'H+':self.radex.cphys.density[6]}
-
-        return np.sum(d.values())*constants.m_p
-
 
     @property
     def opr(self):
         return self.radex.cphys.density[1]/self.radex.cphys.density[2]
-
-    @property
-    def species(self):
-        return self._species
-
-    @species.setter
-    def species(self, species):
-        if hasattr(self,'_species') and self._species == species:
-            return
-        self._species = species
-        try:
-            self.molpath = os.path.join(self.datapath,species+'.dat')
-        except IOError:
-            log.warn("Did not find data file for species {0} "
-                     "in path {1}.  Downloading it.".format(species,
-                                                            self.datapath))
-            utils.get_datafile(species, self.datapath)
-            self.molpath = os.path.join(self.datapath,species+'.dat')
-
-        self._valid_colliders = utils.get_colliders(self.molpath)
-        vc = [x.lower() for x in self._valid_colliders]
-        if 'h2' in vc and ('oh2' in vc or 'ph2' in vc):
-            log.warn("oH2/pH2 and h2 are both in the datafile: "
-                     "The resulting density/total density are invalid.")
 
     @property
     def molpath(self):
@@ -590,7 +557,7 @@ class Radex(object):
     @molpath.setter
     def molpath(self, molfile):
         if "~" in molfile:
-            molfile = os.path.expandpath(molfile)
+            molfile = os.path.expanduser(molfile)
         self.radex.impex.molfile[:] = ""
         utils.verify_collisionratefile(molfile)
         self.radex.impex.molfile[:len(molfile)] = molfile
@@ -782,45 +749,6 @@ class Radex(object):
         self.radex.cphys.tbg = tbg
         self.radex.backrad()
 
-    def _validate_colliders(self):
-        """
-        Check whether the density of at least one collider in the associated
-        LAMDA data file is nonzero
-        """
-        valid_colliders = [x.lower() for x in self.valid_colliders]
-
-        density = self.density
-
-        OK = False
-        matched_colliders = []
-        for collider in valid_colliders:
-            if unitless(density[self._all_valid_colliders[collider.upper()]]) > 0:
-                OK = True
-                matched_colliders.append(collider.lower())
-
-        if not OK:
-            raise ValueError("The colliders in the data file {0} ".format(self.molpath)
-                             + "have density 0.")
-
-        for collider in density:
-            if (unitless(density[collider]) > 0
-                and (collider.lower() not in valid_colliders)):
-                if (collider.lower() in ('oh2','ph2') and 'h2' in
-                    matched_colliders):
-                    # All is OK: we're allowed to have mismatches of this sort
-                    continue
-                elif (collider.lower() == 'h2' and ('oh2' in matched_colliders
-                                                    or 'ph2' in
-                                                    matched_colliders)):
-                    # again, all OK
-                    continue
-                OK = False
-
-        if not OK:
-            raise ValueError("There are colliders with specified densities >0 "
-                             "that do not have corresponding collision rates.")
-
-
     def run_radex(self, silent=True, reuse_last=False, reload_molfile=True,
                   abs_convergence_threshold=1e-16, rel_convergence_threshold=1e-8,
                   validate_colliders=True):
@@ -899,11 +827,13 @@ class Radex(object):
 
     @property
     def upperlevelnumber(self):
-        return self.radex.imolec.iupp[self._mask]
+        # wrong return self.radex.imolec.iupp[self._mask]
+        return self.quantum_number[self.upperlevelindex]
 
     @property
     def lowerlevelnumber(self):
-        return self.radex.imolec.ilow[self._mask]
+        # wrong return self.radex.imolec.ilow[self._mask]
+        return self.quantum_number[self.lowerlevelindex]
 
     @property
     def upperlevelindex(self):
@@ -926,35 +856,6 @@ class Radex(object):
         return self.radex.rmolec.eup[self._mask]
 
     @property
-    def source_area(self):
-        return self._source_area
-
-    @source_area.setter
-    def source_area(self, source_area):
-        self._source_area = source_area
-
-
-    @property
-    def source_line_surfbrightness(self):
-        return self.source_brightness - self.background_brightness
-
-    def line_brightness_temperature(self,beamsize):
-        """
-        Return the line surface brightness in kelvins for a given beam area
-        (Assumes the frequencies are rest frequencies)
-        """
-        #return (self.line_flux * beamsize)
-        # because each line has a different frequency, have to loop it
-        try:
-            return u.Quantity([x.to(u.K, u.brightness_temperature(beamsize, f)).value
-                               for x,f in zip(self.line_flux_density,self.frequency)
-                               ],
-                              unit=u.K)
-        except AttributeError as ex:
-            raise NotImplementedError("line brightness temperature is not implemented "
-                                      "without reference to astropy units yet")
-
-    @property
     def inds_frequencies_included(self):
         """
         The indices of the line frequencies fitted by RADEX
@@ -963,53 +864,8 @@ class Radex(object):
         return np.where(self._mask)[0]
 
     @property
-    def source_line_brightness_temperature(self):
-        """
-        The surface brightness of the source assuming it is observed with a
-        beam matched to its size and it has ff=1
-
-        (this is consistent with the online RADEX calculator)
-        """
-        #return (self.line_flux * beamsize)
-        # because each line has a different frequency, have to loop it
-        return ((self.source_line_surfbrightness*u.sr).
-                 to(u.K, u.brightness_temperature(1*u.sr,
-                                                  self.frequency)))
-
-    @property
-    def T_B(self):
-        return self.source_line_brightness_temperature
-
-
-    @property
     def background_brightness(self):
         return u.Quantity(self.radex.radi.backi[self._mask], self._u_brightness)
-
-    @property
-    def flux_density(self):
-        """
-        Convert the source surface brightness to a flux density by specifying
-        the emitting area of the source (in steradian-equivalent units)
-
-        This is the non-background-subtracted version
-        """
-
-        if not self.source_area:
-            raise AttributeError("Need to specify a source area in order to compute the flux density")
-
-        return self.source_brightness * self.source_area
-
-    @property
-    def line_flux_density(self):
-        """
-        Background-subtracted version of flux_density
-        """
-
-        if not self.source_area:
-            raise AttributeError("Need to specify a source area in order to compute the flux density")
-
-        return self.source_line_surfbrightness * self.source_area
-
 
     _thc = (2 * constants.h * constants.c).cgs / u.sr
     _fk = (constants.h * constants.c / constants.k_B).cgs
@@ -1079,26 +935,6 @@ class Radex(object):
     @property
     def _mask(self):
         return self.radex.radi.spfreq != 0
-
-    def get_table(self):
-        columns = [
-            astropy.table.Column(name='Tex',data=self.tex, unit=u.K),
-            astropy.table.Column(name='tau',data=self.tau, unit=''),
-            astropy.table.Column(name='frequency',data=self.frequency, unit=u.GHz),
-            astropy.table.Column(name='upperstateenergy',data=self.upperstateenergy, unit=u.K),
-            astropy.table.Column(name='upperlevel',data=self.quantum_number[self.upperlevelindex], unit=''),
-            astropy.table.Column(name='lowerlevel',data=self.quantum_number[self.lowerlevelindex], unit=''),
-            astropy.table.Column(name='upperlevelpop',data=self.level_population[self.upperlevelindex], unit=''),
-            astropy.table.Column(name='lowerlevelpop',data=self.level_population[self.lowerlevelindex], unit=''),
-            astropy.table.Column(name='brightness',data=self.source_line_surfbrightness),
-            astropy.table.Column(name='T_B',data=self.T_B), # T_B is pre-masked
-        ]
-        if self.source_area:
-            columns.append(astropy.table.Column(name='flux',data=self.line_flux_density[mask]))
-
-        T = astropy.table.Table(columns)
-
-        return T
 
     def get_synthspec(self, fmin, fmax, npts=1000, **kwargs):
         """

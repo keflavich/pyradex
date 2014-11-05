@@ -41,39 +41,47 @@ def test_molecules(molecule):
     data.pprint(show_unit=True)
 
 def test_radex_class():
-    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15, collider_densities=None)
+    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,
+                      column=1e15, collider_densities=None, temperature=20)
     assert hasattr(R,'radex')
 
 def test_change_abundance():
-    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15, collider_densities=None)
+    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,
+                      column=1e15, collider_densities=None, temperature=20)
     totdens = R.total_density
     R.abundance = 1e-6
     assert totdens == R.total_density
 
 def test_consistent_abund():
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15,density=1e3)
+        R = pyradex.Radex(datapath='examples/', species='co', abundance=1e-4,
+                          column=1e15, density=1e3)
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column=1e15,collider_densities={'H2':1e3})
+        R = pyradex.Radex(datapath='examples/', species='co', abundance=1e-4,
+                          column=1e15, collider_densities={'H2':1e3})
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,column_per_bin=1e15)
+        R = pyradex.Radex(datapath='examples/', species='co', abundance=1e-4,
+                          column_per_bin=1e15)
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/',species='co',abundance=None,column=None)
+        R = pyradex.Radex(datapath='examples/', species='co', abundance=None,
+                          column=None)
 
 def test_selfconsistent_density():
-    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e3}, column_per_bin=1e13)
-    assert rdx.total_density.value == 1e3
+    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e3},
+                        column_per_bin=1e13, temperature=20)
+    np.testing.assert_almost_equal(rdx.total_density.value, 1e3)
     rdx.temperature = 30
-    assert rdx.total_density.value == 1e3
+    np.testing.assert_almost_equal(rdx.total_density.value, 1e3)
     rdx.density = rdx.density
-    assert rdx.total_density.value == 1e3
+    np.testing.assert_almost_equal(rdx.total_density.value, 1e3)
     rdx.density = {'H2':1e3}
-    assert rdx.total_density.value == 1e3
+    np.testing.assert_almost_equal(rdx.total_density.value, 1e3)
     rdx.density = {'oH2':990,'pH2':10}
-    assert rdx.total_density.value == 1e3
+    np.testing.assert_almost_equal(rdx.total_density.value, 1e3)
 
 def test_consistent_parchanges():
-    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e3}, column_per_bin=1e13)
+    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e3},
+                        column_per_bin=1e13, temperature=20)
     np.testing.assert_almost_equal(rdx.abundance, 1e13/(1e3*(u.pc.to(u.cm))))
     assert rdx.locked_parameter == 'column'
     rdx.abundance=1e-9
@@ -88,9 +96,14 @@ def test_radex_results():
     rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
                         temperature=30, tbackground=2.73)
     rdx.run_radex()
+    assert rdx.temperature.value == 30.0 # no approximates allowed
+    assert rdx.column.value == 1e14
     #       LINE         E_UP       FREQ        WAVEL     T_EX      TAU        T_R       POP        POP       FLUX        FLUX
     #                    (K)        (GHz)       (um)      (K)                  (K)        UP        LOW      (K*km/s) (erg/cm2/s)
     # 1      -- 0          5.5    115.2712   2600.7576   56.131  1.786E-03  9.378E-02  3.640E-01  1.339E-01  9.983E-02  1.969E-09
+    # RADEX online:
+    # Transition        Frequency       Tex     tau             TR
+    # 1   --   0        115.2712        54.863  1.824E-03       9.349E-02
     np.testing.assert_approx_equal(rdx.tex[0].value, 56.131, 5)
     np.testing.assert_approx_equal(rdx.tau[0], 1.786E-03, 4)
     np.testing.assert_approx_equal(rdx.upperlevelpop[0], 3.640E-01, 4)

@@ -59,6 +59,33 @@ class BuildRadexExecutable(Command):
         import install_radex
         install_radex.build_radex_executable()
 
+
+class InstallFjdu(Command):
+    """
+    Compile Fujun Du's "myradex"
+    """
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        cwd = os.getcwd()
+        os.chdir('myRadex')
+        if os.path.exists('wrapper_my_radex.so'):
+            os.remove('wrapper_my_radex.so')
+        os.system('make wrapper')
+        os.chdir(cwd)
+        for fn in ('wrapper_my_radex.so',):
+            outpath = 'pyradex/fjdu/{0}'.format(fn)
+            if os.path.exists(outpath):
+                os.remove(outpath)
+            os.link('myRadex/{0}'.format(fn), outpath)
+
+
 import subprocess
 import shutil
 import os
@@ -88,13 +115,17 @@ setup(name='pyradex',
       author='Adam Ginsburg & Julia Kamenetzky',
       author_email='adam.g.ginsburg@gmail.com',
       url='http://github.com/keflavich/pyradex/',
-      packages=['pyradex','pyradex.radex','pyradex.tests'],
+      packages=['pyradex','pyradex.radex','pyradex.tests','pyradex.fjdu'],
       package_data={'pyradex.radex':['radex.so'],
+                    'pyradex.fjdu':['wrapper_my_radex.so'],
                     'pyradex.tests':['data/example.out']},
       requires=['requests', 'astroquery', ],
       install_requires=['astropy>=0.4.1', 'requests>=2.4.1',],
       cmdclass={'test': PyTest,
                 'install_radex': InstallRadex,
-                'build_radex_exe': BuildRadexExecutable},
+                'build_radex_exe': BuildRadexExecutable,
+                'install_myradex': InstallFjdu,
+                'install_fjdu': InstallFjdu,
+               },
       #include_package_data=True,
       )

@@ -3,6 +3,9 @@ import sys
 import os
 import errno
 from astropy import log
+import itertools
+import astropy.units as u
+_quantity = u.Quantity
 
 def mkdir_p(path):
     """ mkdir -p equivalent [used by get_datafile]"""
@@ -77,3 +80,41 @@ def verify_collisionratefile(fn):
                                      ex.args[0]), sys.exc_info()[2]
         if len(collrates) == 0:
             raise ValueError("No data found in the table for the category %s" % qt)
+
+class QuantityOff(object):
+    """ Context manager to disable quantities """
+    def __enter__(self):
+        self._quantity = u.Quantity
+        u.Quantity = lambda value,unit: value
+
+    def __exit__(self, type, value, traceback):
+        u.Quantity = self._quantity
+
+class NoVerify(object):
+    """ Context manager to disable verification of molecule files """
+    def __enter__(self):
+        self._verify_collisionratefile = verify_collisionratefile
+        globals()['verify_collisionratefile'] = lambda x: True
+
+    def __exit__(self, type, value, traceback):
+        globals()['verify_collisionratefile'] = self._verify_collisionratefile
+ 
+class ImmutableDict(dict):
+    def __setitem__(self, key, value):
+        raise AttributeError("Setting items for this dictionary is not supported.")
+
+def unitless(x):
+    if hasattr(x, 'value'):
+        return x.value
+    else:
+        return x
+
+# silly tool needed for fortran misrepresentation of strings
+# http://stackoverflow.com/questions/434287/what-is-the-most-pythonic-way-to-iterate-over-a-list-in-chunks
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return itertools.izip_longest(*args, fillvalue=fillvalue)
+
+def lower_keys(d):
+    """ copy dictionary with lower-case keys """
+    return {k.lower(): d[k] for k in d}

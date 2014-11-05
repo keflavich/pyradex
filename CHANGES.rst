@@ -1,6 +1,9 @@
 Changes
 =======
 
+0.4.0 - November 1, 2014: Add Fujun Du's "myradex" with an identical interface
+        to RADEX.  Factored out common functions to base_class.py
+
 0.3.1 - October 28, 2014: allow 'validate_colliders' to be disabled so that
         fast grids can be run.  Fast grids require validate_colliders=False,
         reload_molfile=False.

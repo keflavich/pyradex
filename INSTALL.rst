@@ -18,7 +18,7 @@ This command should install the python-wrapped-fortran version of RADEX:
 
 .. code-block:: bash
 
-   $ python setup.py install_radex install
+   $ python setup.py install_radex install_myradex install
 
 If it doesn't work, there are a number of ways things could have gone wrong.
 
