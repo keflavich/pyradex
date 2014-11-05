@@ -162,7 +162,7 @@ header_names = ['J_up','J_low','E_UP','FREQ', 'WAVE', 'T_EX', 'TAU', 'T_R', 'POP
 header_units = [None,       None, u.K,   u.GHz,  u.um,   u.K,    None,  u.K,   None,     None,     u.K*u.km/u.s, u.erg/u.cm**2/u.s]
 dtypes       = [str,   str,    float, float,  float,  float,  float, float,  float,    float,     float,         float]
 
-def parse_outfile(filename):
+def parse_outfile(filename, return_dict=False):
     with open(filename,'r') as f:
         alllines = f.readlines()
         header = {L.split(":")[0][2:].strip():L.split(":")[1].strip()
@@ -177,6 +177,8 @@ def parse_outfile(filename):
     if len(data_list) == 0:
         raise ValueError("No lines included?")
     data_in_columns = map(list,zip(*data_list))
+    if return_dict:
+        return {name: C for C,name in zip(data_in_columns, header_names)}
     columns = [astropy.table.Column(data=C, name=name.lower(), unit=unit, dtype=dtype) 
             for C,name,unit,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
     data = astropy.table.Table(columns, meta=header)
