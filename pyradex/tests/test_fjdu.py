@@ -1,4 +1,5 @@
 import pyradex.fjdu
+import numpy as np
 
 def test_simple():
 
@@ -11,3 +12,5 @@ def test_simple():
     assert FF.params['tkin'] == 20
 
     tbl = FF()
+
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.69274406690759)
