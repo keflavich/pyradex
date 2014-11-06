@@ -25,7 +25,7 @@ __all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex',
 
 def pyradex(executable='radex', minfreq=100, maxfreq=130,
             collider_densities={'H2':1}, debug=False, delete_tempfile=True,
-            **kwargs):
+            return_dict=False, **kwargs):
     """
     Get the radex results for a set of input parameters
 
@@ -66,7 +66,7 @@ def pyradex(executable='radex', minfreq=100, maxfreq=130,
 
     check_logfile(logfile.name)
 
-    data = parse_outfile(outfile.name)
+    data = parse_outfile(outfile.name, return_dict=return_dict)
 
     if debug:
         with open(infile.name,'r') as inf:
@@ -173,12 +173,17 @@ def parse_outfile(filename, return_dict=False):
                     and 'iterat' not in L 
                     and 'GHz' not in L 
                     and 'TAU' not in L)]
+        niter = [L.split(" ")[3]
+                for L in alllines
+                if 'iterat' in L]
     data_list = [[x if '*' not in x else '-999' for x in L.split()] for L in lines]
     if len(data_list) == 0:
         raise ValueError("No lines included?")
     data_in_columns = map(list,zip(*data_list))
     if return_dict:
-        return {name: C for C,name in zip(data_in_columns, header_names)}
+        data = {name: C for C,name in zip(data_in_columns, header_names)}
+        data['niter']=niter
+        return data
     columns = [astropy.table.Column(data=C, name=name.lower(), unit=unit, dtype=dtype) 
             for C,name,unit,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
     data = astropy.table.Table(columns, meta=header)
