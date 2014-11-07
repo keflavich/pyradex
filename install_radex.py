@@ -3,6 +3,8 @@ import tarfile
 import re
 import os
 import shutil
+import glob
+from numpy import f2py
 try:
     from astropy.utils.data import download_file
 except ImportError:
@@ -116,22 +118,30 @@ Works for 4.2.3:
 """
 
 def compile_radex(fcompiler='gfortran',f77exec=None):
-    r1 = os.system('f2py -h pyradex/radex/radex.pyf Radex/src/*.f --overwrite-signature > radex_build.log')
-    if r1 != 0:
-        raise SystemError("f2py failed with error %i" % r1)
+    #r1 = os.system('f2py -h pyradex/radex/radex.pyf Radex/src/*.f --overwrite-signature > radex_build.log')
+    pwd = os.getcwd()
+    os.chdir('Radex/src/')
+    files = glob.glob('*.f')
+    include_path = '--include-paths {0}'.format(os.getcwd())
+    f2py.run_main(' -h radex.pyf --overwrite-signature'.split()+include_path.split()+files)
 
     if f77exec is None:
         f77exec=''
     else:
         f77exec = '--f77exec=%s' % f77exec
-    cmd = 'f2py -m radex -c Radex/src/*.f --fcompiler=%s %s >> radex_build.log' % (fcompiler,f77exec)
-    r2 = os.system(cmd)
+    #cmd = '-m radex -c %s --fcompiler=%s %s' % (" ".join(files), fcompiler, f77exec)
+    #f2py.run_main(['-m','radex','-c','--fcompiler={0}'.format(fcompiler), f77exec,] + files)
+    source = "\n".join([open(fn).read() for fn in files])
+    include_path = '-I{0}'.format(os.getcwd())
+    r2 = f2py.compile(source=source, modulename='radex',
+                      extra_args='--fcompiler={0} {1} {2}'.format(fcompiler,
+                                                                  f77exec,
+                                                                  include_path),)
+    os.chdir(pwd)
     if r2 != 0:
         raise SystemError("f2py failed with error %i" % r2)
 
-    r3 = os.system('mv radex.so pyradex/radex/')
-    if r3 != 0:
-        raise SystemError("moving failed with error %i; radex.so was not created successfully" % r3)
+    r3 = shutil.move('Radex/src/radex.so', 'pyradex/radex/radex.so')
 
 def build_radex_executable(datapath='./'):
     filename = download_radex(redownload=False)
