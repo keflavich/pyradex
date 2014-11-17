@@ -235,8 +235,8 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
     @deltav.setter
     def deltav(self, dv):
-        self.set_params(deltav=unitless(u.Quantity(dv/self._kms_to_cms,
-                                                   self._u_cms)))
+        self._params['dv_cgs'] = unitless(u.Quantity(dv/self._kms_to_cms,
+                                                     self._u_cms))
 
     @property
     def molpath(self):
