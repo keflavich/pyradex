@@ -32,6 +32,8 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         from pyradex.fjdu import wrapper_my_radex
         myradex_wrapper = wrapper_my_radex.myradex_wrapper
         self._myradex = myradex_wrapper
+        self._is_locked = False
+        self._locked_parameter = None
 
     def __call__(self, return_table=True, **kwargs):
 
