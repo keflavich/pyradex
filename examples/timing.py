@@ -1,6 +1,10 @@
 import timeit
 import numpy as np
 import textwrap
+import warnings
+warnings.filterwarnings('ignore')
+from astropy import log
+log.setLevel(1000)
 
 # Check correctness before doing timing tests
 import pyradex
@@ -79,7 +83,7 @@ grid = np.empty([3,3,3,3])
 """
 ptiming = timeit.Timer(stmt=gridtest.format(caller='pyradex.pyradex'),setup=setup).repeat(3,1)
 print "pyradex.pyradex timing for a 3^4 grid: ",ptiming
-setup += "R = pyradex.Radex(column=1e15)"
+setup += "R = pyradex.Radex(column=1e15, density=1e4, temperature=20)"
 ftiming = timeit.Timer(stmt=gridtest.format(caller='R'),setup=setup).repeat(3,1)
 print "pyradex.Radex() timing for a 3^4 grid: ",ftiming
 
@@ -102,3 +106,23 @@ print grid[0,0,0,:]
 
 ftiming2 = timeit.Timer(stmt=gridtest_class,setup=setup).repeat(3,1)
 print "pyradex.Radex() class-based timing for a 3^4 grid: ",ftiming2
+
+gridtest_class_faster = """
+# build a small grid
+for ii,T in enumerate([5,10,20]):
+    R.temperature=T
+    for kk,density in enumerate([1e3,1e5,1e7]):
+        for mm,opr in enumerate([1e-2,0.1,1]):
+            fortho = opr/(1+opr)
+            R.density = {'oH2':density*fortho,'pH2':density*(1-fortho)}
+            for jj,column in enumerate([1e13,1e15,1e17]):
+                R.column=column
+                R.run_radex(validate_colliders=False,
+                            reload_molfile=False,
+                            reuse_last=True)
+                grid[ii,jj,kk,mm] = R.tau[0]
+print grid[0,0,0,:]
+"""
+
+ftiming3 = timeit.Timer(stmt=gridtest_class_faster, setup=setup).repeat(3,1)
+print "pyradex.Radex() class-based timing for a 3^4 grid, using optimal parameter-setting order: ",ftiming3

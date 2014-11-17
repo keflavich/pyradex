@@ -192,60 +192,77 @@ the difference can be enormous.  The following tests can be seen in `timing.py
 
 ::
 
-    Python external call:               0.0322824001312
-    Fortran-wrapped:                    0.0172580003738
-    Fortran-wrapped, no reload:         0.000889205932617
-    Fortran-wrapped, no reload, reuse:  0.000833201408386
-    Fortran (call method):  0.0281622171402
-    py/fortran:                    1.87057593185
-    py/fortran, __call__ method:   1.14630179757
-    py/fortran, no reload:         36.3047511798
-    py/fortran, no reload, reuse:  38.7450138782
-    Python external call:               0.0320783853531
-    Fortran-wrapped:                    0.0175447940826
-    Fortran-wrapped, no reload:         0.000887608528137
-    Fortran-wrapped, no reload, reuse:  0.000830006599426
-    Fortran (call method):  0.0281030893326
-    py/fortran:                    1.82837058115
-    py/fortran, __call__ method:   1.14145405772
-    py/fortran, no reload:         36.1402401354
-    py/fortran, no reload, reuse:  38.6483497544
-    Python external call:               0.032553601265
-    Fortran-wrapped:                    0.0220848083496
+
+    Python external call:               0.0323288917542
+    Fortran-wrapped:                    0.0183672904968
+    Fortran-wrapped, no reload:         0.000818204879761
+    Fortran-wrapped, no reload, reuse:  0.000756096839905
+    Fortran (call method):  0.0270668029785
+    py/fortran:                    1.76013395986
+    py/fortran, __call__ method:   1.1944111678
+    py/fortran, no reload:         39.5119762224
+    py/fortran, no reload, reuse:  42.7576072904
+    Python external call:               0.0332223176956
+    Fortran-wrapped:                    0.0169018030167
+    Fortran-wrapped, no reload:         0.000811815261841
+    Fortran-wrapped, no reload, reuse:  0.000753211975098
+    Fortran (call method):  0.0275466918945
+    py/fortran:                    1.96560790957
+    py/fortran, __call__ method:   1.20603656594
+    py/fortran, no reload:         40.9234948605
+    py/fortran, no reload, reuse:  44.1075272221
+    Python external call:               0.0312483787537
+    Fortran-wrapped:                    0.0216565847397
     Fortran-wrapped, no reload:         0.00535380840302
-    Fortran-wrapped, no reload, reuse:  0.000832319259644
-    Fortran (call method):  0.0326553106308
-    py/fortran:                    1.47402688534
-    py/fortran, __call__ method:   0.996885365232
-    py/fortran, no reload:         6.08045690365
-    py/fortran, no reload, reuse:  39.1119163563
-    Python external call:               0.0325154066086
-    Fortran-wrapped:                    0.0213151931763
-    Fortran-wrapped, no reload:         0.00545928478241
-    Fortran-wrapped, no reload, reuse:  0.000832891464233
-    Fortran (call method):  0.0328080892563
-    py/fortran:                    1.525456811
-    py/fortran, __call__ method:   0.991078948688
-    py/fortran, no reload:         5.95598286306
-    py/fortran, no reload, reuse:  39.0391881834
-    Python external call:               0.032644200325
-    Fortran-wrapped:                    0.0224514961243
-    Fortran-wrapped, no reload:         0.00538649559021
-    Fortran-wrapped, no reload, reuse:  0.000833201408386
-    Fortran (call method):  0.0326545953751
-    py/fortran:                    1.45398774961
-    py/fortran, __call__ method:   0.999681666549
-    py/fortran, no reload:         6.06037817693
-    py/fortran, no reload, reuse:  39.1792428535
-    Python external call:               0.0330309152603
-    Fortran-wrapped:                    0.0212877035141
-    Fortran-wrapped, no reload:         0.00561258792877
-    Fortran-wrapped, no reload, reuse:  0.000843000411987
-    Fortran (call method):  0.0330217123032
-    py/fortran:                    1.5516429585
-    py/fortran, __call__ method:   1.00027869412
-    py/fortran, no reload:         5.88514882609
-    py/fortran, no reload, reuse:  39.1825612308
+    Fortran-wrapped, no reload, reuse:  0.000751805305481
+    Fortran (call method):  0.031253194809
+    py/fortran:                    1.44290427735
+    py/fortran, __call__ method:   0.999845901985
+    py/fortran, no reload:         5.83666362361
+    py/fortran, no reload, reuse:  41.5644562839
+    Python external call:               0.0316061973572
+    Fortran-wrapped:                    0.0228497028351
+    Fortran-wrapped, no reload:         0.00549430847168
+    Fortran-wrapped, no reload, reuse:  0.000753903388977
+    Fortran (call method):  0.031331205368
+    py/fortran:                    1.38322137427
+    py/fortran, __call__ method:   1.00877693615
+    py/fortran, no reload:         5.75253419427
+    py/fortran, no reload, reuse:  41.9234053319
+    Python external call:               0.0318208932877
+    Fortran-wrapped:                    0.0216773033142
+    Fortran-wrapped, no reload:         0.00544350147247
+    Fortran-wrapped, no reload, reuse:  0.000751280784607
+    Fortran (call method):  0.0315539121628
+    py/fortran:                    1.46793597093
+    py/fortran, __call__ method:   1.0084611101
+    py/fortran, no reload:         5.84566633234
+    py/fortran, no reload, reuse:  42.3555266415
+    Python external call:               0.0322543859482
+    Fortran-wrapped:                    0.0225975990295
+    Fortran-wrapped, no reload:         0.00569999217987
+    Fortran-wrapped, no reload, reuse:  0.00075900554657
+    Fortran (call method):  0.0314954996109
+    py/fortran:                    1.42733685583
+    py/fortran, __call__ method:   1.02409507221
+    py/fortran, no reload:         5.65867196486
+    py/fortran, no reload, reuse:  42.4955866185
+    [ 0.006951  0.006911  0.006956]
+    [ 0.006951  0.006911  0.006956]
+    [ 0.006951  0.006911  0.006956]
+    pyradex.pyradex timing for a 3^4 grid:  [2.6063590049743652, 2.598068952560425, 2.592205047607422]
+    [ 0.00694859  0.00690934  0.00695345]
+    [ 0.00694859  0.00690934  0.00695345]
+    [ 0.00694859  0.00690934  0.00695345]
+    pyradex.Radex() timing for a 3^4 grid:  [3.8620870113372803, 3.838628053665161, 3.805685043334961]
+    [ 0.00694859  0.00690934  0.00695345]
+    [ 0.00694859  0.00690934  0.00695345]
+    [ 0.00694859  0.00690934  0.00695345]
+    pyradex.Radex() class-based timing for a 3^4 grid:  [3.1014058589935303, 3.2805678844451904, 3.160888195037842]
+    [ 0.00694859  0.00690934  0.00695345]
+    [ 0.00694859  0.00690934  0.00695345]
+    [ 0.00694859  0.00690934  0.00695345]
+    pyradex.Radex() class-based timing for a 3^4 grid, using optimal parameter-setting order:  [0.9963750839233398, 1.0024840831756592, 0.9699358940124512]
     
 
 Making Grids
