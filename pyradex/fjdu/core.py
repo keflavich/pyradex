@@ -169,7 +169,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
             tkin = unitless(u.Quantity(tkin, u.K))
         if tkin <= 0 or tkin > 1e4:
             raise ValueError('Must have kinetic temperature > 0 and < 10^4 K')
-        self.params['tkin'] = tkin
+        self.set_params(tkin=tkin)
 
     @property
     def column_per_bin(self):
@@ -181,7 +181,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
             col = unitless(u.Quantity(col, self._u_sc))
         if col < 1e5 or col > 1e25:
             raise ValueError("Extremely low or extremely high column.")
-        self.params['ncol_x_cgs'] = col
+        self.set_params(ncol_x_cgs=col)
 
         col = u.Quantity(col, self._u_sc)
         if not self._is_locked:
@@ -235,8 +235,8 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
     @deltav.setter
     def deltav(self, dv):
-        self._params['dv_cgs'] = unitless(u.Quantity(dv/self._kms_to_cms,
-                                                    self._u_cms))
+        self.set_params(deltav=unitless(u.Quantity(dv/self._kms_to_cms,
+                                                   self._u_cms)))
 
     @property
     def molpath(self):

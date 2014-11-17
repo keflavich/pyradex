@@ -14,3 +14,25 @@ def test_simple():
     tbl = FF()
 
     np.testing.assert_almost_equal(tbl[0]['Tex'], 8.69274406690759)
+
+def test_mod_params():
+
+    FF = pyradex.fjdu.Fjdu(datapath='examples/', species='co', column=1e15,
+                           density=1e3, temperature=20)
+
+    tbl = FF()
+
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.69274406690759)
+
+    FF.column = 1e14
+    tbl = FF()
+
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.0986662583317646)
+
+    FF.density=1e4
+    tbl = FF()
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 25.381267019506591)
+
+    FF.temperature=25
+    tbl = FF()
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 37.455354325813083)
