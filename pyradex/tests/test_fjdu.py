@@ -1,5 +1,6 @@
 import pyradex.fjdu
 import numpy as np
+from astropy import units as u
 
 def test_simple():
 
@@ -36,3 +37,8 @@ def test_mod_params():
     FF.temperature=25
     tbl = FF()
     np.testing.assert_almost_equal(tbl[0]['Tex'], 37.455354325813083)
+
+    FF.deltav = 5 * u.km/u.s
+    np.testing.assert_almost_equal(FF.deltav.to(u.km/u.s).value, 5)
+    tbl = FF()
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 37.752430110617119)
