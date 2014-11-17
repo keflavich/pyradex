@@ -16,6 +16,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                  temperature=None,
                  tbg=2.73,
                  column=None,
+                 escapeProbGeom='lvg',
                  **kwargs):
 
         if os.getenv('RADEX_DATAPATH') and datapath is None:
@@ -26,7 +27,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
         self.set_default_params()
         self.set_params(temperature=temperature, density=density,
-                        column=column, **kwargs)
+                        column=column, geotype=escapeProbGeom, **kwargs)
         self.tbg = tbg
         from pyradex.fjdu import wrapper_my_radex
         myradex_wrapper = wrapper_my_radex.myradex_wrapper
@@ -99,6 +100,8 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     def set_params(self, **kwargs):
         default = lower_keys(dict(self._default_params))
         for k in kwargs:
+            if kwargs[k] is None:
+                continue
             if k == 'deltav':
                 # deltav requires unit conversion
                 self.deltav = kwargs[k]
