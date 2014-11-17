@@ -528,6 +528,11 @@ class Radex(RadiativeTransferApproximator):
         # It's not obvious that RADEX does this correctly in readdata.f
         self.radex.cphys.totdens = self.radex.cphys.density.sum()
 
+        # Unfortunately,
+        # must re-read molecular file and re-interpolate to new density
+        self._validate_colliders()
+        self.radex.readdata()
+
         if not self._is_locked:
             self._is_locked = True
             if self.locked_parameter == 'column':

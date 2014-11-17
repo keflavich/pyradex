@@ -154,6 +154,33 @@ def test_thermal_opr():
     rdx.temperature = 50
     assert rdx.density['oH2'].value == 1e4
 
+def test_mod_params():
+
+    RR = pyradex.Radex(datapath='examples/', species='co', column=1e15,
+                       density=1e3, temperature=20)
+
+    tbl = RR()
+
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.69274406690759, decimal=2)
+
+    RR.column = 1e14
+    tbl = RR()
+
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.0986662583317646, decimal=2)
+
+    RR.density=1e4
+    tbl = RR()
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 25.381267019506591, decimal=1)
+
+    RR.temperature=25
+    tbl = RR()
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 37.88, decimal=1)
+
+    RR.deltav = 5 * u.km/u.s
+    np.testing.assert_almost_equal(RR.deltav.to(u.km/u.s).value, 5)
+    tbl = RR()
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 37.83, decimal=1)
+
 if __name__ == "__main__":
     test_call()
     test_parse_example()
