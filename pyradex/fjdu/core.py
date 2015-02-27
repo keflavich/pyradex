@@ -58,6 +58,13 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                            'n_transitions': ntrans})
 
     def run_radex(self, **kwargs):
+    
+        # drop kwargs kept for compatibility with Radex
+        ignore_kwargs = ['reuse_last', 'reload_molfile']
+        for ik in ignore_kwargs:
+            if ik in kwargs:
+                kwargs.pop(ik)
+
         self.set_params(**kwargs)
         self.load_datafile()
         energies, f_occupations, data_transitions, cooling_rate = \
