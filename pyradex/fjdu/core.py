@@ -93,7 +93,8 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
     _keyword_map = {'temperature': 'tkin',
                     'deltav': 'dv_cgs',
-                    'column': 'ncol_x_cgs'}
+                    'column': 'ncol_x_cgs',
+                   }
 
     _density_keyword_map = {'h2': 'h2_density_cgs',
                             'h': 'hi_density_cgs',
@@ -118,6 +119,8 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                 self._params[self._keyword_map[k]] = kwargs[k]
             elif k.lower() in ('density','collider_densities'):
                 self.density = kwargs[k]
+            elif k == 'tbg':
+                self.tbg = kwargs[k]
             elif k == 'species':
                 self.species = kwargs[k]
             elif k.lower() not in default:
