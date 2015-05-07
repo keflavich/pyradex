@@ -180,9 +180,9 @@ class Fjdu(base_class.RadiativeTransferApproximator):
             for k in collider_densities:
                 if k.lower() in self._density_keyword_map:
                     key = self._density_keyword_map[k.lower()]
-                    self._params[key.lower()] = collider_density[k]
+                    self._params[key.lower()] = collider_densities[k]
                 elif k.lower() in self._density_keyword_map.values():
-                    self._params[k.lower()] = collider_density[k]
+                    self._params[k.lower()] = collider_densities[k]
                 else:
                     raise KeyError("Collider {0} not recognized.".format(k))
             self._params['dens_x_cgs'] = self.total_density.value
@@ -230,7 +230,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
             # Reset the density to a thermal value
             lp = self._locked_parameter
             self.density = (unitless(self.density['H2']) or
-                            unitless(self.density['oH2']+self.density['pH2']))
+                            unitless(self.density['OH2']+self.density['PH2']))
             self._locked_parameter = lp
 
     @property
