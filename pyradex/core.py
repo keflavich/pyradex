@@ -504,6 +504,7 @@ class Radex(RadiativeTransferApproximator):
 
             T = unitless(self.temperature)
             if T > 0:
+                # From Faure, private communication
                 opr = min(3.0,9.0*np.exp(-170.6/T))
             else:
                 opr = 3.0

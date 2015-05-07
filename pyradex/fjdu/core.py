@@ -1,6 +1,8 @@
 from __future__ import print_function
 import numpy as np
 import os
+import warnings
+from collections import defaultdict
 from astropy import constants
 from astropy import log
 import astropy.table
@@ -9,10 +11,12 @@ from ..utils import ImmutableDict,unitless,lower_keys
 from .. import utils
 
 import astropy.units as u
+_quantity = u.Quantity
 
 class Fjdu(base_class.RadiativeTransferApproximator):
     def __init__(self, datapath=None, species='co',
                  density=None,
+                 collider_densities=None,
                  temperature=None,
                  tbg=2.73,
                  column=None,
@@ -27,6 +31,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
         self.set_default_params()
         self.set_params(temperature=temperature, density=density,
+                        collider_densities=collider_densities,
                         column=column, geotype=escapeProbGeom, **kwargs)
         self.tbg = tbg
         from pyradex.fjdu import wrapper_my_radex
@@ -151,23 +156,63 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         return ImmutableDict(dd)
 
     @density.setter
-    def density(self, value):
-        if isinstance(value, dict):
+    def density(self, collider_density):
+
+        self._use_thermal_opr = False
+
+        if isinstance(collider_density, (float,int,_quantity,np.ndarray)):
+            log.warn("Assuming the density is n(H_2).")
+            collider_density = {'H2': collider_density}
+
+        collider_densities = defaultdict(lambda: 0)
+        for k in collider_density:
+            collider_densities[k.upper()] = unitless(u.Quantity(collider_density[k],
+                                                                self._u_cc))
+            if k.upper() not in self._all_valid_colliders:
+                raise ValueError('Collider %s is not one of the valid colliders: %s' %
+                                 (k,self._all_valid_colliders))
+
+        if (('OH2' in collider_densities and collider_densities['OH2'] !=0) or
+            ('PH2' in collider_densities and collider_densities['PH2'] !=0)):
+            if not 'PH2' in collider_densities or not 'OH2' in collider_densities:
+                raise ValueError("If o-H2 density is specified, p-H2 must also be.")
             # dictionary of collider densities
-            for k in value:
+            for k in collider_densities:
                 if k.lower() in self._density_keyword_map:
                     key = self._density_keyword_map[k.lower()]
-                    self._params[key.lower()] = value[k]
+                    self._params[key.lower()] = collider_density[k]
                 elif k.lower() in self._density_keyword_map.values():
-                    self._params[k.lower()] = value[k]
+                    self._params[k.lower()] = collider_density[k]
                 else:
                     raise KeyError("Collider {0} not recognized.".format(k))
             self._params['dens_x_cgs'] = self.total_density.value
-        else:
-            self._params['dens_x_cgs'] = value
+            self._use_thermal_opr = False
+        elif 'H2' in collider_densities and 'H2' in self._valid_colliders:
+            # H2 is a collider in the file: use it.
+            self._params['dens_x_cgs'] = collider_density['H2']
             for k in self._density_keyword_map.values():
                 self._params[k] = 0.0
-            self._params['h2_density_cgs'] = value
+            self._params['h2_density_cgs'] = collider_density['H2']
+        elif 'H2' in collider_densities:
+            # Only oH2 and pH2 are in the file.  Must assume.
+            warnings.warn("Using a default ortho-to-para ratio (which "
+                          "will only affect species for which independent "
+                          "ortho & para collision rates are given)")
+            self._use_thermal_opr = True
+            #self.radex.cphys.density[0] = collider_densities['H2']
+
+            T = unitless(self.temperature)
+            if T > 0:
+                # From Faure, private communication
+                opr = min(3.0,9.0*np.exp(-170.6/T))
+            else:
+                opr = 3.0
+            fortho = opr/(1+opr)
+            log.debug("Set OPR to {0} and fortho to {1}".format(opr,fortho))
+            self._params['oh2_density_cgs'] = collider_density['H2']*(fortho)
+            self._params['ph2_density_cgs'] = collider_density['H2']*(1-fortho)
+            self._params['dens_x_cgs'] = self.total_density.value
+
 
     @property
     def temperature(self):
@@ -180,6 +225,13 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         if tkin <= 0 or tkin > 1e4:
             raise ValueError('Must have kinetic temperature > 0 and < 10^4 K')
         self.set_params(tkin=tkin)
+
+        if self._use_thermal_opr:
+            # Reset the density to a thermal value
+            lp = self._locked_parameter
+            self.density = (unitless(self.density['H2']) or
+                            unitless(self.density['oH2']+self.density['pH2']))
+            self._locked_parameter = lp
 
     @property
     def column_per_bin(self):
