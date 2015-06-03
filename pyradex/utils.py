@@ -30,7 +30,7 @@ def get_datafile(species, savedir='./'):
     """
     Load a molecular data file and save it into the specified directory
     """
-    from astroquery import lamda
+    from astroquery.lamda import Lamda
 
     datapath = os.path.join(savedir,species)
 
@@ -44,7 +44,7 @@ def get_datafile(species, savedir='./'):
         mkdir_p(savedir)
 
     if not os.path.isfile(datapath):
-        data = lamda.query(species, return_datafile=True)
+        data = Lamda.query(species, return_datafile=True)
         with open(datapath,'w') as out:
             out.writelines([d+"\n" for d in data])
 

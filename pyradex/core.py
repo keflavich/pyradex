@@ -372,7 +372,8 @@ class Radex(RadiativeTransferApproximator):
 
     def set_params(self, density=None, collider_densities=None,
                    column=None, column_per_bin=None, temperature=None,
-                   abundance=None, species=None, deltav=None, tbg=None):
+                   abundance=None, species=None, deltav=None, tbg=None,
+                   escapeProbGeom=None):
 
         if species is not None:
             self.species = species
@@ -409,6 +410,9 @@ class Radex(RadiativeTransferApproximator):
 
         if tbg is not None:
             self.tbg = tbg
+
+        if escapeProbGeom is not None:
+            self.escapeProbGeom = escapeProbGeom
 
     @property
     def locked_parameter(self):
