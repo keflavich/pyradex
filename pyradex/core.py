@@ -972,6 +972,20 @@ class Radex(RadiativeTransferApproximator):
 
         return S
 
+    def partition_function(self, temperature=None):
+        """
+        Equation 46 of Mangum & Shirley 2015:
+
+            Q = Sum( g_i exp(-E_i / kT) )
+        """
+        gi = self.statistical_weight[self.upperlevelindex]
+        Ei = u.Quantity(self.upperstateenergy, unit=u.K)
+        if temperature is None:
+            temperature = self.temperature
+        if not hasattr(temperature, 'unit'):
+            temperature = u.Quantity(temperature, unit=u.K)
+        return (gi*np.exp(-Ei/(temperature))).sum()
+
 
 def density_distribution(densarr, distr, moleculecolumn,
                          tauthresh=0.8, line_ids=[], **kwargs):
