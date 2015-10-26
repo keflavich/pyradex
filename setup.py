@@ -17,7 +17,8 @@ with open('README.rst') as file:
 #    long_description += file.read()
 
 __version__ = ""
-execfile('pyradex/version.py') # sets version
+with open("pyradex/version.py") as f:
+    exec(f.read())
 
 #import os
 #if not os.path.exists('pyradex/radex/radex.so'):
