@@ -131,7 +131,11 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
         f77exec = '--f77exec=%s' % f77exec
     #cmd = '-m radex -c %s --fcompiler=%s %s' % (" ".join(files), fcompiler, f77exec)
     #f2py.run_main(['-m','radex','-c','--fcompiler={0}'.format(fcompiler), f77exec,] + files)
-    source = "\n".join([open(fn).read() for fn in files])
+    source_list = []
+    for fn in files:
+        with open(fn, 'br') as f:
+            source_list.append(f.read())
+    source = b"\n".join(source_list)
     include_path = '-I{0}'.format(os.getcwd())
     r2 = f2py.compile(source=source, modulename='radex',
                       extra_args='--fcompiler={0} {1} {2}'.format(fcompiler,
