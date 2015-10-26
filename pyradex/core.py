@@ -987,8 +987,9 @@ class Radex(RadiativeTransferApproximator):
         return (gi*np.exp(-Ei/(temperature))).sum()
 
 
-def density_distribution(densarr, distr, moleculecolumn,
-                         tauthresh=0.8, line_ids=[], **kwargs):
+def density_distribution(densarr, distr, moleculecolumn, tauthresh=0.8,
+                         opr=None, line_ids=[], mincol=None, Radex=Radex,
+                         **kwargs):
     """
     Compute the LVG model for a single zone with an assumed density
     *distribution* but other properties fixed.
@@ -1012,47 +1013,85 @@ def density_distribution(densarr, distr, moleculecolumn,
     if not line_ids:
         raise ValueError("Specify at least one line ID")
 
-    meandens = {'H2': (densarr*distr).sum()}
+    meandens = (densarr*distr).mean()
+    if opr is None:
+        collider_densities = {'H2': meandens}
+    else:
+        fortho = opr/(1+opr)
+        collider_densities = {'oH2':meandens*fortho,'pH2':meandens*(1-fortho)}
 
 
     # Test whether the multi-slab model is reasonable by checking:
     # if the column was all at the mean density, would any lines be
     # optically thick?
-    R = Radex(collider_densities=meandens, column=moleculecolumn, **kwargs)
+    R = Radex(collider_densities=collider_densities, column=moleculecolumn, **kwargs)
     R.run_radex()
     if np.any(R.tau > tauthresh):
         warnings.warn(("At least one line optical depth is >{tauthresh}.  "
                        "Smoothing may be invalid.").format(tauthresh=tauthresh))
 
+    # set the optical depth from the *mean* density assuming the *total* column
+    tau = R.tau
+    print("Mean density: {0}  Optical Depth: {1}".format(meandens, tau[line_ids]))
+
+    _thc = (2 * constants.h * constants.c).cgs / u.sr
+    _fk = (constants.h * constants.c / constants.k_B).cgs
+    _thc_value = _thc.value
+    _fk_value = _fk.value
+    _u_brightness = (u.erg * u.s**-1 * u.cm**-2 * u.Hz**-1 * u.sr**-1)
+
+    xnu = R.frequency.to(u.cm**-1, u.spectral()).value
+
     linestrengths = []
-    taus = []
     texs = []
     for dens,prob in zip(densarr,distr):
-        R.density = {'H2': dens}
+        if opr is None:
+            collider_densities = {'H2':dens}
+        else:
+            collider_densities = {'oH2':dens*fortho,'pH2':dens*(1-fortho)}
+        R.density = collider_densities
         try:
             R.column = moleculecolumn * prob
+            if mincol is not None and R.column < mincol:
+                R.column = mincol
             R.run_radex()
         except ValueError as ex:
             if ex.args[0] == "Extremely low or extremely high column.":
                 if R.column > u.Quantity(1e20, u.cm**-2):
                     raise ex
                 else:
-                    linestrengths.append(np.zeros_like(line_ids))
-                    taus.append(np.zeros_like(line_ids))
                     texs.append(np.zeros_like(line_ids)+2.73)
+                    linestrengths.append(np.zeros_like(line_ids))
                     continue
             else:
                 raise ex
+        
+        if hasattr(R, 'radex'):
+            R.radex.radi.taul[:len(tau)] = tau
+        elif hasattr(R, '_data_dict'):
+            R._data_dict['tau'] = tau
 
-        linestrengths.append(R.source_line_brightness_temperature[line_ids])
-        taus.append(R.tau[line_ids])
+        fk = _fk_value
+        thc = _thc_value
+
+        with QuantityOff():
+            ftau = np.exp(-tau)
+            xt = xnu**3
+            earg = fk*xnu/R.tex
+            bnutex = thc*xt/(np.exp(earg)-1.0)
+            toti_nounit = R.background_brightness*ftau+bnutex*(1.0-ftau)
+
+        toti = u.Quantity(toti_nounit, _u_brightness)
+        totK = ((toti*u.sr).to(u.K, u.brightness_temperature(1*u.sr,
+                                                             R.frequency)))
+
+        linestrengths.append(totK[line_ids])
         texs.append(R.tex[line_ids])
 
     linestrengths = np.array(linestrengths)
-    taus = np.array(taus)
     texs = np.array(texs)
 
-    return R, linestrengths, linestrengths.sum(axis=0), texs, taus
+    return R, linestrengths, linestrengths.sum(axis=0), texs, tau[line_ids]
 
 
 def grid():
