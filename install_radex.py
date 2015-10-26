@@ -133,7 +133,7 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     #f2py.run_main(['-m','radex','-c','--fcompiler={0}'.format(fcompiler), f77exec,] + files)
     source_list = []
     for fn in files:
-        with open(fn, 'br') as f:
+        with open(fn, 'rb') as f:
             source_list.append(f.read())
     source = b"\n".join(source_list)
     include_path = '-I{0}'.format(os.getcwd())
