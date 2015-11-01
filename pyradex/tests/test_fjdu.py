@@ -1,11 +1,11 @@
-import pyradex.fjdu
+from .. import fjdu
 import numpy as np
 from astropy import units as u
 
 def test_simple():
 
-    FF = pyradex.fjdu.Fjdu(datapath='examples/', species='co', column=1e15,
-                           density={'pH2':1e3,'oH2':0}, temperature=20)
+    FF = fjdu.Fjdu(datapath='examples/', species='co', column=1e15,
+                   density={'pH2':1e3,'oH2':0}, temperature=20)
 
     assert FF.params['ncol_x_cgs'] == 1e15
     np.testing.assert_almost_equal(FF.params['dens_x_cgs'], 1e3)
@@ -21,8 +21,8 @@ def test_simple():
 
 def test_mod_params():
 
-    FF = pyradex.fjdu.Fjdu(datapath='examples/', species='co', column=1e15,
-                           density={'pH2':1e3,'oH2':0}, temperature=20)
+    FF = fjdu.Fjdu(datapath='examples/', species='co', column=1e15,
+                   density={'pH2':1e3,'oH2':0}, temperature=20)
 
     tbl = FF()
 

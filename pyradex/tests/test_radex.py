@@ -1,10 +1,11 @@
-import pyradex
 import pytest
 import os
 import distutils.spawn
 import numpy as np
 from astropy import units as u
 from astropy import log
+
+from ..core import parse_outfile,pyradex,Radex
 
 exepath = 'Radex/bin/radex'
 #if os.path.isfile(exepath) and os.access(exepath, os.X_OK):
@@ -19,12 +20,12 @@ def data_path(filename):
     return os.path.join(data_dir, filename)
 
 def test_parse_example():
-    data = pyradex.parse_outfile(data_path('example.out'))
+    data = parse_outfile(data_path('example.out'))
     data.pprint(show_unit=True)
 
 @pytest.mark.skipif(exepath=='radex',reason='radex not installed')
 def test_call():
-    data = pyradex.pyradex(executable=exepath,species='Radex/data/hco+',minfreq=50)
+    data = pyradex(executable=exepath,species='Radex/data/hco+',minfreq=50)
     data.pprint(show_unit=True)
 
 @pytest.mark.skipif(exepath=='radex',reason='radex not installed')
@@ -37,16 +38,16 @@ def test_molecules(molecule):
     else:
         return
 
-    data = pyradex.pyradex(executable=exepath,species=molecule,minfreq=1,maxfreq=250)
+    data = pyradex(executable=exepath,species=molecule,minfreq=1,maxfreq=250)
     data.pprint(show_unit=True)
 
 def test_radex_class():
-    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,
+    R = Radex(datapath='examples/',species='co',abundance=1e-4,
                       column=1e15, collider_densities=None, temperature=20)
     assert hasattr(R,'radex')
 
 def test_change_abundance():
-    R = pyradex.Radex(datapath='examples/',species='co',abundance=1e-4,
+    R = Radex(datapath='examples/',species='co',abundance=1e-4,
                       column=1e15, collider_densities=None, temperature=20)
     totdens = R.total_density
     R.abundance = 1e-6
@@ -54,20 +55,20 @@ def test_change_abundance():
 
 def test_consistent_abund():
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/', species='co', abundance=1e-4,
+        R = Radex(datapath='examples/', species='co', abundance=1e-4,
                           column=1e15, density=1e3)
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/', species='co', abundance=1e-4,
+        R = Radex(datapath='examples/', species='co', abundance=1e-4,
                           column=1e15, collider_densities={'H2':1e3})
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/', species='co', abundance=1e-4,
+        R = Radex(datapath='examples/', species='co', abundance=1e-4,
                           column_per_bin=1e15)
     with pytest.raises(ValueError):
-        R = pyradex.Radex(datapath='examples/', species='co', abundance=None,
+        R = Radex(datapath='examples/', species='co', abundance=None,
                           column=None)
 
 def test_selfconsistent_density():
-    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e3},
+    rdx = Radex(species='co', collider_densities={'H2':1e3},
                         column_per_bin=1e13, temperature=20)
     np.testing.assert_almost_equal(rdx.total_density.value, 1e3)
     rdx.temperature = 30
@@ -80,7 +81,7 @@ def test_selfconsistent_density():
     np.testing.assert_almost_equal(rdx.total_density.value, 1e3)
 
 def test_consistent_parchanges():
-    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e3},
+    rdx = Radex(species='co', collider_densities={'H2':1e3},
                         column_per_bin=1e13, temperature=20)
     np.testing.assert_almost_equal(rdx.abundance, 1e13/(1e3*(u.pc.to(u.cm))))
     assert rdx.locked_parameter == 'column'
@@ -93,7 +94,7 @@ def test_consistent_parchanges():
 
 def test_radex_results():
     # default parameters for radex online
-    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
+    rdx = Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
                         temperature=30, tbackground=2.73)
     rdx.run_radex()
     assert rdx.temperature.value == 30.0 # no approximates allowed
@@ -110,7 +111,7 @@ def test_radex_results():
     np.testing.assert_approx_equal(rdx.lowerlevelpop[0], 1.339E-01, 4)
 
 def test_consistent_init():
-    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
+    rdx = Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
                         temperature=30, tbackground=2.73)
     log.debug('crate at init: {0}'.format(rdx.radex.collie.crate[0,1]))
     log.debug(str((rdx.density, rdx.temperature, rdx.column, rdx._cddv)))
@@ -118,10 +119,10 @@ def test_consistent_init():
     log.debug('crate at run: {0}'.format(rdx.radex.collie.crate[0,1]))
     tex0 = rdx.tex[0].value
     crate0 = np.copy(rdx.radex.collie.crate)
-    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
+    rdx = Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
                         temperature=25, tbackground=2.73)
     log.debug('crate at temchange: {0}'.format(rdx.radex.collie.crate[0,1]))
-    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
+    rdx = Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
                         temperature=30, tbackground=2.73)
     log.debug('crate at init2: {0}'.format(rdx.radex.collie.crate[0,1]))
     log.debug(str((rdx.density, rdx.temperature, rdx.column, rdx._cddv)))
@@ -134,7 +135,7 @@ def test_consistent_init():
 
 def test_thermal_opr():
     # Check if H2 is specified as total H2, the thermal fraction of O/P H2 is used
-    rdx = pyradex.Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
+    rdx = Radex(species='co', collider_densities={'H2':1e4}, column_per_bin=1e14, deltav=1.0,
                         temperature=30, tbackground=2.73)
     opr = 9.0*np.exp(-170.6/30)
     fortho = opr/(1+opr)
@@ -148,7 +149,7 @@ def test_thermal_opr():
     np.testing.assert_almost_equal(rdx.density['pH2'].value, (1-fortho)*1e4)
 
     # Check that if ortho is specified, density remains unchanged
-    rdx = pyradex.Radex(species='co', collider_densities={'oH2':1e4, 'pH2':0}, column_per_bin=1e14, deltav=1.0,
+    rdx = Radex(species='co', collider_densities={'oH2':1e4, 'pH2':0}, column_per_bin=1e14, deltav=1.0,
                         temperature=30, tbackground=2.73)
     assert rdx.density['oH2'].value == 1e4
     rdx.temperature = 50
@@ -156,7 +157,7 @@ def test_thermal_opr():
 
 def test_mod_params():
 
-    RR = pyradex.Radex(datapath='examples/', species='co', column=1e15,
+    RR = Radex(datapath='examples/', species='co', column=1e15,
                        density=1e3, temperature=20)
 
     tbl = RR()

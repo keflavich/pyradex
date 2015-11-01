@@ -1,2 +1,2 @@
-import core
-from core import Fjdu
+from . import core
+from .core import Fjdu

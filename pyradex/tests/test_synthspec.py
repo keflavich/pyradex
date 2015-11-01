@@ -1,4 +1,5 @@
-import pyradex
+from ..core import Radex
+from .. import synthspec
 import numpy as np
 import astropy.units as u
 
