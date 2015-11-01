@@ -1,5 +1,5 @@
 import numpy as np
-import pyradex
+from .core import Radex
 from astropy.utils.console import ProgressBar
 
 def grid_wrapper(molecule,
@@ -33,7 +33,7 @@ def grid_wrapper(molecule,
 
     # Just a quick first run to get things initialized
     if coltype == 'mol':
-        R = pyradex.Radex(species=molecule, column=columns[0], abundance=abundances[0])
+        R = Radex(species=molecule, column=columns[0], abundance=abundances[0])
     R.deltav = deltav
     R.run_radex()
 

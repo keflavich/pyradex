@@ -2,9 +2,7 @@ from astropy import units as u
 import sys
 import os
 import errno
-from astropy import log
 import itertools
-import astropy.units as u
 _quantity = u.Quantity
 
 def mkdir_p(path):

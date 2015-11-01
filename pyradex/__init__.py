@@ -1,8 +1,8 @@
 from .version import __version__
 
-import utils
-import despotic_interface
-import radex
-import synthspec
+from . import utils
+from . import despotic_interface
+from . import radex
+from . import synthspec
 
 from .core import pyradex,write_input,parse_outfile,call_radex,Radex
