@@ -33,6 +33,7 @@ def download_radex(redownload=True,
 
     try:
         filename = download_file(url, cache=True)
+        assert os.path.exists(filename)
     except:
         import requests
         r = requests.get(url,
