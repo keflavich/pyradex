@@ -48,6 +48,7 @@ def download_radex(redownload=True,
     return filename
 
 def extract_radex(filename='radex_public.tar.gz'):
+    print("Extracting RADEX source from file {0}".format(filename))
     with tarfile.open(filename,mode='r:gz') as tar:
         # this will fail if readonly files are overwritten: tf.extractall()
         for file_ in tar:
