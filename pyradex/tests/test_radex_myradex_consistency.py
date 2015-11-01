@@ -1,4 +1,5 @@
-from ..core import Radex, fjdu
+from ..core import Radex
+from .. import fjdu
 import pytest
 import os
 import distutils.spawn

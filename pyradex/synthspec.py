@@ -3,7 +3,6 @@ Tools to generate synthetic spectra given a table of line strengths
 """
 import numpy as np
 
-from astropy import logging
 from astropy.modeling import models
 from astropy import units as u
 from astropy import constants as c
