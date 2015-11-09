@@ -287,7 +287,7 @@ class Radex(RadiativeTransferApproximator):
                 raise ValueError("Data path %s was not successfully stored;"
                                  " instead %s was." % (datapath,self.datapath))
         self.species = species
-        if self.molpath == '':
+        if self.molpath == b'':
             raise ValueError("Must set a species name.")
         if not os.path.exists(self.molpath):
             raise ValueError("Must specify a valid path to a molecular data file "
@@ -570,13 +570,13 @@ class Radex(RadiativeTransferApproximator):
 
     @property
     def molpath(self):
-        return "".join(self.radex.impex.molfile).strip()
+        return b"".join(self.radex.impex.molfile).strip()
 
     @molpath.setter
     def molpath(self, molfile):
         if "~" in molfile:
             molfile = os.path.expanduser(molfile)
-        self.radex.impex.molfile[:] = ""
+        self.radex.impex.molfile[:] = np.bytes_([""]*len(self.radex.impex.molfile))
         utils.verify_collisionratefile(molfile)
         self.radex.impex.molfile[:len(molfile)] = molfile
 
@@ -586,7 +586,8 @@ class Radex(RadiativeTransferApproximator):
 
     @outfile.setter
     def outfile(self, outfile):
-        self.radex.impex.outfile[:len(self.outfile)] = outfile
+        self.radex.impex.outfile[:] = np.bytes_([""]*len(self.radex.impex.outfile))
+        self.radex.impex.outfile[:len(outfile)] = outfile
 
     @property
     def logfile(self):
@@ -594,16 +595,19 @@ class Radex(RadiativeTransferApproximator):
 
     @logfile.setter
     def logfile(self, logfile):
-        self.radex.setup.logfile[:len(self.logfile)] = logfile
+        self.radex.setup.logfile[:] = np.bytes_([""]*len(self.radex.setup.logfile))
+        self.radex.setup.logfile[:len(logfile)] = logfile
 
     @property
     def datapath(self):
-        return os.path.expanduser("".join(self.radex.setup.radat).strip())
+        return os.path.expanduser(b"".join(self.radex.setup.radat).strip()).decode('utf-8')
 
     @datapath.setter
     def datapath(self, radat):
         # self.radex data path not needed if molecule given as full path
-        self.radex.setup.radat[:] = ""
+        self.radex.setup.radat[:] = np.bytes_([""] * len(self.radex.setup.radat))
+        # there is dangerous magic here: radat needs to be interpreted as an array,
+        # but you can't make it an array of characters easily...
         self.radex.setup.radat[:len(radat)] = radat
 
 
@@ -648,6 +652,9 @@ class Radex(RadiativeTransferApproximator):
     def temperature(self, tkin):
         if hasattr(tkin,'to'):
             tkin = unitless(u.Quantity(tkin, u.K))
+        elif tkin is None:
+            raise TypeError("Must specify tkin")
+
         if tkin <= 0 or tkin > 1e4:
             raise ValueError('Must have kinetic temperature > 0 and < 10^4 K')
         self.radex.cphys.tkin = tkin
@@ -840,7 +847,7 @@ class Radex(RadiativeTransferApproximator):
 
     @property
     def quantum_number(self):
-        return np.array([("".join(x)).strip() for x in
+        return np.array([(b"".join(x)).strip() for x in
                          grouper(self.radex.quant.qnum.T.ravel().tolist(),6)])
 
     @property

@@ -147,7 +147,12 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     if r2 != 0:
         raise SystemError("f2py failed with error %i" % r2)
 
-    r3 = shutil.move('Radex/src/radex.so', 'pyradex/radex/radex.so')
+    outfile = glob.glob("Radex/src/radex.*so")
+    if len(outfile) != 1:
+        print("outfile = {0}".format(outfile))
+        raise OSError("Did not find the correct .so file(s)!  Compilation has failed.")
+    sofile = outfile[0]
+    r3 = shutil.move(sofile, 'pyradex/radex/radex.so')
 
 def build_radex_executable(datapath='./'):
     filename = download_radex(redownload=False)

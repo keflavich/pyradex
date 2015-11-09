@@ -1,5 +1,6 @@
 from astropy import units as u
 from astropy.extern.six import reraise
+from astropy.extern.six.moves import zip_longest
 import sys
 import os
 import errno
@@ -113,7 +114,7 @@ def unitless(x):
 # http://stackoverflow.com/questions/434287/what-is-the-most-pythonic-way-to-iterate-over-a-list-in-chunks
 def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
-    return itertools.izip_longest(*args, fillvalue=fillvalue)
+    return zip_longest(*args, fillvalue=fillvalue)
 
 def lower_keys(d):
     """ copy dictionary with lower-case keys """
