@@ -1,4 +1,5 @@
 from astropy import units as u
+from astropy.extern.six import reraise
 import sys
 import os
 import errno
@@ -73,9 +74,10 @@ def verify_collisionratefile(fn):
         try:
             collrates,radtrans,enlevs = lamda.core.parse_lamda_datafile(fn)
         except Exception as ex:
-            raise type(ex), type(ex)("Data file verification failed.  The molecular data file may be corrupt." +
-                                     "\nOriginal Error in the parser: " +
-                                     ex.args[0]), sys.exc_info()[2]
+            reraise(type(ex), type(ex)("Data file verification failed.  The molecular data file may be corrupt." +
+                                       "\nOriginal Error in the parser: " +
+                                       ex.args[0]),
+                    sys.exc_info()[2])
         if len(collrates) == 0:
             raise ValueError("No data found in the table for the category %s" % qt)
 
