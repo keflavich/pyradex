@@ -7,6 +7,7 @@ import astropy.units as u
 _quantity = u.Quantity
 from collections import defaultdict
 import os
+import sys
 
 from . import utils
 from . import synthspec
@@ -17,6 +18,8 @@ from astropy import units as u
 from astropy import constants
 from astropy import log
 import astropy.table
+
+PYVERSION = 3 if sys.version_info >= (3,0) else 2
 
 __all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex',
            'density_distribution']
@@ -576,7 +579,10 @@ class Radex(RadiativeTransferApproximator):
     def molpath(self, molfile):
         if "~" in molfile:
             molfile = os.path.expanduser(molfile)
-        self.radex.impex.molfile[:] = np.bytes_([""]*len(self.radex.impex.molfile))
+        if PYVERSION == 3:
+            self.radex.impex.molfile[:] = np.bytes_([""]*len(self.radex.impex.molfile))
+        else:
+            self.radex.impex.molfile[:] = ""
         utils.verify_collisionratefile(molfile)
         self.radex.impex.molfile[:len(molfile)] = molfile
 
@@ -586,7 +592,10 @@ class Radex(RadiativeTransferApproximator):
 
     @outfile.setter
     def outfile(self, outfile):
-        self.radex.impex.outfile[:] = np.bytes_([""]*len(self.radex.impex.outfile))
+        if PYVERSION == 3:
+            self.radex.impex.outfile[:] = np.bytes_([""]*len(self.radex.impex.outfile))
+        else:
+            self.radex.impex.outfile[:] = ""
         self.radex.impex.outfile[:len(outfile)] = outfile
 
     @property
@@ -595,7 +604,10 @@ class Radex(RadiativeTransferApproximator):
 
     @logfile.setter
     def logfile(self, logfile):
-        self.radex.setup.logfile[:] = np.bytes_([""]*len(self.radex.setup.logfile))
+        if PYVERSION == 3:
+            self.radex.setup.logfile[:] = np.bytes_([""]*len(self.radex.setup.logfile))
+        else:
+            self.radex.setup.logfile[:] = ""
         self.radex.setup.logfile[:len(logfile)] = logfile
 
     @property
@@ -605,7 +617,10 @@ class Radex(RadiativeTransferApproximator):
     @datapath.setter
     def datapath(self, radat):
         # self.radex data path not needed if molecule given as full path
-        self.radex.setup.radat[:] = np.bytes_([""] * len(self.radex.setup.radat))
+        if PYVERSION == 3:
+            self.radex.setup.radat[:] = np.bytes_([""] * len(self.radex.setup.radat))
+        else:
+            self.radex.setup.radat[:] = ""
         # there is dangerous magic here: radat needs to be interpreted as an array,
         # but you can't make it an array of characters easily...
         self.radex.setup.radat[:len(radat)] = radat
