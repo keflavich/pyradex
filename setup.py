@@ -79,6 +79,9 @@ class InstallFjdu(Command):
         if os.path.exists('wrapper_my_radex.so'):
             os.remove('wrapper_my_radex.so')
         os.system('make wrapper')
+        result = os.system('make sub_trivials.o')
+        if result != 0:
+            raise ValueError("Compilation has failed.  Check gfortran version?")
         os.chdir(cwd)
         for fn in ('wrapper_my_radex.so',):
             outpath = 'pyradex/fjdu/{0}'.format(fn)
