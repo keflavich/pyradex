@@ -1000,6 +1000,9 @@ class Radex(RadiativeTransferApproximator):
 
             Q = Sum( g_i exp(-E_i / kT) )
         """
+        warnings.warn("The partition function may be very inaccurate using "
+                      "LAMDA files because they include a small fraction of"
+                      " the total available states.")
         gi = self.statistical_weight[self.upperlevelindex]
         Ei = u.Quantity(self.upperstateenergy, unit=u.K)
         if temperature is None:
