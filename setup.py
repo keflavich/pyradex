@@ -78,6 +78,7 @@ class InstallFjdu(Command):
         os.chdir('myRadex')
         if os.path.exists('wrapper_my_radex.so'):
             os.remove('wrapper_my_radex.so')
+        os.system('make clean')
         os.system('make wrapper')
         result = os.system('make sub_trivials.o')
         if result != 0:
@@ -88,6 +89,9 @@ class InstallFjdu(Command):
             if os.path.exists(outpath):
                 os.remove(outpath)
             os.link('myRadex/{0}'.format(fn), outpath)
+        os.chdir('myRadex')
+        os.system('make clean')
+        os.chdir(cwd)
 
 
 import subprocess
