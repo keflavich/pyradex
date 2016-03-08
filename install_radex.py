@@ -22,7 +22,7 @@ def install_radex(download=True, extract=True, patch=True, compile=True):
         compile_radex()
 
 def download_radex(redownload=True,
-                   url='http://www.sron.rug.nl/~vdtak/radex/radex_public.tar.gz'):
+                   url='https://personal.sron.nl/~vdtak/radex/radex_public.tar.gz'):
 
     filename = 'radex_public.tar.gz'
 
