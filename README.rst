@@ -50,10 +50,10 @@ Example:
 
     import pyradex
     import numpy as np
-    R = pyradex.Radex()
-    Tlvg = R(collider_densities={'oH2':900,'pH2':100}, column=1e16, species='co',method='lvg')
-    Tslab = R(collider_densities={'oH2':900,'pH2':100}, column=1e16, species='co',method='slab')
-    Tsphere = R(collider_densities={'oH2':900,'pH2':100}, column=1e16, species='co',method='sphere')
+    R = pyradex.Radex(collider_densities={'oH2':900,'pH2':100}, column=1e16, species='co', temperature=20)
+    Tlvg = R(escapeProbGeom='lvg')
+    Tslab = R(escapeProbGeom='slab')
+    Tsphere = R(escapeProbGeom='sphere')
     Tlvg[:3].pprint()
     Tslab[:3].pprint()
     Tsphere[:3].pprint()
