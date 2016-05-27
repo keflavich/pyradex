@@ -241,6 +241,7 @@ class RadiativeTransferApproximator(object):
             raise ValueError("The colliders in the data file {0} ".format(self.molpath)
                              + "have density 0.")
 
+        bad_colliders = []
         for collider in density:
             if (unitless(density[collider]) > 0
                 and (collider.lower() not in valid_colliders)):
@@ -253,11 +254,13 @@ class RadiativeTransferApproximator(object):
                                                     matched_colliders)):
                     # again, all OK
                     continue
+                bad_colliders.append(collider)
                 OK = False
 
         if not OK:
             raise ValueError("There are colliders with specified densities >0 "
-                             "that do not have corresponding collision rates.")
+                             "that do not have corresponding collision rates."
+                             "  The bad colliders are {0}".format(bad_colliders))
 
 
     @property

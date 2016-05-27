@@ -492,15 +492,19 @@ class Radex(RadiativeTransferApproximator):
 
         if (('OH2' in collider_densities and collider_densities['OH2'] !=0) or
             ('PH2' in collider_densities and collider_densities['PH2'] !=0)):
-            if not 'PH2' in collider_densities or not 'OH2' in collider_densities:
-                raise ValueError("If o-H2 density is specified, p-H2 must also be.")
+
+            # this is simply not true: NH3 has just ph2 as a collider
+            #if not 'PH2' in collider_densities or not 'OH2' in collider_densities:
+            #    raise ValueError("If o-H2 density is specified, p-H2 must also be.")
             # TODO: look up whether RADEX uses density[0] if density[1] and [2] are specified
             # (it looks like the answer is "no" based on a quick test)
             #self.radex.cphys.density[0] = 0 # collider_densities['OH2'] + collider_densities['PH2']
             # PARA is [1], ORTHO is [2]
             # See lines 91, 92 of io.f
-            self.radex.cphys.density[1] = collider_densities['PH2']
-            self.radex.cphys.density[2] = collider_densities['OH2']
+            if 'PH2' in collider_densities:
+                self.radex.cphys.density[1] = collider_densities['PH2']
+            if 'OH2' in collider_densities:
+                self.radex.cphys.density[2] = collider_densities['OH2']
             self._use_thermal_opr = False
         elif 'H2' in collider_densities:
             warnings.warn("Using a default ortho-to-para ratio (which "
