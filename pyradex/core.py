@@ -973,8 +973,16 @@ class Radex(RadiativeTransferApproximator):
         return self.column / self.deltav
 
     @property
-    def statistical_weight(self):
+    def _statistical_weight(self):
         return self.radex.rmolec.gstat
+
+    @property
+    def upperlevel_statisticalweight(self):
+        return self._statistical_weight[self.upperlevelindex]
+
+    @property
+    def lowerlevel_statisticalweight(self):
+        return self._statistical_weight[self.lowerlevelindex]
 
     @property
     def _mask(self):
@@ -1007,7 +1015,7 @@ class Radex(RadiativeTransferApproximator):
         warnings.warn("The partition function may be very inaccurate using "
                       "LAMDA files because they include a small fraction of"
                       " the total available states.")
-        gi = self.statistical_weight[self.upperlevelindex]
+        gi = self.upperlevel_statisticalweight
         Ei = u.Quantity(self.upperstateenergy, unit=u.K)
         if temperature is None:
             temperature = self.temperature
