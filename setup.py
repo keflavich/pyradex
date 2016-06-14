@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import glob
 
 if any((x in sys.argv for x in ('develop','bdist'))):
     # use setuptools for develop, but nothing else
@@ -84,7 +85,7 @@ class InstallFjdu(Command):
         if result != 0:
             raise ValueError("Compilation has failed.  Check gfortran version?")
         os.chdir(cwd)
-        for fn in ('wrapper_my_radex.so',):
+        for fn in glob.glob('wrapper_my_radex*.so'):
             outpath = 'pyradex/fjdu/{0}'.format(fn)
             if os.path.exists(outpath):
                 os.remove(outpath)

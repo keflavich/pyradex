@@ -75,7 +75,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         energies, f_occupations, data_transitions, cooling_rate = \
                 self._myradex.run_one_params(**self.params)
         self._energies = u.Quantity(energies, u.K) # excitation temperature
-        self._data_dict = cast_into_dic("".join(self._myradex.column_names),
+        self._data_dict = cast_into_dic(self._myradex.column_names.tostring(),
                                         data_transitions)
         self._level_population = f_occupations
 
