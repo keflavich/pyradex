@@ -85,11 +85,11 @@ class InstallFjdu(Command):
         if result != 0:
             raise ValueError("Compilation has failed.  Check gfortran version?")
         os.chdir(cwd)
-        for fn in glob.glob('wrapper_my_radex*.so'):
-            outpath = 'pyradex/fjdu/{0}'.format(fn)
+        for fn in glob.glob('myRadex/wrapper_my_radex*.so'):
+            outpath = 'pyradex/fjdu/{0}'.format(os.path.basename(fn))
             if os.path.exists(outpath):
                 os.remove(outpath)
-            os.link('myRadex/{0}'.format(fn), outpath)
+            os.link(fn, outpath)
         os.chdir('myRadex')
         os.system('make clean')
         os.chdir(cwd)
