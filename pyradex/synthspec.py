@@ -231,3 +231,11 @@ class SyntheticSpectrum(object):
         self.data = self.get_profile()
 
         return self
+
+
+# I think this was intended to be a more flexible FrequencyArray class
+# compatible with specutils, but I gave up on it.  Instead, it's just a proxy
+# for np.linspace
+def FrequencyArray(minfreq, maxfreq, npoints=1000):
+
+    return np.linspace(minfreq, maxfreq, npoints)
