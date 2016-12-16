@@ -307,7 +307,7 @@ class Radex(RadiativeTransferApproximator):
         n_specifications = sum(x is not None for x in (column, column_per_bin,
                                                        collider_densities,
                                                        density, total_density,
-                                                       abundance)) 
+                                                       abundance))
         if (n_specifications > 2):
             raise ValueError("Can only specify two of column, density, and abundance.")
         if (n_specifications < 2):
@@ -316,12 +316,18 @@ class Radex(RadiativeTransferApproximator):
         self._locked_parameter = 'density'
         self._is_locked = True
 
-        # This MUST happen before density is set, otherwise OPR will be 
+        # This MUST happen before density is set, otherwise OPR will be
         # incorrectly set.
         self.radex.cphys.tkin = unitless(temperature)
 
+        # density warnings will occur if a generic (number-based) density is
+        # used.  It can be suppressed more directly by using a dictionary-style
+        # density
+        self._suppress_density_warning = False
+
         if collider_densities:
             self.density = collider_densities
+            self._suppress_density_warning = True
             self._is_locked = False
             if total_density:
                 log.warn("`total_density` was specified, but `collider_densities` "
@@ -329,9 +335,11 @@ class Radex(RadiativeTransferApproximator):
                          "want to use `total_density`.")
         elif total_density:
             self.density = total_density
+            self._suppress_density_warning = True
             self._is_locked = False
         elif density:
             self.density = density
+            self._suppress_density_warning = True
             self._is_locked = False
         else:
             self._locked_parameter = 'column'
@@ -365,6 +373,8 @@ class Radex(RadiativeTransferApproximator):
 
         self.source_area = source_area
 
+        self._suppress_density_warning = False
+
     _u_brightness = (u.erg * u.s**-1 * u.cm**-2 * u.Hz**-1 * u.sr**-1)
     _u_sc = u.cm**-2
     _u_cc = u.cm**-3
@@ -389,13 +399,18 @@ class Radex(RadiativeTransferApproximator):
         if temperature is not None:
             self.radex.cphys.tkin = unitless(temperature)
 
+        # if the density is a specified parameter, we only want to warn that it
+        # is being set once
+        self._suppress_density_warning = False
         if collider_densities is not None:
             self.density = collider_densities
+            self._suppress_density_warning = True
         elif density is not None:
             if collider_densities is not None:
                 raise ValueError('Can specify only one of density,'
                                  ' collider_densities')
             self.density = density
+            self._suppress_density_warning = True
 
         if column is not None:
             self.column = column
@@ -416,6 +431,9 @@ class Radex(RadiativeTransferApproximator):
 
         if escapeProbGeom is not None:
             self.escapeProbGeom = escapeProbGeom
+
+        # the density warning should occur for any other future settings
+        self._suppress_density_warning = False
 
     @property
     def locked_parameter(self):
@@ -480,7 +498,8 @@ class Radex(RadiativeTransferApproximator):
         self._use_thermal_opr = False
 
         if isinstance(collider_density, (float,int,_quantity,np.ndarray)):
-            log.warn("Assuming the density is n(H_2).")
+            if not self._suppress_density_warning:
+                log.warn("Assuming the density is n(H_2).")
             collider_density = {'H2': collider_density}
 
         collider_densities = defaultdict(lambda: 0)
