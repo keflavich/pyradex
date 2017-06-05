@@ -11,7 +11,7 @@ def read_radex(file,flow,fupp,bw=0.01,debug=False):
     linenum = 0
     line = file.readline()
     linenum+=1
-    if debug: print line
+    if debug: print (line)
     if line == '':
         return 0
     words = line.split()
@@ -44,7 +44,7 @@ def read_radex(file,flow,fupp,bw=0.01,debug=False):
         freq = tryfloat(words[4])
     while  not(freq*(1-bw) < fupp < freq*(1+bw)):
         line = file.readline(); linenum+=1
-        if debug: print freq,flow,line
+        if debug: print (freq,flow,line)
         words = line.split()
         if words[1] == '--':
             freq = tryfloat(words[4])
