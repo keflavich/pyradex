@@ -603,11 +603,17 @@ class Radex(RadiativeTransferApproximator):
         if "~" in molfile:
             molfile = os.path.expanduser(molfile)
         if PYVERSION == 3:
-            self.radex.impex.molfile[:] = np.bytes_([""]*len(self.radex.impex.molfile))
+            try:
+                self.radex.impex.molfile[:] = np.bytes_([""]*len(self.radex.impex.molfile))
+            except TypeError as ex:
+                self.radex.impex.molfile = " " * self.radex.impex.molfile.dtype.itemsize
         else:
             self.radex.impex.molfile[:] = ""
         utils.verify_collisionratefile(molfile)
-        self.radex.impex.molfile[:len(molfile)] = molfile
+        try:
+            self.radex.impex.molfile[:len(molfile)] = molfile
+        except IndexError:
+            self.radex.impex.molfile = molfile + " " * (self.radex.impex.molfile.dtype.itemsize - len(logfile))
 
     @property
     def outfile(self):
@@ -616,10 +622,16 @@ class Radex(RadiativeTransferApproximator):
     @outfile.setter
     def outfile(self, outfile):
         if PYVERSION == 3:
-            self.radex.impex.outfile[:] = np.bytes_([""]*len(self.radex.impex.outfile))
+            try:
+                self.radex.impex.outfile[:] = np.bytes_([""]*len(self.radex.impex.outfile))
+            except TypeError as ex:
+                self.radex.impex.outfile = " " * self.radex.impex.outfile.dtype.itemsize
         else:
             self.radex.impex.outfile[:] = ""
-        self.radex.impex.outfile[:len(outfile)] = outfile
+        try:
+            self.radex.impex.outfile[:len(outfile)] = outfile
+        except IndexError:
+            self.radex.impex.outfile = outfile + " " * (self.radex.impex.outfile.dtype.itemsize - len(logfile))
 
     @property
     def logfile(self):
@@ -628,10 +640,16 @@ class Radex(RadiativeTransferApproximator):
     @logfile.setter
     def logfile(self, logfile):
         if PYVERSION == 3:
-            self.radex.setup.logfile[:] = np.bytes_([""]*len(self.radex.setup.logfile))
+            try:
+                self.radex.setup.logfile[:] = np.bytes_([""]*len(self.radex.setup.logfile))
+            except TypeError as ex:
+                self.radex.setup.logfile = " " * self.radex.setup.logfile.dtype.itemsize
         else:
             self.radex.setup.logfile[:] = ""
-        self.radex.setup.logfile[:len(logfile)] = logfile
+        try:
+            self.radex.setup.logfile[:len(logfile)] = logfile
+        except IndexError:
+            self.radex.setup.logfile = logfile + " " * (self.radex.setup.logfile.dtype.itemsize - len(logfile))
 
     @property
     def datapath(self):
