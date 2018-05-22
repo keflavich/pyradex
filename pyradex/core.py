@@ -613,7 +613,7 @@ class Radex(RadiativeTransferApproximator):
         try:
             self.radex.impex.molfile[:len(molfile)] = molfile
         except IndexError:
-            self.radex.impex.molfile = molfile + " " * (self.radex.impex.molfile.dtype.itemsize - len(logfile))
+            self.radex.impex.molfile = molfile + " " * (self.radex.impex.molfile.dtype.itemsize - len(molfile))
 
     @property
     def outfile(self):
@@ -631,7 +631,7 @@ class Radex(RadiativeTransferApproximator):
         try:
             self.radex.impex.outfile[:len(outfile)] = outfile
         except IndexError:
-            self.radex.impex.outfile = outfile + " " * (self.radex.impex.outfile.dtype.itemsize - len(logfile))
+            self.radex.impex.outfile = outfile + " " * (self.radex.impex.outfile.dtype.itemsize - len(outfile))
 
     @property
     def logfile(self):
