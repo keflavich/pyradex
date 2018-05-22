@@ -655,7 +655,8 @@ class Radex(RadiativeTransferApproximator):
         except IndexError:
             # in python3, this might just work, where the above doesn't?
             # (this works if RADAT is an S120)
-            self.radex.setup.radat = radat
+            # the added space is because the right and left side must have *exactly* the same size
+            self.radex.setup.radat = radat + " " * (self.radex.setup.radat.dtype.itemsize - len(radat))
 
 
     @property
