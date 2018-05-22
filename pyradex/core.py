@@ -641,12 +641,21 @@ class Radex(RadiativeTransferApproximator):
     def datapath(self, radat):
         # self.radex data path not needed if molecule given as full path
         if PYVERSION == 3:
-            self.radex.setup.radat[:] = np.bytes_([""] * len(self.radex.setup.radat))
+            try:
+                self.radex.setup.radat[:] = np.bytes_([""] * len(self.radex.setup.radat))
+            except TypeError as ex:
+                # now radat gets treated as a single S120 instead of an array of S1s
+                self.radex.setup.radat = " " * self.radex.setup.radat.dtype.itemsize
         else:
             self.radex.setup.radat[:] = ""
         # there is dangerous magic here: radat needs to be interpreted as an array,
         # but you can't make it an array of characters easily...
-        self.radex.setup.radat[:len(radat)] = radat
+        try:
+            self.radex.setup.radat[:len(radat)] = radat
+        except IndexError:
+            # in python3, this might just work, where the above doesn't?
+            # (this works if RADAT is an S120)
+            self.radex.setup.radat = radat
 
 
     @property
