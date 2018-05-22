@@ -635,7 +635,12 @@ class Radex(RadiativeTransferApproximator):
 
     @property
     def datapath(self):
-        return os.path.expanduser(b"".join(self.radex.setup.radat).strip()).decode('utf-8')
+        try:
+            return os.path.expanduser(b"".join(self.radex.setup.radat).strip()).decode('utf-8')
+        except TypeError:
+            # occurs if radat is S120 instead of array of S1
+            return os.path.expanduser((self.radex.setup.radat.tostring().decode('utf-8').strip()))
+            
 
     @datapath.setter
     def datapath(self, radat):
