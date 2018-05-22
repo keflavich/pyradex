@@ -596,7 +596,10 @@ class Radex(RadiativeTransferApproximator):
 
     @property
     def molpath(self):
-        return b"".join(self.radex.impex.molfile).strip()
+        try:
+            return b"".join(self.radex.impex.molfile).strip()
+        except TypeError:
+            return self.radex.impex.molfile.tostring().strip()
 
     @molpath.setter
     def molpath(self, molfile):
@@ -919,7 +922,7 @@ class Radex(RadiativeTransferApproximator):
     @property
     def quantum_number(self):
         return np.array([(b"".join(x)).strip() for x in
-                         grouper(self.radex.quant.qnum.T.ravel().tolist(),6)])
+                         grouper(self.radex.quant.qnum.T.ravel().tolist(),6,fillvalue=b'')])
 
     @property
     def upperlevelnumber(self):
