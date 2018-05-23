@@ -596,18 +596,27 @@ class Radex(RadiativeTransferApproximator):
 
     @property
     def molpath(self):
-        return b"".join(self.radex.impex.molfile).strip()
+        try:
+            return b"".join(self.radex.impex.molfile).strip()
+        except TypeError:
+            return self.radex.impex.molfile.tostring().strip()
 
     @molpath.setter
     def molpath(self, molfile):
         if "~" in molfile:
             molfile = os.path.expanduser(molfile)
         if PYVERSION == 3:
-            self.radex.impex.molfile[:] = np.bytes_([""]*len(self.radex.impex.molfile))
+            try:
+                self.radex.impex.molfile[:] = np.bytes_([""]*len(self.radex.impex.molfile))
+            except TypeError as ex:
+                self.radex.impex.molfile = " " * self.radex.impex.molfile.dtype.itemsize
         else:
             self.radex.impex.molfile[:] = ""
         utils.verify_collisionratefile(molfile)
-        self.radex.impex.molfile[:len(molfile)] = molfile
+        try:
+            self.radex.impex.molfile[:len(molfile)] = molfile
+        except IndexError:
+            self.radex.impex.molfile = molfile + " " * (self.radex.impex.molfile.dtype.itemsize - len(molfile))
 
     @property
     def outfile(self):
@@ -616,10 +625,16 @@ class Radex(RadiativeTransferApproximator):
     @outfile.setter
     def outfile(self, outfile):
         if PYVERSION == 3:
-            self.radex.impex.outfile[:] = np.bytes_([""]*len(self.radex.impex.outfile))
+            try:
+                self.radex.impex.outfile[:] = np.bytes_([""]*len(self.radex.impex.outfile))
+            except TypeError as ex:
+                self.radex.impex.outfile = " " * self.radex.impex.outfile.dtype.itemsize
         else:
             self.radex.impex.outfile[:] = ""
-        self.radex.impex.outfile[:len(outfile)] = outfile
+        try:
+            self.radex.impex.outfile[:len(outfile)] = outfile
+        except IndexError:
+            self.radex.impex.outfile = outfile + " " * (self.radex.impex.outfile.dtype.itemsize - len(outfile))
 
     @property
     def logfile(self):
@@ -628,25 +643,46 @@ class Radex(RadiativeTransferApproximator):
     @logfile.setter
     def logfile(self, logfile):
         if PYVERSION == 3:
-            self.radex.setup.logfile[:] = np.bytes_([""]*len(self.radex.setup.logfile))
+            try:
+                self.radex.setup.logfile[:] = np.bytes_([""]*len(self.radex.setup.logfile))
+            except TypeError as ex:
+                self.radex.setup.logfile = " " * self.radex.setup.logfile.dtype.itemsize
         else:
             self.radex.setup.logfile[:] = ""
-        self.radex.setup.logfile[:len(logfile)] = logfile
+        try:
+            self.radex.setup.logfile[:len(logfile)] = logfile
+        except IndexError:
+            self.radex.setup.logfile = logfile + " " * (self.radex.setup.logfile.dtype.itemsize - len(logfile))
 
     @property
     def datapath(self):
-        return os.path.expanduser(b"".join(self.radex.setup.radat).strip()).decode('utf-8')
+        try:
+            return os.path.expanduser(b"".join(self.radex.setup.radat).strip()).decode('utf-8')
+        except TypeError:
+            # occurs if radat is S120 instead of array of S1
+            return os.path.expanduser((self.radex.setup.radat.tostring().decode('utf-8').strip()))
+            
 
     @datapath.setter
     def datapath(self, radat):
         # self.radex data path not needed if molecule given as full path
         if PYVERSION == 3:
-            self.radex.setup.radat[:] = np.bytes_([""] * len(self.radex.setup.radat))
+            try:
+                self.radex.setup.radat[:] = np.bytes_([""] * len(self.radex.setup.radat))
+            except TypeError as ex:
+                # now radat gets treated as a single S120 instead of an array of S1s
+                self.radex.setup.radat = " " * self.radex.setup.radat.dtype.itemsize
         else:
             self.radex.setup.radat[:] = ""
         # there is dangerous magic here: radat needs to be interpreted as an array,
         # but you can't make it an array of characters easily...
-        self.radex.setup.radat[:len(radat)] = radat
+        try:
+            self.radex.setup.radat[:len(radat)] = radat
+        except IndexError:
+            # in python3, this might just work, where the above doesn't?
+            # (this works if RADAT is an S120)
+            # the added space is because the right and left side must have *exactly* the same size
+            self.radex.setup.radat = radat + " " * (self.radex.setup.radat.dtype.itemsize - len(radat))
 
 
     @property
@@ -886,7 +922,7 @@ class Radex(RadiativeTransferApproximator):
     @property
     def quantum_number(self):
         return np.array([(b"".join(x)).strip() for x in
-                         grouper(self.radex.quant.qnum.T.ravel().tolist(),6)])
+                         grouper(self.radex.quant.qnum.T.ravel().tolist(),6,fillvalue=b'')])
 
     @property
     def upperlevelnumber(self):
