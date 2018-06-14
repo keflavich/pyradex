@@ -763,8 +763,17 @@ class Radex(RadiativeTransferApproximator):
         if self._use_thermal_opr:
             # Reset the density to a thermal value
             lp = self._locked_parameter
-            self.density = (unitless(self.density['H2']) or
-                            unitless(self.density['oH2']+self.density['pH2']))
+            # In order to preserve secondary colliders (He, e-, etc), we first load the current
+            # density, then we set the total H2 density to be oH2+pH2
+            # Within the self.density setter, radex.readdata will be called, and it will re-compute
+            # the appropriate O/P density given the newly assigned temperature
+            # (we have to make the density modifiable first)
+            dens_to_set = dict(self.density)
+            if dens_to_set['H2'] == 0:
+                dens_to_set['H2'] = unitless(self.density['oH2']+self.density['pH2'])
+                dens_to_set['oH2'] = 0
+                dens_to_set['pH2'] = 0
+            self.density = dens_to_set
             self._locked_parameter = lp
 
     @property
