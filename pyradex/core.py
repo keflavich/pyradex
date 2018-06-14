@@ -24,6 +24,16 @@ PYVERSION = 3 if sys.version_info >= (3,0) else 2
 __all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex',
            'density_distribution']
 
+
+def _init_radex(radex):
+    """
+    Initialize a RADEX object to blank values so it doesn't trigger any errors.
+    The goal of this method is to re-initialize the radex.so fortran objects
+    and remove any values stored in the fortran-wrapped structures, since these
+    values will persist between independent python objects in unclear and
+    unpredictable ways.
+    """
+    radex.cphys.density[:] = 0
         
 
 def pyradex(executable='radex', minfreq=100, maxfreq=130,
@@ -279,6 +289,11 @@ class Radex(RadiativeTransferApproximator):
         from pyradex.radex import radex
         self.radex = radex
 
+        # the 'radex' object is stateful; it needs to be reset
+        # (this is bad, but a necessary hack to deal with the underlying
+        # fortran objects being wrapped)
+        _init_radex(radex)
+
         self.mu = mu
 
         if os.getenv('RADEX_DATAPATH') and datapath is None:
@@ -509,6 +524,8 @@ class Radex(RadiativeTransferApproximator):
                 raise ValueError('Collider %s is not one of the valid colliders: %s' %
                                  (k,self._all_valid_colliders))
 
+        valid_collider_lowercase = [x.lower() for x in self.valid_colliders]
+
         if (('OH2' in collider_densities and collider_densities['OH2'] !=0) or
             ('PH2' in collider_densities and collider_densities['PH2'] !=0)):
 
@@ -526,9 +543,10 @@ class Radex(RadiativeTransferApproximator):
                 self.radex.cphys.density[2] = collider_densities['OH2']
             self._use_thermal_opr = False
         elif 'H2' in collider_densities:
-            warnings.warn("Using a default ortho-to-para ratio (which "
-                          "will only affect species for which independent "
-                          "ortho & para collision rates are given)")
+            if 'h2' not in valid_collider_lowercase:
+                warnings.warn("Using a default ortho-to-para ratio (which "
+                              "will only affect species for which independent "
+                              "ortho & para collision rates are given)")
             self._use_thermal_opr = True
             #self.radex.cphys.density[0] = collider_densities['H2']
 
@@ -545,12 +563,11 @@ class Radex(RadiativeTransferApproximator):
 
         # RADEX relies on n(H2) = n(oH2) + n(pH2)
         # We have set n(oH2) and n(pH2) above
-        vc = [x.lower() for x in self.valid_colliders]
-        if 'h2' in vc:
+        if 'h2' in valid_collider_lowercase:
             self.radex.cphys.density[0] = self.radex.cphys.density[1:3].sum()
             self.radex.cphys.density[1] = 0
             self.radex.cphys.density[2] = 0
-        elif 'oh2' in vc or 'ph2' in vc:
+        elif 'oh2' in valid_collider_lowercase or 'ph2' in valid_collider_lowercase:
             self.radex.cphys.density[0] = 0
 
         self.radex.cphys.density[3] = collider_densities['E']
