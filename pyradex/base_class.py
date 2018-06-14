@@ -257,6 +257,11 @@ class RadiativeTransferApproximator(object):
                 bad_colliders.append(collider)
                 OK = False
 
+        if 'h2' in valid_colliders and density['H2'] == 0 and (density['oH2'] != 0
+                                                               or
+                                                               density['pH2'] != 0):
+            OK = True
+
         if not OK:
             raise ValueError("There are colliders with specified densities >0 "
                              "that do not have corresponding collision rates."
