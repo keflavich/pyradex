@@ -611,7 +611,7 @@ class Radex(RadiativeTransferApproximator):
             except TypeError as ex:
                 self.radex.impex.molfile = " " * self.radex.impex.molfile.dtype.itemsize
         else:
-            self.radex.impex.molfile[:] = ""
+            self.radex.impex.molfile = " " * self.radex.impex.molfile.dtype.itemsize
         utils.verify_collisionratefile(molfile)
         try:
             self.radex.impex.molfile[:len(molfile)] = molfile
@@ -630,7 +630,7 @@ class Radex(RadiativeTransferApproximator):
             except TypeError as ex:
                 self.radex.impex.outfile = " " * self.radex.impex.outfile.dtype.itemsize
         else:
-            self.radex.impex.outfile[:] = ""
+            self.radex.impex.outfile = " " * self.radex.impex.outfile.dtype.itemsize
         try:
             self.radex.impex.outfile[:len(outfile)] = outfile
         except IndexError:
@@ -648,7 +648,7 @@ class Radex(RadiativeTransferApproximator):
             except TypeError as ex:
                 self.radex.setup.logfile = " " * self.radex.setup.logfile.dtype.itemsize
         else:
-            self.radex.setup.logfile[:] = ""
+            self.radex.setup.logfile = " " * self.radex.setup.logfile.dtype.itemsize
         try:
             self.radex.setup.logfile[:len(logfile)] = logfile
         except IndexError:
@@ -673,7 +673,7 @@ class Radex(RadiativeTransferApproximator):
                 # now radat gets treated as a single S120 instead of an array of S1s
                 self.radex.setup.radat = " " * self.radex.setup.radat.dtype.itemsize
         else:
-            self.radex.setup.radat[:] = ""
+            self.radex.setup.radat = " " * self.radex.setup.radat.dtype.itemsize
         # there is dangerous magic here: radat needs to be interpreted as an array,
         # but you can't make it an array of characters easily...
         try:
