@@ -921,8 +921,10 @@ class Radex(RadiativeTransferApproximator):
 
     @property
     def quantum_number(self):
-        return np.array([(b"".join(x)).strip() for x in
-                         grouper(self.radex.quant.qnum.T.ravel().tolist(),6,fillvalue=b'')])
+        # more recent versions of numpy/python don't require any restructuring?
+        return self.radex.quant.qnum
+        #return np.array([(b"".join(x)).strip() for x in
+        #                 grouper(self.radex.quant.qnum.T.ravel().tolist(),6,fillvalue=b'')])
 
     @property
     def upperlevelnumber(self):
