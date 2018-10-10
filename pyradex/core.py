@@ -24,7 +24,7 @@ PYVERSION = 3 if sys.version_info >= (3,0) else 2
 __all__ = ['pyradex', 'write_input', 'parse_outfile', 'call_radex', 'Radex',
            'density_distribution']
 
-        
+
 
 def pyradex(executable='radex', minfreq=100, maxfreq=130,
             collider_densities={'H2':1}, debug=False, delete_tempfile=True,
@@ -47,7 +47,7 @@ def pyradex(executable='radex', minfreq=100, maxfreq=130,
         If the molecule specified has both o-H2 and p-H2, you will get a
         WARNING if you specify 'H2'
         An ortho/para example:
-        collider_densities = {'oH2':900, 'pH2':100} 
+        collider_densities = {'oH2':900, 'pH2':100}
         which will yield H2 = 1000
 
     See write_input for additional parameters
@@ -171,10 +171,10 @@ def parse_outfile(filename, return_dict=False):
         header = {L.split(":")[0][2:].strip():L.split(":")[1].strip()
                 for L in alllines
                 if L[0]=='*'}
-        lines = [L.replace("--","  ") for L in alllines 
-                if (L[0] != '*' 
-                    and 'iterat' not in L 
-                    and 'GHz' not in L 
+        lines = [L.replace("--","  ") for L in alllines
+                if (L[0] != '*'
+                    and 'iterat' not in L
+                    and 'GHz' not in L
                     and 'TAU' not in L)]
         niter = [L.split(" ")[3]
                 for L in alllines
@@ -187,7 +187,7 @@ def parse_outfile(filename, return_dict=False):
         data = {name: C for C,name in zip(data_in_columns, header_names)}
         data['niter']=niter
         return data
-    columns = [astropy.table.Column(data=C, name=name.lower(), unit=unit, dtype=dtype) 
+    columns = [astropy.table.Column(data=C, name=name.lower(), unit=unit, dtype=dtype)
             for C,name,unit,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
     data = astropy.table.Table(columns, meta=header)
     return data
@@ -394,7 +394,7 @@ class Radex(RadiativeTransferApproximator):
         if deltav is not None:
             self.deltav = deltav
 
-        # This MUST happen before density is set, otherwise OPR will be 
+        # This MUST happen before density is set, otherwise OPR will be
         # incorrectly set.
         if temperature is not None:
             self.radex.cphys.tkin = unitless(temperature)
@@ -481,7 +481,7 @@ class Radex(RadiativeTransferApproximator):
 
         for k in d:
             d[k] = u.Quantity(d[k], self._u_cc)
-        
+
         return ImmutableDict(d)
 
     @density.setter
@@ -580,11 +580,11 @@ class Radex(RadiativeTransferApproximator):
     @property
     def valid_colliders(self):
         return self._valid_colliders
-    
+
     @property
     def total_density(self):
         """
-        The total density *by number of particles* 
+        The total density *by number of particles*
         The *mass density* can be dramatically different!
         """
         return u.Quantity(self.radex.cphys.totdens, self._u_cc)
@@ -661,7 +661,7 @@ class Radex(RadiativeTransferApproximator):
         except TypeError:
             # occurs if radat is S120 instead of array of S1
             return os.path.expanduser((self.radex.setup.radat.tostring().decode('utf-8').strip()))
-            
+
 
     @datapath.setter
     def datapath(self, radat):
@@ -696,7 +696,7 @@ class Radex(RadiativeTransferApproximator):
         if escapeProbGeom not in mdict:
             raise ValueError("Invalid escapeProbGeom, must be one of "+",".join(mdict))
         self.radex.setup.method = mdict[escapeProbGeom]
-        
+
 
     @property
     def level_population(self):
@@ -732,7 +732,7 @@ class Radex(RadiativeTransferApproximator):
         if tkin <= 0 or tkin > 1e4:
             raise ValueError('Must have kinetic temperature > 0 and < 10^4 K')
         self.radex.cphys.tkin = tkin
-        
+
         if not os.path.exists(self.molpath):
             raise IOError("File not found: %s" % self.molpath)
         # must re-read molecular file and re-interpolate to new temperature
@@ -882,14 +882,14 @@ class Radex(RadiativeTransferApproximator):
             self.radex.readdata()
 
         #self.radex.backrad()
-        
+
         # Given the properties of *this* class, set the appropriate RADEX
         # fortran function values
         # 10000 loops, best of 3: 74 micros per loop
         self._set_parameters()
-            
+
         self._iter_counter = 1 if reuse_last else 0
-        
+
         converged = np.array(False)
 
         # 1000000 loops, best of 3: 1.79 micros per loop
@@ -1159,7 +1159,7 @@ def density_distribution(densarr, distr, moleculecolumn, tauthresh=0.8,
                     continue
             else:
                 raise ex
-        
+
         if hasattr(R, 'radex'):
             R.radex.radi.taul[:len(tau)] = tau
         elif hasattr(R, '_data_dict'):
