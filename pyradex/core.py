@@ -842,6 +842,9 @@ class Radex(RadiativeTransferApproximator):
 
     @tbg.setter
     def tbg(self, tbg):
+        if tbg is None:
+            # allow tbg to be not-set so that backrad() isn't triggered
+            return
         #print("Set TBG=%f" % tbg)
         if hasattr(tbg, 'value'):
             tbg = unitless(u.Quantity(tbg, u.K))
@@ -967,6 +970,11 @@ class Radex(RadiativeTransferApproximator):
     @property
     def background_brightness(self):
         return u.Quantity(self.radex.radi.backi[self._mask], self._u_brightness)
+
+    @background_brightness.setter
+    def background_brightness(self, value):
+        self.radex.radi.backi[:value.size] = value.to(self._u_brightness)
+        self.radex.radi.totalb[:value.size] = value.to(self._u_brightness)
 
     _thc = (2 * constants.h * constants.c).cgs / u.sr
     _fk = (constants.h * constants.c / constants.k_B).cgs
