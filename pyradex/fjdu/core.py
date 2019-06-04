@@ -5,7 +5,6 @@ import warnings
 from collections import defaultdict
 from astropy import constants
 from astropy import log
-import astropy.table
 from .. import base_class
 from ..utils import ImmutableDict,unitless,lower_keys
 from .. import utils
@@ -20,6 +19,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                  temperature=None,
                  tbg=2.73,
                  column=None,
+                 abundance=None,
                  escapeProbGeom='lvg',
                  **kwargs):
 
@@ -39,6 +39,16 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         self._myradex = myradex_wrapper
         self._is_locked = False
         self._locked_parameter = None
+
+        if abundance is not None:
+            if density is not None or collider_densities is not None:
+                self._locked_parameter = 'density'
+            elif column is not None:
+                self._locked_parameter = 'column'
+            else:
+                raise ValueError("At least two of column, density, and "
+                                 "abundance must be specified")
+            self.abundance = abundance
 
     def __call__(self, return_table=True, **kwargs):
 
@@ -63,7 +73,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                            'n_transitions': ntrans})
 
     def run_radex(self, **kwargs):
-    
+
         # drop kwargs kept for compatibility with Radex
         ignore_kwargs = ['reuse_last', 'reload_molfile']
         for ik in ignore_kwargs:
@@ -96,9 +106,9 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                        ('geotype', 'lvg'),
                       )
 
-    _keyword_map = {'temperature': 'tkin',
+    _keyword_map = {#'temperature': 'tkin',
                     'deltav': 'dv_cgs',
-                    'column': 'ncol_x_cgs',
+                    #'column': 'ncol_x_cgs',
                    }
 
     _density_keyword_map = {'h2': 'h2_density_cgs',
@@ -124,6 +134,16 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                 self._params[self._keyword_map[k]] = kwargs[k]
             elif k.lower() in ('density','collider_densities'):
                 self.density = kwargs[k]
+            elif k.lower() == 'column':
+                self.column = kwargs[k]
+            elif k.lower() == 'temperature':
+                # temperature _cannot_ be set until density is
+                if not hasattr(self, '_use_thermal_opr'):
+                    try:
+                        self.density = kwargs['density']
+                    except KeyError:
+                        self.density = kwargs['collider_densities']
+                self.temperature = kwargs[k]
             elif k == 'tbg':
                 self.tbg = kwargs[k]
             elif k == 'species':
@@ -132,6 +152,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                 raise ValueError("{0} is not a valid key.".format(k))
             else:
                 self._params[k] = kwargs[k]
+
 
     @property
     def params(self):
@@ -333,7 +354,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
             self._params['geotype'] = value
         else:
             raise ValueError("Geometry must be spherical, slab, or lvg")
-        
+
     _um_to_ghz = u.um.to(u.GHz, equivalencies=u.spectral())
 
     @property
@@ -377,7 +398,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     @property
     def source_line_brightness_temperature(self):
         return u.Quantity(self._data_dict['Tr'], u.K)
-    
+
     #@property
     #def source_line_surfbrightness(self):
     #    return u.Quantity(self._data_dict['flux'], self._u_brightness)

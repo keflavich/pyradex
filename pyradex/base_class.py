@@ -49,11 +49,11 @@ class RadiativeTransferApproximator(object):
     @property
     def valid_colliders(self):
         return self._valid_colliders
-    
+
     @property
     def total_density(self):
         """
-        The total density *by number of particles* 
+        The total density *by number of particles*
         The *mass density* can be dramatically different!
         """
         vc = [x.lower() for x in self.valid_colliders]
@@ -162,7 +162,7 @@ class RadiativeTransferApproximator(object):
     @escapeProbGeom.setter
     def escapeProbGeom(self, escapeProbGeom):
         raise NotImplementedError
-        
+
 
     @property
     def column(self):
