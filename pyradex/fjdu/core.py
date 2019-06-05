@@ -29,6 +29,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         self.datapath = os.path.dirname(datapath)
         self.species = species
 
+        self._is_locked = False
         self.set_default_params()
         self.set_params(temperature=temperature, density=density,
                         collider_densities=collider_densities,
