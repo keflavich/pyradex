@@ -65,6 +65,15 @@ For linux, the build failed with gcc-4.0.1 but succeeded with gcc-4.3.6, which
 suggests that gcc>=4.2 might be required (since gcc-4.2 worked on a mac).
 
 
+Environment Setup
+~~~~~~~~~~~~~~~~~
+
+The shell environmental variable ``RADEX_DATAPATH`` should be set to the
+directory in which you store collision rate data files.  You can also use the
+``datapath`` keyword argument to specify the path during initialization of the
+RADEX object.
+
+
 Installation Troubles
 ~~~~~~~~~~~~~~~~~~~~~
 

@@ -138,3 +138,8 @@ setup(name='pyradex',
                },
       #include_package_data=True,
       )
+
+if os.getenv('RADEX_DATAPATH'):
+    print("Installation has completed.  RADEX_DATAPATH={0}".format(os.getenv('RADEX_DATAPATH')))
+else:
+    print("Installation has completed.  Make sure to set your RADEX_DATAPATH variable!")
