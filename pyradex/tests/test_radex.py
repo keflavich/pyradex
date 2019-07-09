@@ -55,17 +55,21 @@ def test_change_abundance():
 
 def test_consistent_abund():
     with pytest.raises(ValueError):
+        # ValueError: Can only specify two of column, density, and abundance.
         R = Radex(datapath='examples/', species='co', abundance=1e-4,
-                          column=1e15, density=1e3)
+                  column=1e15, density=1e3)
     with pytest.raises(ValueError):
+        # ValueError: Can only specify two of column, density, and abundance.
         R = Radex(datapath='examples/', species='co', abundance=1e-4,
-                          column=1e15, collider_densities={'H2':1e3})
+                  column=1e15, collider_densities={'H2':1e3})
     with pytest.raises(ValueError):
+        # ValueError: Can only specify two of column, density, and abundance.
         R = Radex(datapath='examples/', species='co', abundance=1e-4,
-                          column_per_bin=1e15)
+                  column_per_bin=1e15, density=1e3)
     with pytest.raises(ValueError):
+        # ValueError: Must specify two of column, density, and abundance.
         R = Radex(datapath='examples/', species='co', abundance=None,
-                          column=None)
+                  column=None)
 
 def test_selfconsistent_density():
     rdx = Radex(species='co', collider_densities={'H2':1e3},
