@@ -364,6 +364,8 @@ class Radex(RadiativeTransferApproximator):
         if abundance:
             self.abundance = abundance
 
+        self._validate_colliders()
+
         # This has to happen here, because the colliders are read in at
         # this point and rates interpolated
         self.temperature = temperature
