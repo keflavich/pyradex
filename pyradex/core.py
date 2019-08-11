@@ -131,7 +131,7 @@ def write_input(temperature=10, column=1e12, collider_densities={'H2':1},
             collider_densities.pop(k)
 
     infile.write('%s\n' % len(collider_densities))
-    for name,dens in collider_densities.iteritems():
+    for name,dens in collider_densities.items():
         infile.write('%s\n' % name)
         infile.write(str(dens)+'\n')
     infile.write(str(tbg)+'\n')
