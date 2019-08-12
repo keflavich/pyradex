@@ -144,26 +144,29 @@ class PyTest(Command):
         raise SystemExit(errno2)
 
 #setup(version=version, cmdclass=cmdclass, **package_info)
-setup(name='pyradex',
-      version=version,
-      description='Python-RADEX',
-      long_description=long_description,
-      author='Adam Ginsburg & Julia Kamenetzky',
-      author_email='adam.g.ginsburg@gmail.com',
-      url='http://github.com/keflavich/pyradex/',
-      packages=['pyradex','pyradex.radex','pyradex.tests','pyradex.fjdu'],
-      package_data={'pyradex.radex':['radex.so'],
-                    'pyradex.fjdu':['wrapper_my_radex.so'],
-                    'pyradex.tests':['data/example.out']},
-      requires=['requests', 'astroquery', ],
-      install_requires=['astropy>=0.4.1', 'requests>=2.4.1',],
-      cmdclass={'test': PyTest,
+cmdclass.update({
                 'install_radex': InstallRadex,
                 'build_radex_exe': BuildRadexExecutable,
                 'install_myradex': InstallFjdu,
                 'install_fjdu': InstallFjdu,
-               },
-      #include_package_data=True,
+               })
+package_info['package_data'].update(
+    {'pyradex.radex':['radex.so'],
+     'pyradex.fjdu':['wrapper_my_radex.so'],
+     'pyradex.tests':['data/example.out']},)
+package_info['packages'] += ['pyradex','pyradex.radex','pyradex.tests','pyradex.fjdu']
+
+setup(name='pyradex',
+      version=version,
+      #description='Python-RADEX',
+      #long_description=long_description,
+      #author='Adam Ginsburg & Julia Kamenetzky',
+      #author_email='adam.g.ginsburg@gmail.com',
+      #url='http://github.com/keflavich/pyradex/',
+      requires=['requests', 'astroquery', ],
+      install_requires=['astropy>=0.4.1', 'requests>=2.4.1',],
+      cmdclass=cmdclass,
+      **package_info
       )
 
 if os.getenv('RADEX_DATAPATH'):
