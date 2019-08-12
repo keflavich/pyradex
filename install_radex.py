@@ -101,13 +101,19 @@ def patch_radex():
         lines = f.readlines()
 
     with open('Radex/src/readdata.f','w') as f:
-        for line in lines:
-            if 'density(3) = density(1)/(1.d0+1.d0/opr)' in line:
+        # comment out the block dealing with ortho/para ratio: let python
+        # handle that
+        for ii,line in enumerate(lines):
+            if ii <= 225 or ii > 235:
                 f.write(line)
-                f.write('c        For conservation of total density, set n(H2) = 0\n')
-                f.write('         density(1) = 0.0\n')
             else:
-                f.write(line)
+                f.write("c"+line[1:])
+            #if 'density(3) = density(1)/(1.d0+1.d0/opr)' in line:
+            #    f.write(line)
+            #    f.write('c        For conservation of total density, set n(H2) = 0\n')
+            #    f.write('         density(1) = 0.0\n')
+            #else:
+            #    f.write(line)
 
 
 
@@ -224,7 +230,7 @@ def radex_inc_method(datapath, method=1):
         lines = [L.replace('/Users/floris/Radex/moldat/',datapath)
                  if 'radat' in L else L
                  for L in f.readlines()]
-    
+
     radlines = []
     for line in lines:
         if ('parameter (method' in line):
@@ -235,4 +241,3 @@ def radex_inc_method(datapath, method=1):
 
     with open(fn,'w') as f:
         f.writelines(radlines)
-

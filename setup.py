@@ -7,7 +7,7 @@ import glob
 if any((x in sys.argv for x in ('develop','bdist'))):
     # use setuptools for develop, but nothing else
     from setuptools import setup
-    Command = object
+    from distutils.core import Command
 else:
     from distutils.core import setup, Command
 

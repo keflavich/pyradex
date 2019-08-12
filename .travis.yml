@@ -25,26 +25,22 @@ matrix:
         #  env: SETUP_CMD='build_sphinx -w'
 
         # Try Astropy development version
-        - python: 2.7
+        - python: 3.7
           env: ASTROPY_VERSION=development SETUP_CMD='test'
         #- python: 3.3
         #  env: ASTROPY_VERSION=development SETUP_CMD='test'
 
         # Try all python versions with the latest numpy
-        - python: 2.7
+        - python: 3.7
           env: SETUP_CMD='test'
         #- python: 3.3
         #  env: SETUP_CMD='test'
         #- python: 3.4
         #  env: SETUP_CMD='test'
 
-        # Try older numpy versions
+        # Try older python versions
         - python: 2.7
-          env: NUMPY_VERSION=1.8 SETUP_CMD='test'
-        - python: 2.7
-          env: NUMPY_VERSION=1.7 SETUP_CMD='test'
-        - python: 2.7
-          env: NUMPY_VERSION=1.6 SETUP_CMD='test'
+          env: SETUP_CMD='test'
 
 before_install:
 

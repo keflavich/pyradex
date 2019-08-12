@@ -159,6 +159,19 @@ def test_thermal_opr():
     rdx.temperature = 50
     assert rdx.density['oH2'].value == 1e4
 
+def test_h2_and_eminus():
+    """
+    regression test: readdata.f fails unless it is patched when two colliders
+    are specified, one of them is H2, and the collider file specifies H2 (not
+    oH2+pH2).  This problem is caused by the assumption that >1 collider implies
+    oH2+pH2, which is hard-coded into readdata.f and is incorrect.
+    """
+    rdx = Radex(species='hcn', collider_densities={'H2':1e4, 'e': 1e2},
+                column_per_bin=1e14, deltav=1.0, temperature=30,
+                tbackground=2.73)
+    result_table = rdx()
+
+
 def test_mod_params():
 
     RR = Radex(datapath='examples/', species='co', column=1e15,
