@@ -96,7 +96,7 @@ def test_consistent_parchanges():
     rdx.density = 1e3
     assert rdx.abundance == 1e-9
     np.testing.assert_almost_equal(rdx.column.to(u.cm**-2).value,
-                                   (1*u.pc * 1e-9 * 1e3*u.cm**-3).to(u.cm**-2).value, decimal=5)
+                                   (1*u.pc * 1e-9 * 1e3*u.cm**-3).to(u.cm**-2).value, decimal=2)
     rdx.column_per_bin = 1e13
     np.testing.assert_almost_equal(rdx.abundance, 1e13/(1e3*(u.pc.to(u.cm))))
 
