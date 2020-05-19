@@ -193,6 +193,12 @@ class RadiativeTransferApproximator(object):
     def abundance(self, abund):
         self._abundance = abund
         if not self._is_locked:
+            assert self.locked_parameter in ('column', 'abundance', 'density')
+            if self.locked_parameter == 'abundance': # self is locked, still need to update
+                if hasattr(self, '_previous_locked_parameter'):
+                    self._lock_param(self._previous_locked_parameter)
+                else:
+                    self._lock_param('density') # choose arbitrarily
             self._is_locked = True
             if self.locked_parameter == 'column':
                 dens = self.column_per_bin / self.length / abund
@@ -202,6 +208,9 @@ class RadiativeTransferApproximator(object):
                 self.column_per_bin = u.Quantity(col, u.cm**-2)
             self._lock_param('abundance')
             self._is_locked=False
+        np.testing.assert_almost_equal((self.total_density / (self.column /
+                                                              self.length)),
+                                       1/self.abundance)
 
     @property
     def deltav(self):

@@ -442,6 +442,9 @@ class Radex(RadiativeTransferApproximator):
         return self._locked_parameter
 
     def _lock_param(self, parname):
+        if not hasattr(self, '_previous_locked_parameter') or (hasattr(self, '_locked_parameter') and
+                                                               self._previous_locked_parameter != self._locked_parameter):
+            self._previous_lock_parameter = self._locked_parameter
         self._locked_parameter = parname
 
     def _set_parameters(self):
@@ -571,12 +574,24 @@ class Radex(RadiativeTransferApproximator):
 
         if not self._is_locked:
             self._is_locked = True
+            assert self.locked_parameter in ('column', 'abundance', 'density')
+            if self.locked_parameter == 'density': # self is locked, still need to update
+                if hasattr(self, '_previous_locked_parameter'):
+                    self._lock_param(self._previous_locked_parameter)
+                else:
+                    self._lock_param('abundance') # choose arbitrarily
             if self.locked_parameter == 'column':
                 self.abundance = self.column_per_bin /(self.total_density*self.length)
             elif self.locked_parameter == 'abundance':
                 self.column_per_bin = self.total_density * self.length * self.abundance
+            else:
+                raise ValueError("Neither column nor abundance were updated")
             self._lock_param('density')
             self._is_locked = False
+
+            np.testing.assert_almost_equal((self.total_density / (self.column /
+                                                                  self.length)) ,
+                                           1/self.abundance)
 
 
     @property
@@ -766,7 +781,7 @@ class Radex(RadiativeTransferApproximator):
 
     @column_per_bin.setter
     def column_per_bin(self, col):
-        if hasattr(col,'to'):
+        if hasattr(col, 'to'):
             col = unitless(u.Quantity(col, self._u_sc))
         if col < 1e5 or col > 1e25:
             raise ValueError("Extremely low or extremely high column.")
@@ -775,6 +790,13 @@ class Radex(RadiativeTransferApproximator):
         col = u.Quantity(col, self._u_sc)
         if not self._is_locked:
             self._is_locked = True
+            assert self.locked_parameter in ('column', 'abundance', 'density')
+            if self.locked_parameter == 'column': # self is locked, still need to update
+                if hasattr(self, '_previous_locked_parameter'):
+                    self._lock_param(self._previous_locked_parameter)
+                else:
+                    self._lock_param('density') # choose arbitrarily
+            assert self.locked_parameter in ('density', 'abundance')
             if self.locked_parameter == 'density':
                 ab = (col/(self.total_density * self.length))
                 if hasattr(ab, 'decompose'):
@@ -783,8 +805,14 @@ class Radex(RadiativeTransferApproximator):
                     self.abundance = ab / (self._u_cc*u.pc).to(self._u_sc)
             elif self.locked_parameter == 'abundance':
                 self.density = col / self.length / self.abundance
+            else:
+                raise ValueError("Neither density nor abundance were updated")
             self._lock_param('column')
             self._is_locked = False
+
+            np.testing.assert_almost_equal((self.total_density / (self.column /
+                                                                  self.length)) ,
+                                           1/self.abundance)
 
     @property
     def column_per_kms_perpc(self):
@@ -806,6 +834,12 @@ class Radex(RadiativeTransferApproximator):
     def abundance(self, abund):
         self._abundance = abund
         if not self._is_locked:
+            assert self.locked_parameter in ('column', 'abundance', 'density')
+            if self.locked_parameter == 'abundance': # self is locked, still need to update
+                if hasattr(self, '_previous_locked_parameter'):
+                    self._lock_param(self._previous_locked_parameter)
+                else:
+                    self._lock_param('density') # choose arbitrarily
             self._is_locked = True
             if self.locked_parameter == 'column':
                 dens = self.column_per_bin / self.length / abund
@@ -813,8 +847,14 @@ class Radex(RadiativeTransferApproximator):
             elif self.locked_parameter == 'density':
                 col = self.total_density*self.length*abund
                 self.column_per_bin = u.Quantity(col, u.cm**-2)
+            else:
+                raise ValueError("Neither column nor density were updated")
             self._lock_param('abundance')
-            self._is_locked=False
+            self._is_locked = False
+
+            np.testing.assert_almost_equal((self.total_density / (self.column /
+                                                                  self.length)),
+                                           1/self.abundance)
 
     @property
     def deltav(self):
