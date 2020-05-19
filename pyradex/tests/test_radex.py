@@ -92,7 +92,11 @@ def test_consistent_parchanges():
     rdx.abundance=1e-9
     assert rdx.locked_parameter == 'abundance'
     np.testing.assert_almost_equal(rdx.total_density.to(u.cm**-3).value, 1e13/1e-9/u.pc.to(u.cm))
+    assert rdx.locked_parameter == 'abundance'
     rdx.density = 1e3
+    assert rdx.abundance == 1e-9
+    np.testing.assert_almost_equal(rdx.column.to(u.cm**-2).value,
+                                   (1*u.pc * 1e-9 * 1e3*u.cm**-3).to(u.cm**-2).value, decimal=5)
     rdx.column_per_bin = 1e13
     np.testing.assert_almost_equal(rdx.abundance, 1e13/(1e3*(u.pc.to(u.cm))))
 
@@ -198,6 +202,7 @@ def test_mod_params():
     np.testing.assert_almost_equal(RR.deltav.to(u.km/u.s).value, 5)
     tbl = RR()
     np.testing.assert_almost_equal(tbl[0]['Tex'], 37.83, decimal=1)
+
 
 if __name__ == "__main__":
     test_call()

@@ -444,7 +444,7 @@ class Radex(RadiativeTransferApproximator):
     def _lock_param(self, parname):
         if not hasattr(self, '_previous_locked_parameter') or (hasattr(self, '_locked_parameter') and
                                                                self._previous_locked_parameter != self._locked_parameter):
-            self._previous_lock_parameter = self._locked_parameter
+            self._previous_locked_parameter = self._locked_parameter
         self._locked_parameter = parname
 
     def _set_parameters(self):
@@ -589,9 +589,8 @@ class Radex(RadiativeTransferApproximator):
             self._lock_param('density')
             self._is_locked = False
 
-            np.testing.assert_almost_equal((self.total_density / (self.column /
-                                                                  self.length)) ,
-                                           1/self.abundance)
+            invab = (self.total_density / (self.column / self.length)).decompose().value
+            np.testing.assert_almost_equal(invab, 1/self.abundance, decimal=5)
 
 
     @property
@@ -810,9 +809,8 @@ class Radex(RadiativeTransferApproximator):
             self._lock_param('column')
             self._is_locked = False
 
-            np.testing.assert_almost_equal((self.total_density / (self.column /
-                                                                  self.length)) ,
-                                           1/self.abundance)
+            invab = (self.total_density / (self.column / self.length)).decompose().value
+            np.testing.assert_almost_equal(invab, 1/self.abundance, decimal=5)
 
     @property
     def column_per_kms_perpc(self):
@@ -852,9 +850,8 @@ class Radex(RadiativeTransferApproximator):
             self._lock_param('abundance')
             self._is_locked = False
 
-            np.testing.assert_almost_equal((self.total_density / (self.column /
-                                                                  self.length)),
-                                           1/self.abundance)
+            invab = (self.total_density / (self.column / self.length)).decompose().value
+            np.testing.assert_almost_equal(invab, 1/self.abundance, decimal=5)
 
     @property
     def deltav(self):
