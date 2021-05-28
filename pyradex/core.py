@@ -601,7 +601,8 @@ class Radex(RadiativeTransferApproximator):
             self._is_locked = False
 
             invab = (self.total_density / (self.column / self.length)).decompose().value
-            np.testing.assert_almost_equal(invab, 1/self.abundance, decimal=5)
+            if not np.allclose(invab, 1/self.abundance):
+                raise ValueError("Can not set density to %s" % collider_density)    
 
 
     @property
@@ -826,7 +827,8 @@ class Radex(RadiativeTransferApproximator):
             self._is_locked = False
 
             invab = (self.total_density / (self.column / self.length)).decompose().value
-            np.testing.assert_almost_equal(invab, 1/self.abundance, decimal=5)
+            if not np.allclose(invab, 1/self.abundance):
+                raise ValueError("Can not set column_per_bin to %s" % col)          
 
     @property
     def column_per_kms_perpc(self):
@@ -867,7 +869,8 @@ class Radex(RadiativeTransferApproximator):
             self._is_locked = False
 
             invab = (self.total_density / (self.column / self.length)).decompose().value
-            np.testing.assert_almost_equal(invab, 1/self.abundance, decimal=5)
+            if not np.allclose(invab, 1/self.abundance):
+                raise ValueError("Can not set abundance to %s" % abund)     
 
     @property
     def deltav(self):
@@ -1162,9 +1165,7 @@ def density_distribution(densarr, distr, moleculecolumn, tauthresh=0.8,
         redistributed across the appropriate densities.  Units: cm^-2
         [this is wrong - each density will assume a too-low optical depth]
     """
-    try:
-        np.testing.assert_almost_equal(distr.sum(), 1)
-    except AssertionError:
+    if not np.allclose(distr.sum(), 1):
         raise ValueError("The distribution must be normalized.")
 
     if not line_ids:
