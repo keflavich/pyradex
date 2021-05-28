@@ -1,3 +1,4 @@
+#raise "This was left in a terrible debug state may 25, 2021"
 from __future__ import print_function
 import tarfile
 import re
@@ -119,7 +120,7 @@ def patch_radex():
 
 """
 Works for hpc:
-    PATH=/Users/adam/repos/hpc/bin/:/usr/bin:~/virtual-python/bin/:/bin FFLAGS='-m64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-common -dynamic -m64 -g -O2' LDFLAGS='-m64 -undefined dynamic_lookup -bundle' python -c "import install_radex; install_radex.compile_radex(f77exec='/Users/adam/repos/hpc/bin/gfortran')"
+    PATH=/Users/adam/repos/hpc/bin/:/usr/bin:~/virtual-python/bin/:/bin FFLAGS='-m64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-automatic -fno-common -dynamic -m64 -g -O2' LDFLAGS='-m64 -undefined dynamic_lookup -bundle' python -c "import install_radex; install_radex.compile_radex(f77exec='/Users/adam/repos/hpc/bin/gfortran')"
 
 Works for 4.2.3:
     FFLAGS='-arch i686 -arch x86_64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-common -dynamic -arch i386 -arch x86_64 -g -O2' LDFLAGS='-arch i686 -arch x86_64 -undefined dynamic_lookup -bundle' python setup.py install_radex
@@ -146,7 +147,7 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     source = b"\n".join(source_list)
     include_path = '-I{0}'.format(os.getcwd())
     r2 = f2py.compile(source=source, modulename='radex',
-                      extra_args='--fcompiler={0} {1} {2}'.format(fcompiler,
+                      extra_args='--f77flags="-fno-automatic" --fcompiler={0} {1} {2}'.format(fcompiler,
                                                                   f77exec,
                                                                   include_path),)
     os.chdir(pwd)

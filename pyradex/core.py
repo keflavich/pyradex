@@ -276,6 +276,7 @@ class Radex(RadiativeTransferApproximator):
             The emitting area of the source on the sky in steradians
         """
 
+        log.debug("Importing radex fortran module")
         from pyradex.radex import radex
         self.radex = radex
 
@@ -283,12 +284,14 @@ class Radex(RadiativeTransferApproximator):
 
         if os.getenv('RADEX_DATAPATH') and datapath is None:
             datapath = os.getenv('RADEX_DATAPATH')
+            log.debug(f"Datapath={datapath}")
 
         if datapath is not None:
             self.datapath = datapath
             if self.datapath != os.path.expanduser(datapath):
                 raise ValueError("Data path %s was not successfully stored;"
                                  " instead %s was." % (datapath,self.datapath))
+        log.debug(f"Setting species to {species}")
         self.species = species
         if self.molpath == b'':
             raise ValueError("Must set a species name.")
@@ -316,15 +319,18 @@ class Radex(RadiativeTransferApproximator):
         self._locked_parameter = 'density'
         self._is_locked = True
 
+        log.debug(f"Setting temperature to {temperature}")
         # This MUST happen before density is set, otherwise OPR will be
         # incorrectly set.
         self.radex.cphys.tkin = unitless(temperature)
+        log.debug(f"Temperature = {self.radex.cphys.tkin}")
 
         # density warnings will occur if a generic (number-based) density is
         # used.  It can be suppressed more directly by using a dictionary-style
         # density
         self._suppress_density_warning = False
 
+        log.debug("Setting up collider densities")
         if collider_densities:
             self.density = collider_densities
             self._suppress_density_warning = True
@@ -345,11 +351,13 @@ class Radex(RadiativeTransferApproximator):
             self._locked_parameter = 'column'
             self._is_locked = True
 
+        log.debug("Completed collider densities; setting up outfile/logfile")
         self.outfile = outfile
         self.logfile = logfile
         self.escapeProbGeom = escapeProbGeom
 
         self.deltav = deltav
+        log.debug("Setting parameters for the first time")
         self._set_parameters()
 
         if column_per_bin is not None:
@@ -569,8 +577,11 @@ class Radex(RadiativeTransferApproximator):
 
         # Unfortunately,
         # must re-read molecular file and re-interpolate to new density
+        log.debug("Validating colliders")
         self._validate_colliders()
+        log.debug(f"Running 'readdata' from molfile={self.molpath}")
         self.radex.readdata()
+        log.debug("Ran 'readdata'")
 
         if not self._is_locked:
             self._is_locked = True
@@ -612,13 +623,17 @@ class Radex(RadiativeTransferApproximator):
 
     @property
     def molpath(self):
+        log.debug(f"Computing molpath from molfile = {self.radex.impex.molfile}")
         try:
-            return b"".join(self.radex.impex.molfile).strip()
+            result = b"".join(self.radex.impex.molfile).strip()
         except TypeError:
-            return self.radex.impex.molfile.tostring().strip()
+            result = self.radex.impex.molfile.tostring().strip()
+        # this hack may be wrong; the underlying dtype appears to be corrupt
+        return result.lstrip(b"b'") # strip "bytes" junk that appears to be added by numpy
 
     @molpath.setter
     def molpath(self, molfile):
+        log.debug(f"Setting molpath to {molfile} (self.radex.impex.molfile={self.radex.impex.molfile})")
         if "~" in molfile:
             molfile = os.path.expanduser(molfile)
         if PYVERSION == 3:
@@ -628,6 +643,7 @@ class Radex(RadiativeTransferApproximator):
                 self.radex.impex.molfile = " " * self.radex.impex.molfile.dtype.itemsize
         else:
             self.radex.impex.molfile[:] = ""
+        log.debug(f"Verifying collision rates for molfile={molfile} from impex.molfile={self.radex.impex.molfile}")
         utils.verify_collisionratefile(molfile)
         try:
             self.radex.impex.molfile[:len(molfile)] = molfile
