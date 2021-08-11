@@ -154,6 +154,7 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
                                                                   f77exec,
                                                                   include_path),)
     os.chdir(pwd)
+    # 0 on success, or a subprocess.CompletedProcess if full_output=True
     if not isinstance(r2, CompletedProcess) and r2 != 0:
         raise SystemError(f"f2py failed with error {r2}")
 
