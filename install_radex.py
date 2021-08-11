@@ -6,6 +6,7 @@ import os
 import shutil
 import glob
 from numpy import f2py
+from subprocess import CompletedProcess
 try:
     from astropy.utils.data import download_file
 except ImportError:
@@ -146,13 +147,15 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
             source_list.append(f.read())
     source = b"\n".join(source_list)
     include_path = '-I{0}'.format(os.getcwd())
+    print(f"Running f2py with fcompiler={fcompiler}, f77exec={f77exec}, include_path={include_path}")
     r2 = f2py.compile(source=source, modulename='radex',
+                      verbose=True, full_output=True,
                       extra_args='--f77flags="-fno-automatic" --fcompiler={0} {1} {2}'.format(fcompiler,
                                                                   f77exec,
                                                                   include_path),)
     os.chdir(pwd)
-    if r2 != 0:
-        raise SystemError("f2py failed with error %i" % r2)
+    if not isinstance(r2, CompletedProcess) and r2 != 0:
+        raise SystemError(f"f2py failed with error {r2}")
 
     outfile = glob.glob("Radex/src/radex.*so")
     if len(outfile) != 1:
