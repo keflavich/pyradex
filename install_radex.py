@@ -147,12 +147,24 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
             source_list.append(f.read())
     source = b"\n".join(source_list)
     include_path = '-I{0}'.format(os.getcwd())
+
+    import platform
+    mac_ver = platform.mac_ver()
+
+    # not sure if this check is robust enough
+    if int(mac_ver[0].split('.')[0]) >= 12:
+        linker_path = '-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib'
+    else:
+        linker_path = ''
+
     print(f"Running f2py with fcompiler={fcompiler}, f77exec={f77exec}, include_path={include_path}")
     r2 = f2py.compile(source=source, modulename='radex',
                       verbose=True, full_output=True,
-                      extra_args='--f77flags="-fno-automatic" --fcompiler={0} {1} {2}'.format(fcompiler,
-                                                                  f77exec,
-                                                                  include_path),)
+                      extra_args='--f77flags="-fno-automatic" --fcompiler={0} {1} {2} {3}'.format(fcompiler,
+                                                                                                  f77exec,
+                                                                                                  include_path,
+                                                                                                  linker_path
+                                                                                                 ),)
     os.chdir(pwd)
     # 0 on success, or a subprocess.CompletedProcess if full_output=True
     if not isinstance(r2, CompletedProcess) and r2 != 0:
