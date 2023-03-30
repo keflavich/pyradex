@@ -698,6 +698,9 @@ class Radex(RadiativeTransferApproximator):
 
     @datapath.setter
     def datapath(self, radat):
+        if len(radat) > 120:
+            raise ValueError("RADEX has a hard limit on the path length of 120 characters."
+                             f"  Your path was {len(radat)}.")
         # self.radex data path not needed if molecule given as full path
         if PYVERSION == 3:
             try:

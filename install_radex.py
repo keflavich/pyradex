@@ -157,18 +157,25 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     else:
         linker_path = ''
 
-    print(f"Running f2py with fcompiler={fcompiler}, f77exec={f77exec}, include_path={include_path}")
+    extra_args = '--f77flags="-fno-automatic" --fcompiler={0} {1} {2} {3}'.format(fcompiler,
+                                                                                  f77exec,
+                                                                                  include_path,
+                                                                                  linker_path)
+
+    print(f"Running f2py with fcompiler={fcompiler}, f77exec={f77exec}, include_path={include_path}, linker_path={linker_path}")
+    print(f"extra args = {extra_args}")
+    print(f"Current directory = {os.getcwd()}")
     r2 = f2py.compile(source=source, modulename='radex',
-                      verbose=True, full_output=True,
-                      extra_args='--f77flags="-fno-automatic" --fcompiler={0} {1} {2} {3}'.format(fcompiler,
-                                                                                                  f77exec,
-                                                                                                  include_path,
-                                                                                                  linker_path
-                                                                                                 ),)
-    os.chdir(pwd)
+                      verbose=True, full_output=False,
+                      extra_args=extra_args,)
+    print(f"Done running f2py in {os.getcwd()}.  r2={r2}")
     # 0 on success, or a subprocess.CompletedProcess if full_output=True
     if not isinstance(r2, CompletedProcess) and r2 != 0:
+        r3 = f2py.compile(source=source, modulename='radex',
+                          verbose=True, full_output=True,
+                          extra_args=extra_args,)
         raise SystemError(f"f2py failed with error {r2}")
+    os.chdir(pwd)
 
     outfile = glob.glob("Radex/src/radex.*so")
     if len(outfile) != 1:
