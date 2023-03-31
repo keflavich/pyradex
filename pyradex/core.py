@@ -1243,8 +1243,8 @@ def density_distribution(densarr, distr, moleculecolumn, tauthresh=0.8,
             toti_nounit = R.background_brightness*ftau+bnutex*(1.0-ftau)
 
         toti = u.Quantity(toti_nounit, _u_brightness)
-        totK = ((toti*u.sr).to(u.K, u.brightness_temperature(1*u.sr,
-                                                             R.frequency)))
+        totK = ((toti*u.sr).to(u.K, u.brightness_temperature(beam_area=1*u.sr,
+                                                             frequency=R.frequency)))
 
         linestrengths.append(totK[line_ids])
         texs.append(R.tex[line_ids])
