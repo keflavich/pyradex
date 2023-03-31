@@ -1,6 +1,7 @@
 #raise "This was left in a terrible debug state may 25, 2021"
 from __future__ import print_function
 import tarfile
+import sys
 import re
 import os
 import shutil
@@ -143,9 +144,13 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     #f2py.run_main(['-m','radex','-c','--fcompiler={0}'.format(fcompiler), f77exec,] + files)
     source_list = []
     for fn in files:
-        with open(fn, 'rb') as f:
+        with open(fn, 'r') as f:
             source_list.append(f.read())
-    source = b"\n".join(source_list)
+    source = "\n".join(source_list)
+
+    #with open("merged_source.f", 'wb') as fh:
+    #    fh.write(source)
+
     include_path = '-I{0}'.format(os.getcwd())
 
     import platform
@@ -165,22 +170,38 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     print(f"Running f2py with fcompiler={fcompiler}, f77exec={f77exec}, include_path={include_path}, linker_path={linker_path}")
     print(f"extra args = {extra_args}")
     print(f"Current directory = {os.getcwd()}")
-    r2 = f2py.compile(source=source, modulename='radex',
+
+    #f2py_path = os.path.join(sys.exec_prefix, 'bin', 'f2py')
+
+    # Hack doesn't work.
+    command = f'f2py -c -m radex {extra_args} *.f'
+    # print(command)
+    # import subprocess
+    # r2 = subprocess.run(command.split(), stdout=subprocess.PIPE,
+    #                     stderr=subprocess.PIPE, env=os.environ)
+
+    r2 = f2py.compile(source="merged_source.f", modulename='radex',
                       verbose=True, full_output=False,
                       extra_args=extra_args,)
     print(f"Done running f2py in {os.getcwd()}.  r2={r2}")
     # 0 on success, or a subprocess.CompletedProcess if full_output=True
     if not isinstance(r2, CompletedProcess) and r2 != 0:
-        r3 = f2py.compile(source=source, modulename='radex',
+        r3 = f2py.compile(source="merged_source.f", modulename='radex',
                           verbose=True, full_output=True,
                           extra_args=extra_args,)
-        raise SystemError(f"f2py failed with error {r2}")
+        raise SystemError(f"f2py failed with error {r2}\n"
+                          "Try running the command: "
+                          f"\n\ncd Radex/src/\n{command}\ncd -\nmv Radex/src/*so pyradex/radex/\n\n"
+                          "See also Github issues 39 and 40")
     os.chdir(pwd)
 
     outfile = glob.glob("Radex/src/radex.*so")
     if len(outfile) != 1:
         print("outfile = {0}".format(outfile))
-        raise OSError("Did not find the correct .so file(s)!  Compilation has failed.")
+        raise OSError("Did not find the correct .so file(s)!  Compilation has failed.\n"
+                      "Try running the command: "
+                      f"\n\ncd Radex/src/\n{command}\ncd -\nmv Radex/src/*so pyradex/radex/\n\n"
+                      "See also Github issues 39 and 40")
     sofile = outfile[0]
     r3 = shutil.move(sofile, 'pyradex/radex/radex.so')
 
