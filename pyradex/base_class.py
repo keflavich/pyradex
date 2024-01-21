@@ -293,7 +293,7 @@ class RadiativeTransferApproximator(object):
         #return (self.line_flux * beamsize)
         # because each line has a different frequency, have to loop it
         try:
-            return u.Quantity([x.to(u.K, u.brightness_temperature(beamsize, f)).value
+            return u.Quantity([x.to(u.K, u.brightness_temperature(beam_area=beamsize, frequency=f)).value
                                for x,f in zip(self.line_flux_density,self.frequency)
                                ],
                               unit=u.K)
@@ -312,8 +312,8 @@ class RadiativeTransferApproximator(object):
         #return (self.line_flux * beamsize)
         # because each line has a different frequency, have to loop it
         return ((self.source_line_surfbrightness*u.sr).
-                 to(u.K, u.brightness_temperature(1*u.sr,
-                                                  self.frequency)))
+                 to(u.K, u.brightness_temperature(beam_area=1*u.sr,
+                                                  frequency=self.frequency)))
 
     @property
     def T_B(self):
