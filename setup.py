@@ -1,5 +1,35 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+
+import builtins
+
+# Ensure that astropy-helpers is available
+import ah_bootstrap  # noqa
+
+from setuptools import setup
+from setuptools.config import read_configuration
+
+from astropy_helpers.setup_helpers import register_commands, get_package_info
+from astropy_helpers.version_helpers import generate_version_py
+
+# Store the package name in a built-in variable so it's easy
+# to get from other parts of the setup infrastructure
+builtins._ASTROPY_PACKAGE_NAME_ = read_configuration('setup.cfg')['metadata']['name']
+
+# Create a dictionary with setup command overrides. Note that this gets
+# information about the package (name and version) from the setup.cfg file.
+cmdclass = register_commands()
+
+# Freeze build information in version.py. Note that this gets information
+# about the package (name and version) from the setup.cfg file.
+version = generate_version_py()
+
+# Get configuration information from all of the various subpackages.
+# See the docstring for setup_helpers.update_package_files for more
+# details.
+package_info = get_package_info()
+
 
 import sys
 import glob
@@ -16,10 +46,6 @@ with open('README.rst') as file:
 
 #with open('CHANGES') as file:
 #    long_description += file.read()
-
-__version__ = ""
-with open("pyradex/version.py") as f:
-    exec(f.read())
 
 #import os
 #if not os.path.exists('pyradex/radex/radex.so'):
@@ -117,26 +143,30 @@ class PyTest(Command):
         errno2 = subprocess.call([sys.executable, 'runtests.py'])
         raise SystemExit(errno2)
 
-setup(name='pyradex',
-      version=__version__,
-      description='Python-RADEX',
-      long_description=long_description,
-      author='Adam Ginsburg & Julia Kamenetzky',
-      author_email='adam.g.ginsburg@gmail.com',
-      url='http://github.com/keflavich/pyradex/',
-      packages=['pyradex','pyradex.radex','pyradex.tests','pyradex.fjdu'],
-      package_data={'pyradex.radex':['radex.so'],
-                    'pyradex.fjdu':['wrapper_my_radex.so'],
-                    'pyradex.tests':['data/example.out']},
-      requires=['requests', 'astroquery', ],
-      install_requires=['astropy>=0.4.1', 'requests>=2.4.1',],
-      cmdclass={'test': PyTest,
+#setup(version=version, cmdclass=cmdclass, **package_info)
+cmdclass.update({
                 'install_radex': InstallRadex,
                 'build_radex_exe': BuildRadexExecutable,
                 'install_myradex': InstallFjdu,
                 'install_fjdu': InstallFjdu,
-               },
-      #include_package_data=True,
+               })
+package_info['package_data'].update(
+    {'pyradex.radex':['radex.so'],
+     'pyradex.fjdu':['wrapper_my_radex.so'],
+     'pyradex.tests':['data/example.out']},)
+package_info['packages'] += ['pyradex','pyradex.radex','pyradex.tests','pyradex.fjdu']
+
+setup(name='pyradex',
+      version=version,
+      #description='Python-RADEX',
+      #long_description=long_description,
+      #author='Adam Ginsburg & Julia Kamenetzky',
+      #author_email='adam.g.ginsburg@gmail.com',
+      #url='http://github.com/keflavich/pyradex/',
+      requires=['requests', 'astroquery', ],
+      install_requires=['astropy>=0.4.1', 'requests>=2.4.1',],
+      cmdclass=cmdclass,
+      **package_info
       )
 
 if os.getenv('RADEX_DATAPATH'):

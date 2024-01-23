@@ -1,3 +1,6 @@
 [submodule "myRadex"]
 	path = myRadex
 	url = https://github.com/keflavich/myRadex.git
+[submodule "astropy-helpers"]
+	path = astropy-helpers
+	url = ./astropy-helpers
