@@ -158,7 +158,7 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     mac_ver = platform.mac_ver()
 
     # not sure if this check is robust enough
-    if int(mac_ver[0].split('.')[0]) >= 12:
+    if mac_ver[0] and int(mac_ver[0].split('.')[0]) >= 12:
         linkdir = '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib'
         if os.path.exists(linkdir):
             linker_path = f'-L{linkdir}'
