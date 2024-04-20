@@ -190,9 +190,16 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     # r2 = subprocess.run(command.split(), stdout=subprocess.PIPE,
     #                     stderr=subprocess.PIPE, env=os.environ)
 
-    r2 = f2py.compile(source="merged_source.f", modulename='radex',
-                      verbose=True, full_output=False,
-                      extra_args=extra_args,)
+    try:
+        r2 = f2py.compile(source="merged_source.f", modulename='radex',
+                          verbose=True, full_output=False,
+                          extra_args=extra_args,)
+    except TypeError:
+        # Regression fix for https://github.com/keflavich/pyradex/issues/37
+        print("You're using numpy version <1.20, which may cause additional failures.  See Issue 37")
+        r2 = f2py.compile(source="merged_source.f", modulename='radex',
+                          verbose=True,
+                          extra_args=extra_args,)
     print(f"Done running f2py in {os.getcwd()}.  r2={r2}")
     # 0 on success, or a subprocess.CompletedProcess if full_output=True
     if not isinstance(r2, CompletedProcess) and r2 != 0:
@@ -202,7 +209,8 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
         raise SystemError(f"f2py failed with error {r2}\n"
                           "Try running the command: "
                           f"\n\ncd Radex/src/\n{command}\ncd -\nmv Radex/src/*so pyradex/radex/\n\n"
-                          "See also Github issues 39 and 40")
+                          "See also Github issues 39 and 40\n"
+                         )
     os.chdir(pwd)
 
     outfile = glob.glob("Radex/src/radex.*so")
