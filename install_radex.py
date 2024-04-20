@@ -163,7 +163,7 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
         if os.path.exists(linkdir):
             linker_path = f'-L{linkdir}'
         else:
-            other_linkpaths = '/Library/Developer/CommandLineTools/SDKs/MacOSX*.sdk/usr/lib'
+            other_linkpaths = glob.glob('/Library/Developer/CommandLineTools/SDKs/MacOSX*.sdk/usr/lib')
             if len(other_linkpaths) >= 1:
                 linker_path = f'-L{other_linkpaths[0]}'
                 print(f"Set linkpath to {linker_path}")
