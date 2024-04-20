@@ -6,6 +6,7 @@ import re
 import os
 import shutil
 import glob
+import warnings
 from numpy import f2py
 from subprocess import CompletedProcess
 try:
@@ -158,7 +159,16 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
 
     # not sure if this check is robust enough
     if int(mac_ver[0].split('.')[0]) >= 12:
-        linker_path = '-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib'
+        linkdir = '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib'
+        if os.path.exists(linkdir):
+            linker_path = f'-L{linkdir}'
+        else:
+            other_linkpaths = '/Library/Developer/CommandLineTools/SDKs/MacOSX*.sdk/usr/lib'
+            if len(other_linkpaths) >= 1:
+                linker_path = f'-L{other_linkpaths[0]}'
+                print(f"Set linkpath to {linker_path}")
+            else:
+                warnings.warn("NO LINK PATH WAS FOUND!  Check that Mac OS X software development kit (SDK) is installed, and check where it's installed; it should be in /Library/Developer/CommandLineTools/SDKs/")
     else:
         linker_path = ''
 
