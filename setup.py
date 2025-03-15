@@ -143,6 +143,7 @@ setup(name='pyradex',
                 'install_fjdu': InstallFjdu,
                },
       #include_package_data=True,
+      zip_safe=False
       )
 
 if os.getenv('RADEX_DATAPATH'):
