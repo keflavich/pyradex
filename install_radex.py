@@ -8,6 +8,7 @@ import shutil
 import glob
 import warnings
 from numpy import f2py
+import subprocess
 from subprocess import CompletedProcess
 try:
     from astropy.utils.data import download_file
@@ -68,7 +69,7 @@ def extract_radex(filename='radex_public.tar.gz'):
 def patch_radex():
     # PATCHES
     radlines = []
-    vers = re.compile("parameter\(version = '([a-z0-9]*)'\)")
+    vers = re.compile("parameter\\(version = '([a-z0-9]*)'\)")
     with open('Radex/src/radex.inc') as f:
         for line in f.readlines():
             if ('parameter(radat' in line or
@@ -172,10 +173,20 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     else:
         linker_path = ''
 
-    extra_args = '--f77flags="-fno-automatic" --fcompiler={0} {1} {2} {3}'.format(fcompiler,
-                                                                                  f77exec,
-                                                                                  include_path,
-                                                                                  linker_path)
+    # Check Python version to determine how to specify the compiler
+    is_py312_or_later = sys.version_info >= (3, 12)
+
+    if is_py312_or_later:
+        # For Python 3.12+, we need to use FC environment variable instead of --fcompiler
+        print(f"Python 3.12+ detected, using FC environment variable for compiler: {fcompiler}")
+        env = os.environ.copy()
+        env['FC'] = fcompiler
+
+        # Set flags without the --fcompiler option
+        extra_args = f'--f77flags="-fPIC" {f77exec} {include_path} {linker_path}'
+    else:
+        # For older Python versions, use --fcompiler as before
+        extra_args = f'--f77flags="-fPIC -fno-automatic" --fcompiler={fcompiler} {f77exec} {include_path} {linker_path}'
 
     print(f"Running f2py with fcompiler={fcompiler}, f77exec={f77exec}, include_path={include_path}, linker_path={linker_path}")
     print(f"extra args = {extra_args}")
@@ -184,43 +195,73 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     #f2py_path = os.path.join(sys.exec_prefix, 'bin', 'f2py')
 
     # Hack doesn't work.
-    command = f'f2py -c -m radex {extra_args} *.f'
-    # print(command)
-    # import subprocess
-    # r2 = subprocess.run(command.split(), stdout=subprocess.PIPE,
-    #                     stderr=subprocess.PIPE, env=os.environ)
+    lsrslt = subprocess.run(["ls", "*.f"], cwd=os.getcwd(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    print(f".f files are: {lsrslt.stdout}")
 
-    try:
-        r2 = f2py.compile(source="merged_source.f", modulename='radex',
-                          verbose=True, full_output=False,
-                          extra_args=extra_args,)
-    except TypeError:
-        # Regression fix for https://github.com/keflavich/pyradex/issues/37
-        print("You're using numpy version <1.20, which may cause additional failures.  See Issue 37")
-        r2 = f2py.compile(source="merged_source.f", modulename='radex',
-                          verbose=True,
-                          extra_args=extra_args,)
-    print(f"Done running f2py in {os.getcwd()}.  r2={r2}")
-    # 0 on success, or a subprocess.CompletedProcess if full_output=True
-    if not isinstance(r2, CompletedProcess) and r2 != 0:
-        r3 = f2py.compile(source="merged_source.f", modulename='radex',
-                          verbose=True, full_output=True,
-                          extra_args=extra_args,)
-        raise SystemError(f"f2py failed with error {r2}\n"
-                          "Try running the command: "
-                          f"\n\ncd Radex/src/\n{command}\ncd -\nmv Radex/src/*so pyradex/radex/\n\n"
-                          "See also Github issues 39 and 40\n"
-                         )
+    # For Python 3.12+ with meson, we need to explicitly list all Fortran files
+    if is_py312_or_later:
+        # Get the list of .f files
+        fortran_files = glob.glob("*.f")
+
+        # Build the command as a list of arguments
+        cmd_args = ['f2py', '-c', '-m', 'radex']
+        cmd_args.extend(extra_args.split())
+        cmd_args.extend(fortran_files)
+        command = ' '.join(cmd_args)
+
+        print(f"Running command in {os.getcwd()}: {' '.join(cmd_args)}")
+
+        # Use the environment with FC set for Python 3.12+
+        r2 = subprocess.run(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            cwd=os.getcwd(), text=True, env=env)
+    else:
+        # For older Python versions, we can use the wildcard
+        command = f'f2py -c -m radex {extra_args} *.f'
+        print(f"Running command in {os.getcwd()}: {command}")
+
+        # Use the original environment for older Python versions
+        r2 = subprocess.run(command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            cwd=os.getcwd(), text=True, env=os.environ)
+
+    print(f"Command completed with return code: {r2.returncode}")
+
+    outfile_ = glob.glob("radex.*so")
+    if (r2.returncode != 0) or (len(outfile_) != 1):
+        print("\nCommand failed or no output file was generated. Here's the output:")
+        print("\n--- STDOUT ---")
+        print(r2.stdout)
+        print("\n--- STDERR ---")
+        print(r2.stderr)
+        print("\nTry running it manually:")
+        print(f"cd {os.getcwd()}")
+        if is_py312_or_later:
+            print(f"FC={fcompiler} {command}")
+        else:
+            print(command)
+        print("cd -")
+        print("mv Radex/src/*so pyradex/radex/")
+
     os.chdir(pwd)
 
     outfile = glob.glob("Radex/src/radex.*so")
     if len(outfile) != 1:
         print("outfile = {0}".format(outfile))
-        raise OSError("Did not find the correct .so file(s)!  Compilation has failed.\n"
-                      "Try running the command: "
-                      f"\n\ncd Radex/src/\n{command}\ncd -\nmv Radex/src/*so pyradex/radex/\n\n"
-                      "See also Github issues 39 and 40")
+        error_msg = "Did not find the correct .so file(s)! Compilation has failed.\n"
+        error_msg += "Try running the command manually:\n\n"
+        error_msg += f"cd Radex/src/\n"
+
+        if is_py312_or_later:
+            error_msg += f"FC={fcompiler} {command}\n"
+        else:
+            error_msg += f"{command}\n"
+
+        error_msg += "cd -\n"
+        error_msg += "mv Radex/src/*so pyradex/radex/\n\n"
+        error_msg += "See also Github issues 39 and 40"
+
+        raise OSError(error_msg)
     sofile = outfile[0]
+    print(f"Moving {sofile} to pyradex/radex/radex.so")
     r3 = shutil.move(sofile, 'pyradex/radex/radex.so')
 
 def build_radex_executable(datapath='./'):
