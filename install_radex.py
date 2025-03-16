@@ -195,8 +195,8 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     #f2py_path = os.path.join(sys.exec_prefix, 'bin', 'f2py')
 
     # Hack doesn't work.
-    lsrslt = subprocess.run(["ls", "*.f"], cwd=os.getcwd(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    print(f".f files are: {lsrslt.stdout}")
+    lsrslt = subprocess.run(["ls *.f"], cwd=os.getcwd(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+    print(f".f files are: {lsrslt.stdout.replace('\n', ' ')} = {glob.glob('*.f')}")
 
     # For Python 3.12+ with meson, we need to explicitly list all Fortran files
     if is_py312_or_later:
@@ -220,8 +220,8 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
         print(f"Running command in {os.getcwd()}: {command}")
 
         # Use the original environment for older Python versions
-        r2 = subprocess.run(command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                            cwd=os.getcwd(), text=True, env=os.environ)
+        r2 = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            cwd=os.getcwd(), text=True, shell=True, env=os.environ)
 
     print(f"Command completed with return code: {r2.returncode}")
 
