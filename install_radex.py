@@ -196,7 +196,8 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
 
     # Hack doesn't work.
     lsrslt = subprocess.run(["ls *.f"], cwd=os.getcwd(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
-    print(f".f files are: {lsrslt.stdout.replace('\n', ' ')} = {glob.glob('*.f')}")
+    lsout = lsrslt.stdout.replace('\n', ' ')
+    print(f".f files are: {lsout} = {glob.glob('*.f')}")
 
     # For Python 3.12+ with meson, we need to explicitly list all Fortran files
     if is_py312_or_later:
