@@ -113,9 +113,9 @@ class PyTest(Command):
 
         if os.path.exists('build'):
             shutil.rmtree('build')
-        #errno1 = subprocess.call(['py.test','--genscript=runtests.py'])
-        errno2 = subprocess.call([sys.executable, 'runtests.py'])
-        raise SystemExit(errno2)
+        # Use pytest directly instead of deprecated astropy test runners
+        errno = subprocess.call([sys.executable, '-m', 'pytest', 'pyradex/tests/'])
+        raise SystemExit(errno)
 
 radex_shared_object_files = [os.path.basename(fn) for fn in glob.glob("pyradex/radex/*.so")]
 myradex_shared_object_files = [os.path.basename(fn) for fn in glob.glob("pyradex/fjdu/*.so")]

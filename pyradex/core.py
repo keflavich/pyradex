@@ -512,7 +512,7 @@ class Radex(RadiativeTransferApproximator):
 
         if isinstance(collider_density, (float,int,_quantity,np.ndarray)):
             if not self._suppress_density_warning:
-                log.warn("Assuming the density is n(H_2).")
+                log.warning("Assuming the density is n(H_2).")
             collider_density = {'H2': collider_density}
 
         collider_densities = defaultdict(lambda: 0)
@@ -628,7 +628,7 @@ class Radex(RadiativeTransferApproximator):
         try:
             result = b"".join(self.radex.impex.molfile).strip()
         except TypeError:
-            result = self.radex.impex.molfile.tostring().strip()
+            result = self.radex.impex.molfile.tobytes().strip()
         # this hack may be wrong; the underlying dtype appears to be corrupt
         return result.lstrip(b"b'") # strip "bytes" junk that appears to be added by numpy
 
@@ -693,7 +693,7 @@ class Radex(RadiativeTransferApproximator):
             return os.path.expanduser(b"".join(self.radex.setup.radat).strip()).decode('utf-8')
         except TypeError:
             # occurs if radat is S120 instead of array of S1
-            return os.path.expanduser((self.radex.setup.radat.tostring().decode('utf-8').strip()))
+            return os.path.expanduser((self.radex.setup.radat.tobytes().decode('utf-8').strip()))
 
 
     @datapath.setter
