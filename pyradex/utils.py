@@ -5,7 +5,59 @@ import sys
 import os
 import errno
 import itertools
+import inspect
+import difflib
 _quantity = u.Quantity
+
+def check_unexpected_kwargs(func, kwargs, name=None, aliases=None):
+    """
+    Raise a TypeError listing the valid keyword arguments (and, for likely
+    typos or known aliases, the closest valid match) instead of python's
+    default::
+
+        TypeError: Radex.__init__() got an unexpected keyword argument 'tkin'
+
+    Parameters
+    ----------
+    func : callable
+        The function or (possibly bound) method whose signature should be
+        used to determine which keyword arguments are valid.  If bound,
+        ``self`` is excluded automatically.
+    kwargs : dict
+        The leftover ``**kwargs`` collected by the caller.  If empty, this
+        function does nothing.
+    name : str, optional
+        Name to use for ``func`` in the error message.  Defaults to
+        ``func.__qualname__``.
+    aliases : dict, optional
+        Mapping of known-wrong names (e.g. RADEX's own Fortran variable
+        names, like ``tkin``) to the correct keyword argument, checked
+        before falling back to fuzzy string matching.
+    """
+    if not kwargs:
+        return
+
+    valid = [p for p in inspect.signature(func).parameters
+             if p not in ('self', 'kwargs')]
+
+    bad = list(kwargs)
+    suggestions = {}
+    for badname in bad:
+        if aliases and badname in aliases and aliases[badname] in valid:
+            suggestions[badname] = aliases[badname]
+            continue
+        close = difflib.get_close_matches(badname, valid, n=1, cutoff=0.5)
+        if close:
+            suggestions[badname] = close[0]
+
+    msg = "{0}() got unexpected keyword argument(s): {1}.".format(
+        name or getattr(func, '__qualname__', func), ', '.join(map(repr, bad)))
+    if suggestions:
+        msg += "  Did you mean: {0}?".format(
+            ', '.join(f"{k!r} -> {v!r}" for k, v in suggestions.items()))
+    msg += "  Valid keyword arguments are: {0}.".format(', '.join(valid))
+
+    raise TypeError(msg)
 
 def mkdir_p(path):
     """ mkdir -p equivalent [used by get_datafile]"""
