@@ -11,13 +11,20 @@ import sys
 
 from . import utils
 from . import synthspec
-from .utils import QuantityOff,ImmutableDict,unitless,grouper
+from .utils import QuantityOff,ImmutableDict,unitless,grouper,check_unexpected_kwargs
 from .base_class import RadiativeTransferApproximator
 
 from astropy import units as u
 from astropy import constants
 from astropy import log
 import astropy.table
+
+# RADEX's own Fortran common-block names (see Radex/src/radex.inc) for
+# parameters that pyradex exposes under a different, more descriptive name;
+# used to give exact suggestions for these instead of relying on fuzzy
+# string matching.
+_KEYWORD_ALIASES = {'tkin': 'temperature', 'cdmol': 'column',
+                     'totdens': 'total_density'}
 
 PYVERSION = 3 if sys.version_info >= (3,0) else 2
 
@@ -224,6 +231,7 @@ class Radex(RadiativeTransferApproximator):
                  debug=False,
                  mu=2.8,
                  source_area=None,
+                 **kwargs
                  ):
         """
         Direct wrapper of the radex FORTRAN code
@@ -275,6 +283,21 @@ class Radex(RadiativeTransferApproximator):
         source_area: float / unit
             The emitting area of the source on the sky in steradians
         """
+        check_unexpected_kwargs(Radex.__init__, kwargs, name='Radex.__init__',
+                                 aliases=_KEYWORD_ALIASES)
+
+        for parname, value in (('collider_densities', collider_densities),
+                                ('density', density),
+                                ('total_density', total_density)):
+            if isinstance(value, str):
+                raise TypeError(
+                    "`{0}` must be a dict, Quantity, or number giving the "
+                    "density of one or more colliders, but got the string "
+                    "{1!r}.  If you meant to specify the target molecule, "
+                    "use the `species` keyword argument instead: "
+                    "species={1!r}.  Note that `species` cannot be passed "
+                    "positionally; `collider_densities` is the first "
+                    "positional parameter of Radex.__init__().".format(parname, value))
 
         log.debug("Importing radex fortran module")
         from pyradex.radex import radex
@@ -300,21 +323,40 @@ class Radex(RadiativeTransferApproximator):
                              "else RADEX will crash."
                              "  Current path is {0}".format(self.molpath))
 
+        def _given(**pairs):
+            return ", ".join(f"{k}={v!r}" for k, v in pairs.items() if v is not None)
+
         if sum(x is not None for x in (collider_densities,density,total_density)) > 1:
-            raise ValueError("Can only specify one of density, total_density,"
-                             " and collider_densities")
+            raise ValueError(
+                "Can only specify one of density, total_density, and "
+                "collider_densities, but multiple were given: " +
+                _given(collider_densities=collider_densities, density=density,
+                       total_density=total_density))
 
         if sum(x is not None for x in (column,column_per_bin)) > 1:
-            raise ValueError("Can only specify one of column, column_per_bin.")
+            raise ValueError(
+                "Can only specify one of column, column_per_bin, but both "
+                "were given: " +
+                _given(column=column, column_per_bin=column_per_bin))
 
+        density_kwargs = dict(collider_densities=collider_densities,
+                               density=density, total_density=total_density,
+                               column=column, column_per_bin=column_per_bin,
+                               abundance=abundance)
         n_specifications = sum(x is not None for x in (column, column_per_bin,
                                                        collider_densities,
                                                        density, total_density,
                                                        abundance))
         if (n_specifications > 2):
-            raise ValueError("Can only specify two of column, density, and abundance.")
+            raise ValueError(
+                "Can only specify two of column (or column_per_bin), "
+                "density (or total_density or collider_densities), and "
+                "abundance, but more were given: " + _given(**density_kwargs))
         if (n_specifications < 2):
-            raise ValueError("Must specify two of column, density, and abundance.")
+            raise ValueError(
+                "Must specify two of column (or column_per_bin), density "
+                "(or total_density or collider_densities), and abundance, "
+                "but only got: " + (_given(**density_kwargs) or "none of them"))
 
         self._locked_parameter = 'density'
         self._is_locked = True
@@ -396,7 +438,9 @@ class Radex(RadiativeTransferApproximator):
     def set_params(self, density=None, collider_densities=None,
                    column=None, column_per_bin=None, temperature=None,
                    abundance=None, species=None, deltav=None, tbg=None,
-                   escapeProbGeom=None):
+                   escapeProbGeom=None, **kwargs):
+        check_unexpected_kwargs(self.set_params, kwargs,
+                                 name='Radex.set_params', aliases=_KEYWORD_ALIASES)
 
         if species is not None:
             self.species = species
