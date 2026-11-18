@@ -49,11 +49,11 @@ class RadiativeTransferApproximator(object):
     @property
     def valid_colliders(self):
         return self._valid_colliders
-    
+
     @property
     def total_density(self):
         """
-        The total density *by number of particles* 
+        The total density *by number of particles*
         The *mass density* can be dramatically different!
         """
         vc = [x.lower() for x in self.valid_colliders]
@@ -162,7 +162,7 @@ class RadiativeTransferApproximator(object):
     @escapeProbGeom.setter
     def escapeProbGeom(self, escapeProbGeom):
         raise NotImplementedError
-        
+
 
     @property
     def column(self):
@@ -193,6 +193,12 @@ class RadiativeTransferApproximator(object):
     def abundance(self, abund):
         self._abundance = abund
         if not self._is_locked:
+            assert self.locked_parameter in ('column', 'abundance', 'density')
+            if self.locked_parameter == 'abundance': # self is locked, still need to update
+                if hasattr(self, '_previous_locked_parameter'):
+                    self._lock_param(self._previous_locked_parameter)
+                else:
+                    self._lock_param('density') # choose arbitrarily
             self._is_locked = True
             if self.locked_parameter == 'column':
                 dens = self.column_per_bin / self.length / abund
@@ -202,6 +208,9 @@ class RadiativeTransferApproximator(object):
                 self.column_per_bin = u.Quantity(col, u.cm**-2)
             self._lock_param('abundance')
             self._is_locked=False
+        np.testing.assert_almost_equal((self.total_density / (self.column /
+                                                              self.length)),
+                                       1/self.abundance)
 
     @property
     def deltav(self):
@@ -289,7 +298,7 @@ class RadiativeTransferApproximator(object):
         #return (self.line_flux * beamsize)
         # because each line has a different frequency, have to loop it
         try:
-            return u.Quantity([x.to(u.K, u.brightness_temperature(beamsize, f)).value
+            return u.Quantity([x.to(u.K, u.brightness_temperature(beam_area=beamsize, frequency=f)).value
                                for x,f in zip(self.line_flux_density,self.frequency)
                                ],
                               unit=u.K)
@@ -308,8 +317,8 @@ class RadiativeTransferApproximator(object):
         #return (self.line_flux * beamsize)
         # because each line has a different frequency, have to loop it
         return ((self.source_line_surfbrightness*u.sr).
-                 to(u.K, u.brightness_temperature(1*u.sr,
-                                                  self.frequency)))
+                 to(u.K, u.brightness_temperature(beam_area=1*u.sr,
+                                                  frequency=self.frequency)))
 
     @property
     def T_B(self):

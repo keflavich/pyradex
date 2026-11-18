@@ -4,10 +4,10 @@
 import sys
 import glob
 
-if any((x in sys.argv for x in ('develop','bdist'))):
+if any((x in sys.argv for x in ('develop', 'bdist'))):
     # use setuptools for develop, but nothing else
     from setuptools import setup
-    Command = object
+    from distutils.core import Command
 else:
     from distutils.core import setup, Command
 
@@ -113,9 +113,15 @@ class PyTest(Command):
 
         if os.path.exists('build'):
             shutil.rmtree('build')
-        #errno1 = subprocess.call(['py.test','--genscript=runtests.py'])
-        errno2 = subprocess.call([sys.executable, 'runtests.py'])
-        raise SystemExit(errno2)
+        # Use pytest directly instead of deprecated astropy test runners
+        errno = subprocess.call([sys.executable, '-m', 'pytest', 'pyradex/tests/'])
+        raise SystemExit(errno)
+
+radex_shared_object_files = [os.path.basename(fn) for fn in glob.glob("pyradex/radex/*.so")]
+myradex_shared_object_files = [os.path.basename(fn) for fn in glob.glob("pyradex/fjdu/*.so")]
+
+print(f"Found shared object files={radex_shared_object_files} for RADEX.  (if that is a blank, it means radex didn't install successfully)")
+print(f"Found shared object files={myradex_shared_object_files} for RADEX.  (if that is a blank, it means fjdu's myradex didn't install successfully)")
 
 setup(name='pyradex',
       version=__version__,
@@ -125,8 +131,8 @@ setup(name='pyradex',
       author_email='adam.g.ginsburg@gmail.com',
       url='http://github.com/keflavich/pyradex/',
       packages=['pyradex','pyradex.radex','pyradex.tests','pyradex.fjdu'],
-      package_data={'pyradex.radex':['radex.so'],
-                    'pyradex.fjdu':['wrapper_my_radex.so'],
+      package_data={'pyradex.radex':['radex.so'] + radex_shared_object_files,
+                    'pyradex.fjdu':['wrapper_my_radex.so'] + myradex_shared_object_files,
                     'pyradex.tests':['data/example.out']},
       requires=['requests', 'astroquery', ],
       install_requires=['astropy>=0.4.1', 'requests>=2.4.1',],
@@ -137,4 +143,10 @@ setup(name='pyradex',
                 'install_fjdu': InstallFjdu,
                },
       #include_package_data=True,
+      zip_safe=False
       )
+
+if os.getenv('RADEX_DATAPATH'):
+    print("Installation has completed.  RADEX_DATAPATH={0}".format(os.getenv('RADEX_DATAPATH')))
+else:
+    print("Installation has completed.  Make sure to set your RADEX_DATAPATH variable!")

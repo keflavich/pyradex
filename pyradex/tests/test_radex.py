@@ -55,17 +55,21 @@ def test_change_abundance():
 
 def test_consistent_abund():
     with pytest.raises(ValueError):
+        # ValueError: Can only specify two of column, density, and abundance.
         R = Radex(datapath='examples/', species='co', abundance=1e-4,
-                          column=1e15, density=1e3)
+                  column=1e15, density=1e3)
     with pytest.raises(ValueError):
+        # ValueError: Can only specify two of column, density, and abundance.
         R = Radex(datapath='examples/', species='co', abundance=1e-4,
-                          column=1e15, collider_densities={'H2':1e3})
+                  column=1e15, collider_densities={'H2':1e3})
     with pytest.raises(ValueError):
+        # ValueError: Can only specify two of column, density, and abundance.
         R = Radex(datapath='examples/', species='co', abundance=1e-4,
-                          column_per_bin=1e15)
+                  column_per_bin=1e15, density=1e3)
     with pytest.raises(ValueError):
+        # ValueError: Must specify two of column, density, and abundance.
         R = Radex(datapath='examples/', species='co', abundance=None,
-                          column=None)
+                  column=None)
 
 def test_selfconsistent_density():
     rdx = Radex(species='co', collider_densities={'H2':1e3},
@@ -88,7 +92,11 @@ def test_consistent_parchanges():
     rdx.abundance=1e-9
     assert rdx.locked_parameter == 'abundance'
     np.testing.assert_almost_equal(rdx.total_density.to(u.cm**-3).value, 1e13/1e-9/u.pc.to(u.cm))
+    assert rdx.locked_parameter == 'abundance'
     rdx.density = 1e3
+    assert rdx.abundance == 1e-9
+    np.testing.assert_almost_equal(rdx.column.to(u.cm**-2).value,
+                                   (1*u.pc * 1e-9 * 1e3*u.cm**-3).to(u.cm**-2).value, decimal=2)
     rdx.column_per_bin = 1e13
     np.testing.assert_almost_equal(rdx.abundance, 1e13/(1e3*(u.pc.to(u.cm))))
 
@@ -155,6 +163,19 @@ def test_thermal_opr():
     rdx.temperature = 50
     assert rdx.density['oH2'].value == 1e4
 
+def test_h2_and_eminus():
+    """
+    regression test: readdata.f fails unless it is patched when two colliders
+    are specified, one of them is H2, and the collider file specifies H2 (not
+    oH2+pH2).  This problem is caused by the assumption that >1 collider implies
+    oH2+pH2, which is hard-coded into readdata.f and is incorrect.
+    """
+    rdx = Radex(species='hcn', collider_densities={'H2':1e4, 'e': 1e2},
+                column_per_bin=1e14, deltav=1.0, temperature=30,
+                tbackground=2.73)
+    result_table = rdx()
+
+
 def test_mod_params():
 
     RR = Radex(datapath='examples/', species='co', column=1e15,
@@ -181,6 +202,7 @@ def test_mod_params():
     np.testing.assert_almost_equal(RR.deltav.to(u.km/u.s).value, 5)
     tbl = RR()
     np.testing.assert_almost_equal(tbl[0]['Tex'], 37.83, decimal=1)
+
 
 if __name__ == "__main__":
     test_call()

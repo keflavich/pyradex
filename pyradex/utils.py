@@ -1,6 +1,6 @@
 from astropy import units as u
-from astropy.extern.six import reraise
-from astropy.extern.six.moves import zip_longest
+from six import reraise
+from six.moves import zip_longest
 import sys
 import os
 import errno

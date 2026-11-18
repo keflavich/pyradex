@@ -32,9 +32,10 @@ which is a python shared object that can be imported.
 See the install_ page for more details.
 
 If you want pyradex to look in a specific directory for the molecular data
-files, you can specify an environmental variable `RADEX_DATAPATH` prior to
-starting python.  It can also be specified interactively with the `datapath`
-keyword.
+files, you can specify an environmental variable ``RADEX_DATAPATH`` prior to
+starting python.  It can also be specified interactively with the ``datapath``
+keyword.  If you do not specify one of these two variables, the code
+will not work and may return strange errors.
 
 
 Using the f2py-wrapped version
@@ -44,7 +45,7 @@ The direct wrapper of the fortran code uses a class `Radex` as its underlying
 structure.  This class is useful for direct manipulation of RADEX inputs and
 direct access to its outputs.
 
-Example:
+Example (assuming ``RADEX_DATAPATH`` has been specified as an environmental variable):
 
 .. code-block:: python
 
@@ -360,5 +361,5 @@ the scenes.  In v0.3, the length in Radex has been fixed to 1 pc.
    :alt: Bitdeli badge
    :target: https://bitdeli.com/free
 
-.. _install: install.rst
+.. _install: INSTALL.rst
 

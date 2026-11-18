@@ -57,7 +57,7 @@ def pyradex(executable='radex', minfreq=100, maxfreq=130,
         If the molecule specified has both o-H2 and p-H2, you will get a
         WARNING if you specify 'H2'
         An ortho/para example:
-        collider_densities = {'oH2':900, 'pH2':100} 
+        collider_densities = {'oH2':900, 'pH2':100}
         which will yield H2 = 1000
 
     See write_input for additional parameters
@@ -141,7 +141,7 @@ def write_input(temperature=10, column=1e12, collider_densities={'H2':1},
             collider_densities.pop(k)
 
     infile.write('%s\n' % len(collider_densities))
-    for name,dens in collider_densities.iteritems():
+    for name,dens in collider_densities.items():
         infile.write('%s\n' % name)
         infile.write(str(dens)+'\n')
     infile.write(str(tbg)+'\n')
@@ -181,10 +181,10 @@ def parse_outfile(filename, return_dict=False):
         header = {L.split(":")[0][2:].strip():L.split(":")[1].strip()
                 for L in alllines
                 if L[0]=='*'}
-        lines = [L.replace("--","  ") for L in alllines 
-                if (L[0] != '*' 
-                    and 'iterat' not in L 
-                    and 'GHz' not in L 
+        lines = [L.replace("--","  ") for L in alllines
+                if (L[0] != '*'
+                    and 'iterat' not in L
+                    and 'GHz' not in L
                     and 'TAU' not in L)]
         niter = [L.split(" ")[3]
                 for L in alllines
@@ -197,7 +197,7 @@ def parse_outfile(filename, return_dict=False):
         data = {name: C for C,name in zip(data_in_columns, header_names)}
         data['niter']=niter
         return data
-    columns = [astropy.table.Column(data=C, name=name.lower(), unit=unit, dtype=dtype) 
+    columns = [astropy.table.Column(data=C, name=name.lower(), unit=unit, dtype=dtype)
             for C,name,unit,dtype in zip(data_in_columns, header_names, header_units, dtypes)]
     data = astropy.table.Table(columns, meta=header)
     return data
@@ -286,6 +286,7 @@ class Radex(RadiativeTransferApproximator):
             The emitting area of the source on the sky in steradians
         """
 
+        log.debug("Importing radex fortran module")
         from pyradex.radex import radex
         self.radex = radex
 
@@ -298,12 +299,14 @@ class Radex(RadiativeTransferApproximator):
 
         if os.getenv('RADEX_DATAPATH') and datapath is None:
             datapath = os.getenv('RADEX_DATAPATH')
+            log.debug(f"Datapath={datapath}")
 
         if datapath is not None:
             self.datapath = datapath
             if self.datapath != os.path.expanduser(datapath):
                 raise ValueError("Data path %s was not successfully stored;"
                                  " instead %s was." % (datapath,self.datapath))
+        log.debug(f"Setting species to {species}")
         self.species = species
         if self.molpath == b'':
             raise ValueError("Must set a species name.")
@@ -331,15 +334,18 @@ class Radex(RadiativeTransferApproximator):
         self._locked_parameter = 'density'
         self._is_locked = True
 
+        log.debug(f"Setting temperature to {temperature}")
         # This MUST happen before density is set, otherwise OPR will be
         # incorrectly set.
         self.radex.cphys.tkin = unitless(temperature)
+        log.debug(f"Temperature = {self.radex.cphys.tkin}")
 
         # density warnings will occur if a generic (number-based) density is
         # used.  It can be suppressed more directly by using a dictionary-style
         # density
         self._suppress_density_warning = False
 
+        log.debug("Setting up collider densities")
         if collider_densities:
             self.density = collider_densities
             self._suppress_density_warning = True
@@ -360,11 +366,13 @@ class Radex(RadiativeTransferApproximator):
             self._locked_parameter = 'column'
             self._is_locked = True
 
+        log.debug("Completed collider densities; setting up outfile/logfile")
         self.outfile = outfile
         self.logfile = logfile
         self.escapeProbGeom = escapeProbGeom
 
         self.deltav = deltav
+        log.debug("Setting parameters for the first time")
         self._set_parameters()
 
         if column_per_bin is not None:
@@ -378,6 +386,8 @@ class Radex(RadiativeTransferApproximator):
 
         if abundance:
             self.abundance = abundance
+
+        self._validate_colliders()
 
         # This has to happen here, because the colliders are read in at
         # this point and rates interpolated
@@ -409,7 +419,7 @@ class Radex(RadiativeTransferApproximator):
         if deltav is not None:
             self.deltav = deltav
 
-        # This MUST happen before density is set, otherwise OPR will be 
+        # This MUST happen before density is set, otherwise OPR will be
         # incorrectly set.
         if temperature is not None:
             self.radex.cphys.tkin = unitless(temperature)
@@ -455,6 +465,9 @@ class Radex(RadiativeTransferApproximator):
         return self._locked_parameter
 
     def _lock_param(self, parname):
+        if not hasattr(self, '_previous_locked_parameter') or (hasattr(self, '_locked_parameter') and
+                                                               self._previous_locked_parameter != self._locked_parameter):
+            self._previous_locked_parameter = self._locked_parameter
         self._locked_parameter = parname
 
     def _set_parameters(self):
@@ -496,7 +509,7 @@ class Radex(RadiativeTransferApproximator):
 
         for k in d:
             d[k] = u.Quantity(d[k], self._u_cc)
-        
+
         return ImmutableDict(d)
 
     @density.setter
@@ -514,7 +527,7 @@ class Radex(RadiativeTransferApproximator):
 
         if isinstance(collider_density, (float,int,_quantity,np.ndarray)):
             if not self._suppress_density_warning:
-                log.warn("Assuming the density is n(H_2).")
+                log.warning("Assuming the density is n(H_2).")
             collider_density = {'H2': collider_density}
 
         collider_densities = defaultdict(lambda: 0)
@@ -581,27 +594,42 @@ class Radex(RadiativeTransferApproximator):
 
         # Unfortunately,
         # must re-read molecular file and re-interpolate to new density
+        log.debug("Validating colliders")
         self._validate_colliders()
+        log.debug(f"Running 'readdata' from molfile={self.molpath}")
         self.radex.readdata()
+        log.debug("Ran 'readdata'")
 
         if not self._is_locked:
             self._is_locked = True
+            assert self.locked_parameter in ('column', 'abundance', 'density')
+            if self.locked_parameter == 'density': # self is locked, still need to update
+                if hasattr(self, '_previous_locked_parameter'):
+                    self._lock_param(self._previous_locked_parameter)
+                else:
+                    self._lock_param('abundance') # choose arbitrarily
             if self.locked_parameter == 'column':
                 self.abundance = self.column_per_bin /(self.total_density*self.length)
             elif self.locked_parameter == 'abundance':
                 self.column_per_bin = self.total_density * self.length * self.abundance
+            else:
+                raise ValueError("Neither column nor abundance were updated")
             self._lock_param('density')
             self._is_locked = False
+
+            invab = (self.total_density / (self.column / self.length)).decompose().value
+            if not np.allclose(invab, 1/self.abundance):
+                raise ValueError("Can not set density to %s" % collider_density)    
 
 
     @property
     def valid_colliders(self):
         return self._valid_colliders
-    
+
     @property
     def total_density(self):
         """
-        The total density *by number of particles* 
+        The total density *by number of particles*
         The *mass density* can be dramatically different!
         """
         return u.Quantity(self.radex.cphys.totdens, self._u_cc)
@@ -613,13 +641,17 @@ class Radex(RadiativeTransferApproximator):
 
     @property
     def molpath(self):
+        log.debug(f"Computing molpath from molfile = {self.radex.impex.molfile}")
         try:
-            return b"".join(self.radex.impex.molfile).strip()
+            result = b"".join(self.radex.impex.molfile).strip()
         except TypeError:
-            return self.radex.impex.molfile.tostring().strip()
+            result = self.radex.impex.molfile.tobytes().strip()
+        # this hack may be wrong; the underlying dtype appears to be corrupt
+        return result.lstrip(b"b'") # strip "bytes" junk that appears to be added by numpy
 
     @molpath.setter
     def molpath(self, molfile):
+        log.debug(f"Setting molpath to {molfile} (self.radex.impex.molfile={self.radex.impex.molfile})")
         if "~" in molfile:
             molfile = os.path.expanduser(molfile)
         if PYVERSION == 3:
@@ -629,6 +661,7 @@ class Radex(RadiativeTransferApproximator):
                 self.radex.impex.molfile = " " * self.radex.impex.molfile.dtype.itemsize
         else:
             self.radex.impex.molfile[:] = ""
+        log.debug(f"Verifying collision rates for molfile={molfile} from impex.molfile={self.radex.impex.molfile}")
         utils.verify_collisionratefile(molfile)
         try:
             self.radex.impex.molfile[:len(molfile)] = molfile
@@ -677,11 +710,14 @@ class Radex(RadiativeTransferApproximator):
             return os.path.expanduser(b"".join(self.radex.setup.radat).strip()).decode('utf-8')
         except TypeError:
             # occurs if radat is S120 instead of array of S1
-            return os.path.expanduser((self.radex.setup.radat.tostring().decode('utf-8').strip()))
-            
+            return os.path.expanduser((self.radex.setup.radat.tobytes().decode('utf-8').strip()))
+
 
     @datapath.setter
     def datapath(self, radat):
+        if len(radat) > 120:
+            raise ValueError("RADEX has a hard limit on the path length of 120 characters."
+                             f"  Your path was {len(radat)}.")
         # self.radex data path not needed if molecule given as full path
         if PYVERSION == 3:
             try:
@@ -713,7 +749,7 @@ class Radex(RadiativeTransferApproximator):
         if escapeProbGeom not in mdict:
             raise ValueError("Invalid escapeProbGeom, must be one of "+",".join(mdict))
         self.radex.setup.method = mdict[escapeProbGeom]
-        
+
 
     @property
     def level_population(self):
@@ -749,7 +785,7 @@ class Radex(RadiativeTransferApproximator):
         if tkin <= 0 or tkin > 1e4:
             raise ValueError('Must have kinetic temperature > 0 and < 10^4 K')
         self.radex.cphys.tkin = tkin
-        
+
         if not os.path.exists(self.molpath):
             raise IOError("File not found: %s" % self.molpath)
         # must re-read molecular file and re-interpolate to new temperature
@@ -790,7 +826,7 @@ class Radex(RadiativeTransferApproximator):
 
     @column_per_bin.setter
     def column_per_bin(self, col):
-        if hasattr(col,'to'):
+        if hasattr(col, 'to'):
             col = unitless(u.Quantity(col, self._u_sc))
         if col < 1e5 or col > 1e25:
             raise ValueError("Extremely low or extremely high column.")
@@ -799,6 +835,13 @@ class Radex(RadiativeTransferApproximator):
         col = u.Quantity(col, self._u_sc)
         if not self._is_locked:
             self._is_locked = True
+            assert self.locked_parameter in ('column', 'abundance', 'density')
+            if self.locked_parameter == 'column': # self is locked, still need to update
+                if hasattr(self, '_previous_locked_parameter'):
+                    self._lock_param(self._previous_locked_parameter)
+                else:
+                    self._lock_param('density') # choose arbitrarily
+            assert self.locked_parameter in ('density', 'abundance')
             if self.locked_parameter == 'density':
                 ab = (col/(self.total_density * self.length))
                 if hasattr(ab, 'decompose'):
@@ -807,8 +850,14 @@ class Radex(RadiativeTransferApproximator):
                     self.abundance = ab / (self._u_cc*u.pc).to(self._u_sc)
             elif self.locked_parameter == 'abundance':
                 self.density = col / self.length / self.abundance
+            else:
+                raise ValueError("Neither density nor abundance were updated")
             self._lock_param('column')
             self._is_locked = False
+
+            invab = (self.total_density / (self.column / self.length)).decompose().value
+            if not np.allclose(invab, 1/self.abundance):
+                raise ValueError("Can not set column_per_bin to %s" % col)          
 
     @property
     def column_per_kms_perpc(self):
@@ -830,6 +879,12 @@ class Radex(RadiativeTransferApproximator):
     def abundance(self, abund):
         self._abundance = abund
         if not self._is_locked:
+            assert self.locked_parameter in ('column', 'abundance', 'density')
+            if self.locked_parameter == 'abundance': # self is locked, still need to update
+                if hasattr(self, '_previous_locked_parameter'):
+                    self._lock_param(self._previous_locked_parameter)
+                else:
+                    self._lock_param('density') # choose arbitrarily
             self._is_locked = True
             if self.locked_parameter == 'column':
                 dens = self.column_per_bin / self.length / abund
@@ -837,8 +892,14 @@ class Radex(RadiativeTransferApproximator):
             elif self.locked_parameter == 'density':
                 col = self.total_density*self.length*abund
                 self.column_per_bin = u.Quantity(col, u.cm**-2)
+            else:
+                raise ValueError("Neither column nor density were updated")
             self._lock_param('abundance')
-            self._is_locked=False
+            self._is_locked = False
+
+            invab = (self.total_density / (self.column / self.length)).decompose().value
+            if not np.allclose(invab, 1/self.abundance):
+                raise ValueError("Can not set abundance to %s" % abund)     
 
     @property
     def deltav(self):
@@ -868,6 +929,9 @@ class Radex(RadiativeTransferApproximator):
 
     @tbg.setter
     def tbg(self, tbg):
+        if tbg is None:
+            # allow tbg to be not-set so that backrad() isn't triggered
+            return
         #print("Set TBG=%f" % tbg)
         if hasattr(tbg, 'value'):
             tbg = unitless(u.Quantity(tbg, u.K))
@@ -908,14 +972,14 @@ class Radex(RadiativeTransferApproximator):
             self.radex.readdata()
 
         #self.radex.backrad()
-        
+
         # Given the properties of *this* class, set the appropriate RADEX
         # fortran function values
         # 10000 loops, best of 3: 74 micros per loop
         self._set_parameters()
-            
+
         self._iter_counter = 1 if reuse_last else 0
-        
+
         converged = np.array(False)
 
         # 1000000 loops, best of 3: 1.79 micros per loop
@@ -947,8 +1011,10 @@ class Radex(RadiativeTransferApproximator):
 
     @property
     def quantum_number(self):
-        return np.array([(b"".join(x)).strip() for x in
-                         grouper(self.radex.quant.qnum.T.ravel().tolist(),6,fillvalue=b'')])
+        # more recent versions of numpy/python don't require any restructuring?
+        return self.radex.quant.qnum
+        #return np.array([(b"".join(x)).strip() for x in
+        #                 grouper(self.radex.quant.qnum.T.ravel().tolist(),6,fillvalue=b'')])
 
     @property
     def upperlevelnumber(self):
@@ -991,6 +1057,11 @@ class Radex(RadiativeTransferApproximator):
     @property
     def background_brightness(self):
         return u.Quantity(self.radex.radi.backi[self._mask], self._u_brightness)
+
+    @background_brightness.setter
+    def background_brightness(self, value):
+        self.radex.radi.backi[:value.size] = value.to(self._u_brightness)
+        self.radex.radi.totalb[:value.size] = value.to(self._u_brightness)
 
     _thc = (2 * constants.h * constants.c).cgs / u.sr
     _fk = (constants.h * constants.c / constants.k_B).cgs
@@ -1123,9 +1194,7 @@ def density_distribution(densarr, distr, moleculecolumn, tauthresh=0.8,
         redistributed across the appropriate densities.  Units: cm^-2
         [this is wrong - each density will assume a too-low optical depth]
     """
-    try:
-        np.testing.assert_almost_equal(distr.sum(), 1)
-    except AssertionError:
+    if not np.allclose(distr.sum(), 1):
         raise ValueError("The distribution must be normalized.")
 
     if not line_ids:
@@ -1183,7 +1252,7 @@ def density_distribution(densarr, distr, moleculecolumn, tauthresh=0.8,
                     continue
             else:
                 raise ex
-        
+
         if hasattr(R, 'radex'):
             R.radex.radi.taul[:len(tau)] = tau
         elif hasattr(R, '_data_dict'):
@@ -1200,8 +1269,8 @@ def density_distribution(densarr, distr, moleculecolumn, tauthresh=0.8,
             toti_nounit = R.background_brightness*ftau+bnutex*(1.0-ftau)
 
         toti = u.Quantity(toti_nounit, _u_brightness)
-        totK = ((toti*u.sr).to(u.K, u.brightness_temperature(1*u.sr,
-                                                             R.frequency)))
+        totK = ((toti*u.sr).to(u.K, u.brightness_temperature(beam_area=1*u.sr,
+                                                             frequency=R.frequency)))
 
         linestrengths.append(totK[line_ids])
         texs.append(R.tex[line_ids])

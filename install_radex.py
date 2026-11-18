@@ -1,10 +1,15 @@
+#raise "This was left in a terrible debug state may 25, 2021"
 from __future__ import print_function
 import tarfile
+import sys
 import re
 import os
 import shutil
 import glob
+import warnings
 from numpy import f2py
+import subprocess
+from subprocess import CompletedProcess
 try:
     from astropy.utils.data import download_file
 except ImportError:
@@ -21,28 +26,58 @@ def install_radex(download=True, extract=True, patch=True, compile=True):
     if compile:
         compile_radex()
 
-def download_radex(redownload=True,
-                   url='https://personal.sron.nl/~vdtak/radex/radex_public.tar.gz'):
+# SRON retired the old personal.sron.nl domain; sronpersonalpages.nl is the
+# current home for van der Tak's RADEX pages.  Keep the old URL as a fallback
+# in case the primary one moves again.
+RADEX_URLS = (
+    'https://sronpersonalpages.nl/~vdtak/radex/radex_public.tar.gz',
+    'https://personal.sron.nl/~vdtak/radex/radex_public.tar.gz',
+)
+
+
+def download_radex(redownload=True, url=RADEX_URLS[0], urls=RADEX_URLS):
 
     filename = 'radex_public.tar.gz'
 
     if os.path.isfile(filename) and not redownload:
         return filename
 
+    # allow a caller-specified `url` to take priority, but still fall back
+    # to the rest of `urls` if it fails
+    candidate_urls = list(dict.fromkeys((url,) + tuple(urls)))
+
     print("Downloading RADEX")
 
-    try:
-        filename = download_file(url, cache=True)
-        assert os.path.exists(filename)
-    except:
-        import requests
-        r = requests.get(url,
-                         #data={'filename':filename},
-                         stream=True,
-                         verify=False)
-        with open(filename,'wb') as f:
-            for chunk in r.iter_content(1024):
-                f.write(chunk)
+    errors = []
+    for candidate_url in candidate_urls:
+        try:
+            filename = download_file(candidate_url, cache=True)
+            assert os.path.exists(filename)
+            break
+        except Exception as ex:
+            errors.append((candidate_url, ex))
+            try:
+                import requests
+                r = requests.get(candidate_url, stream=True, verify=False,
+                                  timeout=30)
+                r.raise_for_status()
+                with open(filename, 'wb') as f:
+                    for chunk in r.iter_content(1024):
+                        f.write(chunk)
+                break
+            except Exception as ex2:
+                errors[-1] = (candidate_url, ex2)
+    else:
+        error_report = "\n".join(f"  {u}: {e}" for u, e in errors)
+        raise IOError(
+            "Failed to download RADEX from all known URLs:\n"
+            f"{error_report}\n"
+            "The RADEX homepage may have moved again.  Check "
+            "https://home.strw.leidenuniv.nl/~moldata/radex.html for the "
+            "current download link, then either update RADEX_URLS in "
+            "install_radex.py or manually download the tarball and save it "
+            "as 'radex_public.tar.gz' in the current directory."
+        )
 
     print("Download succeeded, or at least didn't obviously fail.")
 
@@ -64,7 +99,7 @@ def extract_radex(filename='radex_public.tar.gz'):
 def patch_radex():
     # PATCHES
     radlines = []
-    vers = re.compile("parameter\(version = '([a-z0-9]*)'\)")
+    vers = re.compile("parameter\\(version = '([a-z0-9]*)'\)")
     with open('Radex/src/radex.inc') as f:
         for line in f.readlines():
             if ('parameter(radat' in line or
@@ -101,26 +136,50 @@ def patch_radex():
         lines = f.readlines()
 
     with open('Radex/src/readdata.f','w') as f:
-        for line in lines:
-            if 'density(3) = density(1)/(1.d0+1.d0/opr)' in line:
+        # comment out the block dealing with ortho/para ratio: let python
+        # handle that
+        for ii,line in enumerate(lines):
+            if ii <= 225 or ii > 235:
                 f.write(line)
-                f.write('c        For conservation of total density, set n(H2) = 0\n')
-                f.write('         density(1) = 0.0\n')
             else:
-                f.write(line)
+                f.write("c"+line[1:])
+            #if 'density(3) = density(1)/(1.d0+1.d0/opr)' in line:
+            #    f.write(line)
+            #    f.write('c        For conservation of total density, set n(H2) = 0\n')
+            #    f.write('         density(1) = 0.0\n')
+            #else:
+            #    f.write(line)
 
 
 
 """
 Works for hpc:
-    PATH=/Users/adam/repos/hpc/bin/:/usr/bin:~/virtual-python/bin/:/bin FFLAGS='-m64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-common -dynamic -m64 -g -O2' LDFLAGS='-m64 -undefined dynamic_lookup -bundle' python -c "import install_radex; install_radex.compile_radex(f77exec='/Users/adam/repos/hpc/bin/gfortran')"
+    PATH=/Users/adam/repos/hpc/bin/:/usr/bin:~/virtual-python/bin/:/bin FFLAGS='-m64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-automatic -fno-common -dynamic -m64 -g -O2' LDFLAGS='-m64 -undefined dynamic_lookup -bundle' python -c "import install_radex; install_radex.compile_radex(f77exec='/Users/adam/repos/hpc/bin/gfortran')"
 
 Works for 4.2.3:
     FFLAGS='-arch i686 -arch x86_64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-common -dynamic -arch i386 -arch x86_64 -g -O2' LDFLAGS='-arch i686 -arch x86_64 -undefined dynamic_lookup -bundle' python setup.py install_radex
 """
 
+def check_f2py_build_tools():
+    """
+    numpy>=1.26 builds f2py extensions (``f2py -c``) with a meson+ninja
+    backend instead of distutils.  Neither tool is a declared dependency of
+    pyradex, so a bare FileNotFoundError from a subprocess call is otherwise
+    the only symptom when they're missing.
+    """
+    missing = [tool for tool in ('meson', 'ninja') if shutil.which(tool) is None]
+    if missing:
+        raise OSError(
+            "Missing build tool(s) required by numpy's f2py compiler "
+            f"backend: {', '.join(missing)}.  Install them with:\n\n"
+            f"    pip install {' '.join(missing)}\n\n"
+            "then re-run install_radex."
+        )
+
+
 def compile_radex(fcompiler='gfortran',f77exec=None):
     #r1 = os.system('f2py -h pyradex/radex/radex.pyf Radex/src/*.f --overwrite-signature > radex_build.log')
+    check_f2py_build_tools()
     pwd = os.getcwd()
     os.chdir('Radex/src/')
     files = glob.glob('*.f')
@@ -135,23 +194,123 @@ def compile_radex(fcompiler='gfortran',f77exec=None):
     #f2py.run_main(['-m','radex','-c','--fcompiler={0}'.format(fcompiler), f77exec,] + files)
     source_list = []
     for fn in files:
-        with open(fn, 'rb') as f:
+        with open(fn, 'r') as f:
             source_list.append(f.read())
-    source = b"\n".join(source_list)
+    source = "\n".join(source_list)
+
+    #with open("merged_source.f", 'wb') as fh:
+    #    fh.write(source)
+
     include_path = '-I{0}'.format(os.getcwd())
-    r2 = f2py.compile(source=source, modulename='radex',
-                      extra_args='--fcompiler={0} {1} {2}'.format(fcompiler,
-                                                                  f77exec,
-                                                                  include_path),)
+
+    import platform
+    mac_ver = platform.mac_ver()
+
+    # not sure if this check is robust enough
+    if mac_ver[0] and int(mac_ver[0].split('.')[0]) >= 12:
+        linkdir = '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib'
+        if os.path.exists(linkdir):
+            linker_path = f'-L{linkdir}'
+        else:
+            other_linkpaths = glob.glob('/Library/Developer/CommandLineTools/SDKs/MacOSX*.sdk/usr/lib')
+            if len(other_linkpaths) >= 1:
+                linker_path = f'-L{other_linkpaths[0]}'
+                print(f"Set linkpath to {linker_path}")
+            else:
+                warnings.warn("NO LINK PATH WAS FOUND!  Check that Mac OS X software development kit (SDK) is installed, and check where it's installed; it should be in /Library/Developer/CommandLineTools/SDKs/")
+    else:
+        linker_path = ''
+
+    # Check Python version to determine how to specify the compiler
+    is_py312_or_later = sys.version_info >= (3, 12)
+
+    if is_py312_or_later:
+        # For Python 3.12+, we need to use FC environment variable instead of --fcompiler
+        print(f"Python 3.12+ detected, using FC environment variable for compiler: {fcompiler}")
+        env = os.environ.copy()
+        env['FC'] = fcompiler
+
+        # Set flags without the --fcompiler option
+        extra_args = f'--f77flags="-fPIC" {f77exec} {include_path} {linker_path}'
+    else:
+        # For older Python versions, use --fcompiler as before
+        extra_args = f'--f77flags="-fPIC -fno-automatic" --fcompiler={fcompiler} {f77exec} {include_path} {linker_path}'
+
+    print(f"Running f2py with fcompiler={fcompiler}, f77exec={f77exec}, include_path={include_path}, linker_path={linker_path}")
+    print(f"extra args = {extra_args}")
+    print(f"Current directory = {os.getcwd()}")
+
+    #f2py_path = os.path.join(sys.exec_prefix, 'bin', 'f2py')
+
+    # Hack doesn't work.
+    lsrslt = subprocess.run(["ls *.f"], cwd=os.getcwd(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+    lsout = lsrslt.stdout.replace('\n', ' ')
+    print(f".f files are: {lsout} = {glob.glob('*.f')}")
+
+    # For Python 3.12+ with meson, we need to explicitly list all Fortran files
+    if is_py312_or_later:
+        # Get the list of .f files
+        fortran_files = glob.glob("*.f")
+
+        # Build the command as a list of arguments
+        cmd_args = ['f2py', '-c', '-m', 'radex']
+        cmd_args.extend(extra_args.split())
+        cmd_args.extend(fortran_files)
+        command = ' '.join(cmd_args)
+
+        print(f"Running command in {os.getcwd()}: {' '.join(cmd_args)}")
+
+        # Use the environment with FC set for Python 3.12+
+        r2 = subprocess.run(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            cwd=os.getcwd(), text=True, env=env)
+    else:
+        # For older Python versions, we can use the wildcard
+        command = f'f2py -c -m radex {extra_args} *.f'
+        print(f"Running command in {os.getcwd()}: {command}")
+
+        # Use the original environment for older Python versions
+        r2 = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            cwd=os.getcwd(), text=True, shell=True, env=os.environ)
+
+    print(f"Command completed with return code: {r2.returncode}")
+
+    outfile_ = glob.glob("radex.*so")
+    if (r2.returncode != 0) or (len(outfile_) != 1):
+        print("\nCommand failed or no output file was generated. Here's the output:")
+        print("\n--- STDOUT ---")
+        print(r2.stdout)
+        print("\n--- STDERR ---")
+        print(r2.stderr)
+        print("\nTry running it manually:")
+        print(f"cd {os.getcwd()}")
+        if is_py312_or_later:
+            print(f"FC={fcompiler} {command}")
+        else:
+            print(command)
+        print("cd -")
+        print("mv Radex/src/*so pyradex/radex/")
+
     os.chdir(pwd)
-    if r2 != 0:
-        raise SystemError("f2py failed with error %i" % r2)
 
     outfile = glob.glob("Radex/src/radex.*so")
     if len(outfile) != 1:
         print("outfile = {0}".format(outfile))
-        raise OSError("Did not find the correct .so file(s)!  Compilation has failed.")
+        error_msg = "Did not find the correct .so file(s)! Compilation has failed.\n"
+        error_msg += "Try running the command manually:\n\n"
+        error_msg += f"cd Radex/src/\n"
+
+        if is_py312_or_later:
+            error_msg += f"FC={fcompiler} {command}\n"
+        else:
+            error_msg += f"{command}\n"
+
+        error_msg += "cd -\n"
+        error_msg += "mv Radex/src/*so pyradex/radex/\n\n"
+        error_msg += "See also Github issues 39 and 40"
+
+        raise OSError(error_msg)
     sofile = outfile[0]
+    print(f"Moving {sofile} to pyradex/radex/radex.so")
     r3 = shutil.move(sofile, 'pyradex/radex/radex.so')
 
 def build_radex_executable(datapath='./'):
@@ -224,7 +383,7 @@ def radex_inc_method(datapath, method=1):
         lines = [L.replace('/Users/floris/Radex/moldat/',datapath)
                  if 'radat' in L else L
                  for L in f.readlines()]
-    
+
     radlines = []
     for line in lines:
         if ('parameter (method' in line):
@@ -235,4 +394,3 @@ def radex_inc_method(datapath, method=1):
 
     with open(fn,'w') as f:
         f.writelines(radlines)
-
