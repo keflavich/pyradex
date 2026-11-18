@@ -4,15 +4,22 @@ Installation
 Installation *should* be relatively easy, but it may break down depending on
 your compiler.
 
-Installation requires astroquery_ and specutils_.  These can be pip installed:
+Installation requires astroquery_.  It can be pip installed:
 
 .. code-block:: bash
 
    pip install astroquery
-   pip install https://github.com/astropy/specutils/archive/master.zip
 
 Compiling RADEX
 ~~~~~~~~~~~~~~~
+
+Compiling the fortran code requires ``gfortran`` and, on numpy>=1.26
+(the default on any currently-supported Python), the ``meson`` and
+``ninja`` build tools that numpy's f2py uses to compile extensions:
+
+.. code-block:: bash
+
+   pip install meson ninja
 
 This command should install the python-wrapped-fortran version of RADEX:
 
@@ -21,6 +28,27 @@ This command should install the python-wrapped-fortran version of RADEX:
    $ python setup.py install_radex install_myradex install
 
 If it doesn't work, there are a number of ways things could have gone wrong.
+
+If the ``install_radex`` step fails with ``FileNotFoundError: ... 'meson'``,
+you're missing the build tools mentioned above; install them and re-run.
+
+If the ``install_myradex`` step fails to compile ``opkda1.f`` with an error
+like ``Type mismatch in argument 'iwk' at (1); passed REAL(8) to
+INTEGER(4)``, your ``gfortran`` is version 10 or newer, which rejects
+argument-type mismatches that this legacy Fortran 77 code relies on.  This
+is fixed in recent versions of the myRadex_ submodule (which adds
+``-fallow-argument-mismatch``); run ``git submodule update --remote
+myRadex`` to pick up the fix if your checkout predates it.
+
+If compilation fails with ``ld: -rpath can only be used when targeting Mac
+OS X 10.5 or later`` (seen with conda-forge's ``gfortran`` on very recent
+macOS versions that the compiler doesn't recognize, e.g. macOS 26), set an
+explicit deployment target before building:
+
+.. code-block:: bash
+
+   export FFLAGS='-mmacosx-version-min=11.0'
+   export LDFLAGS="$LDFLAGS -mmacosx-version-min=11.0"
 
 If you try to `import pyradex` and see the error::
 
@@ -102,4 +130,4 @@ e.g.:
 .. _issues: https://github.com/keflavich/pyradex/issues
 
 .. _astroquery: astroquery.readthedocs.org
-.. _specutils: https://github.com/astropy/specutils
+.. _myRadex: https://github.com/keflavich/myRadex

@@ -26,28 +26,58 @@ def install_radex(download=True, extract=True, patch=True, compile=True):
     if compile:
         compile_radex()
 
-def download_radex(redownload=True,
-                   url='https://personal.sron.nl/~vdtak/radex/radex_public.tar.gz'):
+# SRON retired the old personal.sron.nl domain; sronpersonalpages.nl is the
+# current home for van der Tak's RADEX pages.  Keep the old URL as a fallback
+# in case the primary one moves again.
+RADEX_URLS = (
+    'https://sronpersonalpages.nl/~vdtak/radex/radex_public.tar.gz',
+    'https://personal.sron.nl/~vdtak/radex/radex_public.tar.gz',
+)
+
+
+def download_radex(redownload=True, url=RADEX_URLS[0], urls=RADEX_URLS):
 
     filename = 'radex_public.tar.gz'
 
     if os.path.isfile(filename) and not redownload:
         return filename
 
+    # allow a caller-specified `url` to take priority, but still fall back
+    # to the rest of `urls` if it fails
+    candidate_urls = list(dict.fromkeys((url,) + tuple(urls)))
+
     print("Downloading RADEX")
 
-    try:
-        filename = download_file(url, cache=True)
-        assert os.path.exists(filename)
-    except:
-        import requests
-        r = requests.get(url,
-                         #data={'filename':filename},
-                         stream=True,
-                         verify=False)
-        with open(filename,'wb') as f:
-            for chunk in r.iter_content(1024):
-                f.write(chunk)
+    errors = []
+    for candidate_url in candidate_urls:
+        try:
+            filename = download_file(candidate_url, cache=True)
+            assert os.path.exists(filename)
+            break
+        except Exception as ex:
+            errors.append((candidate_url, ex))
+            try:
+                import requests
+                r = requests.get(candidate_url, stream=True, verify=False,
+                                  timeout=30)
+                r.raise_for_status()
+                with open(filename, 'wb') as f:
+                    for chunk in r.iter_content(1024):
+                        f.write(chunk)
+                break
+            except Exception as ex2:
+                errors[-1] = (candidate_url, ex2)
+    else:
+        error_report = "\n".join(f"  {u}: {e}" for u, e in errors)
+        raise IOError(
+            "Failed to download RADEX from all known URLs:\n"
+            f"{error_report}\n"
+            "The RADEX homepage may have moved again.  Check "
+            "https://home.strw.leidenuniv.nl/~moldata/radex.html for the "
+            "current download link, then either update RADEX_URLS in "
+            "install_radex.py or manually download the tarball and save it "
+            "as 'radex_public.tar.gz' in the current directory."
+        )
 
     print("Download succeeded, or at least didn't obviously fail.")
 
@@ -130,8 +160,26 @@ Works for 4.2.3:
     FFLAGS='-arch i686 -arch x86_64 -fPIC' CFLAGS='-fno-strict-aliasing -fno-common -dynamic -arch i386 -arch x86_64 -g -O2' LDFLAGS='-arch i686 -arch x86_64 -undefined dynamic_lookup -bundle' python setup.py install_radex
 """
 
+def check_f2py_build_tools():
+    """
+    numpy>=1.26 builds f2py extensions (``f2py -c``) with a meson+ninja
+    backend instead of distutils.  Neither tool is a declared dependency of
+    pyradex, so a bare FileNotFoundError from a subprocess call is otherwise
+    the only symptom when they're missing.
+    """
+    missing = [tool for tool in ('meson', 'ninja') if shutil.which(tool) is None]
+    if missing:
+        raise OSError(
+            "Missing build tool(s) required by numpy's f2py compiler "
+            f"backend: {', '.join(missing)}.  Install them with:\n\n"
+            f"    pip install {' '.join(missing)}\n\n"
+            "then re-run install_radex."
+        )
+
+
 def compile_radex(fcompiler='gfortran',f77exec=None):
     #r1 = os.system('f2py -h pyradex/radex/radex.pyf Radex/src/*.f --overwrite-signature > radex_build.log')
+    check_f2py_build_tools()
     pwd = os.getcwd()
     os.chdir('Radex/src/')
     files = glob.glob('*.f')
