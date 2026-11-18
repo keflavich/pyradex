@@ -455,6 +455,17 @@ class Radex(RadiativeTransferApproximator):
             self._previous_locked_parameter = self._locked_parameter
         self._locked_parameter = parname
 
+    def _unlock_param(self, parname, default):
+        """
+        Release the lock on ``parname`` (the parameter being set) by locking
+        a different parameter: the previously-locked one if it differs from
+        ``parname``, otherwise ``default``.
+        """
+        prev = getattr(self, '_previous_locked_parameter', None)
+        if prev is None or prev == parname:
+            prev = default
+        self._lock_param(prev)
+
     def _set_parameters(self):
 
         #self.radex.cphys.cdmol = self.column
@@ -587,10 +598,7 @@ class Radex(RadiativeTransferApproximator):
             self._is_locked = True
             assert self.locked_parameter in ('column', 'abundance', 'density')
             if self.locked_parameter == 'density': # self is locked, still need to update
-                if hasattr(self, '_previous_locked_parameter'):
-                    self._lock_param(self._previous_locked_parameter)
-                else:
-                    self._lock_param('abundance') # choose arbitrarily
+                self._unlock_param('density', 'abundance')
             if self.locked_parameter == 'column':
                 self.abundance = self.column_per_bin /(self.total_density*self.length)
             elif self.locked_parameter == 'abundance':
@@ -811,10 +819,7 @@ class Radex(RadiativeTransferApproximator):
             self._is_locked = True
             assert self.locked_parameter in ('column', 'abundance', 'density')
             if self.locked_parameter == 'column': # self is locked, still need to update
-                if hasattr(self, '_previous_locked_parameter'):
-                    self._lock_param(self._previous_locked_parameter)
-                else:
-                    self._lock_param('density') # choose arbitrarily
+                self._unlock_param('column', 'density')
             assert self.locked_parameter in ('density', 'abundance')
             if self.locked_parameter == 'density':
                 ab = (col/(self.total_density * self.length))
@@ -855,10 +860,7 @@ class Radex(RadiativeTransferApproximator):
         if not self._is_locked:
             assert self.locked_parameter in ('column', 'abundance', 'density')
             if self.locked_parameter == 'abundance': # self is locked, still need to update
-                if hasattr(self, '_previous_locked_parameter'):
-                    self._lock_param(self._previous_locked_parameter)
-                else:
-                    self._lock_param('density') # choose arbitrarily
+                self._unlock_param('abundance', 'density')
             self._is_locked = True
             if self.locked_parameter == 'column':
                 dens = self.column_per_bin / self.length / abund

@@ -61,15 +61,25 @@ class Fjdu(base_class.RadiativeTransferApproximator):
         else:
             return niter
 
+    # myRadex does not run the equilibrium solver unless a method is given
+    # explicitly ('ODE' or 'Newton')
+    solve_method = 'ODE'
+    _solver_defaults = dict(collisiopartnercrit=1, beam_fwhm_in_arcsec=0.4,
+                            max_code_run_time=10.0, max_evol_time=1e16,
+                            rtol=1e-4, atol=1e-20)
+    f_occupation_init_method = ''
+
     def load_datafile(self, filename=None, verbose=False):
         filename = filename or self.molpath
         self.datapath = (os.path.dirname(filename) or self.datapath)+"/"
         self.fname = os.path.basename(filename)
 
+        # newer myRadex versions also return the number of collision partners
         nlevels, nitems, ntrans = self._myradex.config_basic(self.datapath,
                                                              self.fname,
                                                              unitless(self.tbg),
-                                                             verbose)
+                                                             verbose,
+                                                             solve_method=self.solve_method)[:3]
         self.set_params(**{'n_levels': nlevels,
                            'n_item': nitems,
                            'n_transitions': ntrans})
@@ -84,10 +94,22 @@ class Fjdu(base_class.RadiativeTransferApproximator):
 
         self.set_params(**kwargs)
         self.load_datafile()
+        params = dict(self.params)
+        # f2py passes absent optional scalars as 0 (so Fortran's `present()`
+        # is always true), which would zero out the solver tolerances, the
+        # evolution time, etc.  Always pass explicit values.
+        params.setdefault('tbg', unitless(self.tbg))
+        for k, v in self._solver_defaults.items():
+            params.setdefault(k, v)
+        params['solve_method'] = self.solve_method
+        params['f_occupation_init_method'] = self.f_occupation_init_method
+        # some myRadex versions misspell this keyword ('ph2_densty_cgs')
+        if 'ph2_densty_cgs' in (self._myradex.run_one_params.__doc__ or ''):
+            params['ph2_densty_cgs'] = params.pop('ph2_density_cgs')
         energies, f_occupations, data_transitions, cooling_rate = \
-                self._myradex.run_one_params(**self.params)
+                self._myradex.run_one_params(**params)
         self._energies = u.Quantity(energies, u.K) # excitation temperature
-        self._data_dict = cast_into_dic(self._myradex.column_names.tostring().decode(),
+        self._data_dict = cast_into_dic(self._myradex.column_names.tobytes().decode(),
                                         data_transitions)
         self._level_population = f_occupations
 
@@ -102,6 +124,7 @@ class Fjdu(base_class.RadiativeTransferApproximator):
                        ('pH2_density_CGS', 0.0),
                        ('HII_density_CGS', 0.0),
                        ('Electron_density_CGS', 0.0),
+                       ('He_density_CGS', 0.0),
                        ('n_levels', 0),
                        ('n_item', 0),
                        ('n_transitions', 0),
@@ -405,14 +428,27 @@ class Fjdu(base_class.RadiativeTransferApproximator):
     #def source_line_surfbrightness(self):
     #    return u.Quantity(self._data_dict['flux'], self._u_brightness)
 
+    # Recent myRadex versions no longer return 'flux_dens' or 'Jback'
+    # columns, so the brightnesses are reconstructed from the (background-
+    # subtracted) Rayleigh-Jeans brightness temperature 'Tr' and the
+    # background temperature.
     @property
-    def source_brightness(self):
-        return u.Quantity(self._data_dict['flux_dens'], self._u_brightness)
+    def source_line_surfbrightness(self):
+        tr = self.source_line_brightness_temperature
+        return tr.to(self._u_brightness,
+                     u.brightness_temperature(self.frequency))
 
     @property
     def background_brightness(self):
-        return u.Quantity(self._data_dict['Jback'], self._u_brightness)
-    #    return self.tbg.to(self._u_brightness)
+        freq = self.frequency
+        tbg = u.Quantity(self.tbg, u.K)
+        planck = (2 * constants.h * freq**3 / constants.c**2 /
+                  np.expm1((constants.h * freq / (constants.k_B * tbg)).decompose()) / u.sr)
+        return planck.to(self._u_brightness)
+
+    @property
+    def source_brightness(self):
+        return self.source_line_surfbrightness + self.background_brightness
 
     @property
     def beta(self):

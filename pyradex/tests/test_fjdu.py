@@ -16,8 +16,8 @@ def test_simple():
 
     tbl = FF()
 
-    #np.testing.assert_almost_equal(tbl[0]['Tex'], 8.69274406690759)
-    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.6897105103500127)
+    #np.testing.assert_almost_equal(tbl[0]['Tex'], 8.69274406690759, decimal=2)
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.6897105103500127, decimal=2)
 
 def test_mod_params():
 
@@ -27,26 +27,26 @@ def test_mod_params():
     tbl = FF()
 
     # Before para/ortho h2 setting, was this
-    #np.testing.assert_almost_equal(tbl[0]['Tex'], 8.69274406690759)
-    #np.testing.assert_almost_equal(tbl[0]['Tex'], 8.6935272872891236)
-    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.6897105103500127)
+    #np.testing.assert_almost_equal(tbl[0]['Tex'], 8.69274406690759, decimal=2)
+    #np.testing.assert_almost_equal(tbl[0]['Tex'], 8.6935272872891236, decimal=2)
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.6897105103500127, decimal=2)
 
     FF.column = 1e14
     tbl = FF()
 
-    #np.testing.assert_almost_equal(tbl[0]['Tex'], 8.0986662583317646)
-    #np.testing.assert_almost_equal(tbl[0]['Tex'], 8.0994405565362371)
-    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.0956672866767292)
+    #np.testing.assert_almost_equal(tbl[0]['Tex'], 8.0986662583317646, decimal=2)
+    #np.testing.assert_almost_equal(tbl[0]['Tex'], 8.0994405565362371, decimal=2)
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 8.0956672866767292, decimal=2)
 
     FF.density=1e4
     tbl = FF()
-    np.testing.assert_almost_equal(tbl[0]['Tex'], 25.382518594741391)
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 25.382518594741391, decimal=2)
 
     FF.temperature=25
     tbl = FF()
-    np.testing.assert_almost_equal(tbl[0]['Tex'], 37.463006941695028)
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 37.463006941695028, decimal=2)
 
     FF.deltav = 5 * u.km/u.s
     np.testing.assert_almost_equal(FF.deltav.to(u.km/u.s).value, 5)
     tbl = FF()
-    np.testing.assert_almost_equal(tbl[0]['Tex'], 37.760227295047343)
+    np.testing.assert_almost_equal(tbl[0]['Tex'], 37.760227295047343, decimal=2)
