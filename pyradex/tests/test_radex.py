@@ -1,6 +1,6 @@
 import pytest
 import os
-import distutils.spawn
+import shutil
 import numpy as np
 from astropy import units as u
 from astropy import log
@@ -10,8 +10,8 @@ from ..core import parse_outfile,pyradex,Radex
 exepath = 'Radex/bin/radex'
 #if os.path.isfile(exepath) and os.access(exepath, os.X_OK):
 #    exepath = exepath
-if distutils.spawn.find_executable('radex'):
-    exepath = distutils.spawn.find_executable('radex')
+if shutil.which('radex'):
+    exepath = shutil.which('radex')
 else:
     exepath = 'radex'
 
@@ -29,7 +29,7 @@ def test_call():
     data.pprint(show_unit=True)
 
 @pytest.mark.skipif(exepath=='radex',reason='radex not installed')
-@pytest.mark.parametrize('molecule,',('co','13co','c18o','o-h2co','p-nh3',))
+@pytest.mark.parametrize('molecule',('co','13co','c18o','o-h2co','p-nh3',))
 def test_molecules(molecule):
     if os.path.isfile('examples/%s.dat' % molecule):
         molecule = 'examples/%s' % molecule

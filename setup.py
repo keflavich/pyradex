@@ -4,11 +4,10 @@
 import sys
 import glob
 
-if any((x in sys.argv for x in ('develop', 'bdist'))):
-    # use setuptools for develop, but nothing else
-    from setuptools import setup
-    from distutils.core import Command
-else:
+try:
+    from setuptools import setup, Command
+except ImportError:
+    # distutils was removed in Python 3.12; setuptools is required there
     from distutils.core import setup, Command
 
 with open('README.rst') as file:

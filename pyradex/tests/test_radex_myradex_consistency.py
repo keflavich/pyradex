@@ -2,7 +2,7 @@ from ..core import Radex
 from .. import fjdu
 import pytest
 import os
-import distutils.spawn
+import shutil
 import numpy as np
 from astropy import units as u
 from astropy import log
